@@ -209,8 +209,10 @@ body {
     color: var(--text-secondary);
     display: flex;
     justify-content: space-between;
+    gap: 8px;
     padding: 6px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    word-break: break-all;
 }
 .synonym-item:last-child {
     border-bottom: none;
@@ -560,6 +562,7 @@ body {
 
 .step-details {
     flex: 1;
+    min-width: 0;
 }
 
 .step-details h3 {
@@ -749,6 +752,7 @@ body {
 .table-wrapper {
     max-height: 240px;
     overflow-y: auto;
+    overflow-x: auto;
     border: 1px solid var(--border-color);
     border-radius: 8px;
 }
@@ -796,6 +800,8 @@ tr:hover td {
 
 .detail-line {
     margin-bottom: 6px;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 .detail-line:last-child {
     margin-bottom: 0;
@@ -806,14 +812,25 @@ tr:hover td {
 }
 .detail-val {
     color: var(--text-primary);
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 .detail-val-highlight {
     color: var(--accent-blue);
     background: rgba(0, 210, 255, 0.08);
     padding: 2px 6px;
     border-radius: 4px;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    display: inline-block;
+    max-width: 100%;
 }
 .detail-val-code {
     font-family: var(--font-mono);
     color: #e6b422;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    display: inline-block;
+    max-width: 100%;
 }

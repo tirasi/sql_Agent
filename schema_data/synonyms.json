@@ -1,0 +1,12 @@
+{
+  "notebooks": "Notebook",
+  "notebook": "Notebook",
+  "backpacks": "Backpack",
+  "backpack": "Backpack",
+  "pens": "Pen Set",
+  "pen set": "Pen Set",
+  "clients": "customers",
+  "buyers": "customers",
+  "purchases": "orders",
+  "sales": "orders"
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "rule": "counting_customers",
+    "description": "Questions asking 'how many customers' who did X should use COUNT(DISTINCT customers.id), not COUNT(orders.id), to avoid double-counting customers with multiple qualifying orders."
+  },
+  {
+    "rule": "product_name_matching",
+    "description": "Product names in orders.product should be matched case-insensitively, since user phrasing (e.g. 'notebooks') may be plural while stored values (e.g. 'Notebook') are singular and capitalized."
+  }
+]

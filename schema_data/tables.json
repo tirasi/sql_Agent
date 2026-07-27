@@ -1,0 +1,21 @@
+{
+  "customers": {
+    "description": "One row per customer.",
+    "columns": {
+      "id": "INTEGER PRIMARY KEY",
+      "name": "TEXT - customer full name",
+      "city": "TEXT - customer's city",
+      "signup_date": "TEXT (YYYY-MM-DD)"
+    }
+  },
+  "orders": {
+    "description": "One row per order placed by a customer.",
+    "columns": {
+      "id": "INTEGER PRIMARY KEY",
+      "customer_id": "INTEGER - references customers.id",
+      "product": "TEXT - product name",
+      "amount": "REAL - order value",
+      "order_date": "TEXT (YYYY-MM-DD)"
+    }
+  }
+}

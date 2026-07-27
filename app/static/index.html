@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLQ SQL Agent - AI Database Assistant</title>
+    <meta name="description" content="An interactive AI agent dashboard to query databases using natural language, inspect SQL schemas, and view real-time LangGraph execution traces.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Lucide Icons for clean, modern iconography -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar for Schema and Business Logic Explorer -->
+        <aside class="sidebar" id="schemaSidebar">
+            <div class="sidebar-header">
+                <div class="logo-area">
+                    <div class="logo-icon"><i data-lucide="database"></i></div>
+                    <h2>Schema Explorer</h2>
+                </div>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="explorer-section">
+                    <h3 class="section-title"><i data-lucide="table-2"></i> Database Tables</h3>
+                    <div class="explorer-list" id="tablesList">
+                        <div class="loading-placeholder">Loading schema...</div>
+                    </div>
+                </div>
+
+
+                <div class="explorer-section">
+                    <h3 class="section-title"><i data-lucide="refresh-cw"></i> Synonyms Mapping</h3>
+                    <div class="explorer-list" id="synonymsList">
+                        <div class="loading-placeholder">Loading synonyms...</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Interface -->
+        <main class="main-content">
+            <!-- Header bar -->
+            <header class="main-header">
+                <div class="header-left">
+                    <h1>AI SQL Agent</h1>
+                    <span class="badge badge-success"><span class="dot"></span> Online</span>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-secondary" id="toggleSidebarBtn">
+                        <i data-lucide="menu"></i> Toggle Schema
+                    </button>
+                </div>
+            </header>
+
+            <!-- Search Area -->
+            <section class="search-section">
+                <div class="search-container">
+                    <form id="queryForm">
+                        <div class="input-wrapper">
+                            <i data-lucide="search" class="search-icon"></i>
+                            <input 
+                                type="text" 
+                                id="queryInput" 
+                                placeholder="Ask a question about the customers or orders database..." 
+                                autocomplete="off"
+                                required
+                            >
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <span>Execute</span> <i data-lucide="sparkles"></i>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="suggested-queries">
+                        <span class="suggest-label">Try asking:</span>
+                        <button class="suggest-chip" data-query="Which customers in Jaipur placed orders, and what did they buy?">
+                            Customers in Jaipur & purchases
+                        </button>
+                        <button class="suggest-chip" data-query="How many customers ordered notebooks?">
+                            Who ordered notebooks?
+                        </button>
+                        <button class="suggest-chip" data-query="List all products and their total sales amount ordered by revenue.">
+                            Product sales revenue ranking
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interactive Graph & Results Section -->
+            <div class="dashboard-grid">
+                <!-- Left: Interactive Graph Node Trace -->
+                <section class="panel trace-panel">
+                    <div class="panel-header">
+                        <h2><i data-lucide="git-fork" class="text-blue"></i> Execution Trace</h2>
+                        <span class="status-badge" id="executionStatus">Idle</span>
+                    </div>
+                    <div class="panel-body">
+                        <!-- Node Steps Grid/List -->
+                        <div class="trace-steps">
+                            <!-- Step 1 -->
+                            <div class="step-card" id="step-context_resolution">
+                                <div class="step-icon"><i data-lucide="user-check"></i></div>
+                                <div class="step-details">
+                                    <h3>Context Resolution</h3>
+                                    <p class="step-desc">Normalizing business rules and synonyms</p>
+                                    <div class="step-data" id="data-context_resolution"></div>
+                                </div>
+                                <div class="step-status"><i data-lucide="circle-dashed"></i></div>
+                            </div>
+                            
+                            <!-- Step 2 -->
+                            <div class="step-card" id="step-schema_retrieval">
+                                <div class="step-icon"><i data-lucide="columns"></i></div>
+                                <div class="step-details">
+                                    <h3>Schema Retrieval</h3>
+                                    <p class="step-desc">Identifying relevant tables and structure</p>
+                                    <div class="step-data" id="data-schema_retrieval"></div>
+                                </div>
+                                <div class="step-status"><i data-lucide="circle-dashed"></i></div>
+                            </div>
+
+                            <!-- Step 3 -->
+                            <div class="step-card" id="step-sql_generation">
+                                <div class="step-icon"><i data-lucide="terminal"></i></div>
+                                <div class="step-details">
+                                    <h3>SQL Generation</h3>
+                                    <p class="step-desc">Drafting and formatting SQL query</p>
+                                    <div class="step-data" id="data-sql_generation"></div>
+                                </div>
+                                <div class="step-status"><i data-lucide="circle-dashed"></i></div>
+                            </div>
+
+                            <!-- Step 4 -->
+                            <div class="step-card" id="step-validation">
+                                <div class="step-icon"><i data-lucide="check-square"></i></div>
+                                <div class="step-details">
+                                    <h3>SQL Validation</h3>
+                                    <p class="step-desc">Validating syntax and safety checks</p>
+                                    <div class="step-data" id="data-validation"></div>
+                                </div>
+                                <div class="step-status"><i data-lucide="circle-dashed"></i></div>
+                            </div>
+
+                            <!-- Step 5 -->
+                            <div class="step-card" id="step-execution">
+                                <div class="step-icon"><i data-lucide="play-circle"></i></div>
+                                <div class="step-details">
+                                    <h3>Execution</h3>
+                                    <p class="step-desc">Fetching rows from database</p>
+                                    <div class="step-data" id="data-execution"></div>
+                                </div>
+                                <div class="step-status"><i data-lucide="circle-dashed"></i></div>
+                            </div>
+
+                            <!-- Step 6 -->
+                            <div class="step-card" id="step-response_generation">
+                                <div class="step-icon"><i data-lucide="message-square"></i></div>
+                                <div class="step-details">
+                                    <h3>Response Generation</h3>
+                                    <p class="step-desc">Synthesizing human-friendly answer</p>
+                                    <div class="step-data" id="data-response_generation"></div>
+                                </div>
+                                <div class="step-status"><i data-lucide="circle-dashed"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Right: Final Result Display -->
+                <section class="panel result-panel">
+                    <div class="panel-header">
+                        <h2><i data-lucide="award" class="text-green"></i> Final Answer</h2>
+                    </div>
+                    <div class="panel-body answer-body" id="answerBody">
+                        <div class="empty-state">
+                            <i data-lucide="messages-square"></i>
+                            <p>Submit a query above to see the agent's natural language answer and returned data rows.</p>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic SQL & Data Results Container -->
+                    <div class="sql-result-container hidden" id="sqlResultContainer">
+                        <div class="result-tabs">
+                            <button class="tab-btn active" data-tab="sql">Generated SQL</button>
+                            <button class="tab-btn" data-tab="data">Data Table</button>
+                        </div>
+                        
+                        <div class="tab-content" id="tab-sql">
+                            <div class="sql-header">
+                                <span>SQL Query</span>
+                                <button class="btn btn-sm btn-icon" id="copySqlBtn" title="Copy SQL">
+                                    <i data-lucide="copy"></i>
+                                </button>
+                            </div>
+                            <pre class="sql-code"><code id="sqlCode">SELECT * FROM customers;</code></pre>
+                        </div>
+
+                        <div class="tab-content hidden" id="tab-data">
+                            <div class="table-wrapper">
+                                <table id="resultsTable">
+                                    <thead>
+                                        <!-- Column names injected here -->
+                                    </thead>
+                                    <tbody>
+                                        <!-- Data rows injected here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <!-- Application Logic -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

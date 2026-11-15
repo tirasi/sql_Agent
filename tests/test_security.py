@@ -40,8 +40,9 @@ def _denial(sql):
 
 
 def _run(sql):
+    # explicit limits, so the result doesn't depend on which test file set env vars first
     with readonly_connection() as c:
-        return execute_sql(c, sql)
+        return execute_sql(c, sql, timeout_ms=300, max_rows=5)
 
 
 # S1 -- runaway queries are interrupted
@@ -68,7 +69,7 @@ def test_s2_answer_prompt_gets_a_sample_only(monkeypatch):
     monkeypatch.setattr(rg, "ANSWER_SAMPLE_ROWS", 3)
     rg.response_generation_node({"user_input": "list", "rows": [(i,) for i in range(50)],
                                  "columns": ["x"], "truncated": True})
-    assert "Rows (3 shown)" in seen["p"]
+    assert seen["p"].count("Row ") == 3 and "Row 4:" not in seen["p"]
 
 
 # S3 -- only catalogued columns are readable

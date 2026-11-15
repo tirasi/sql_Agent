@@ -1,0 +1,20 @@
+{
+  "sales": {
+    "aliases": ["total sales", "sales", "revenue", "turnover", "total spend", "spend", "spent"],
+    "sql": "SUM(orders.amount)",
+    "tables": ["orders"],
+    "description": "total money value of orders"
+  },
+  "order_count": {
+    "aliases": ["number of orders", "order count", "how many orders"],
+    "sql": "COUNT(orders.id)",
+    "tables": ["orders"],
+    "description": "number of orders"
+  },
+  "average_order_value": {
+    "aliases": ["average order value", "aov", "average order"],
+    "sql": "AVG(orders.amount)",
+    "tables": ["orders"],
+    "description": "mean value of one order"
+  }
+}

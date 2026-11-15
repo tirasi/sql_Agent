@@ -12,10 +12,16 @@ from typing import TypedDict, Optional, List, Dict, Any, Annotated
 class AgentState(TypedDict):
     # input
     user_input: str
+    history: Optional[List[Dict[str, Any]]]   # C8: previous turns of this conversation
+
 
     # context_resolution output
     resolved_input: Optional[str]        # user_input after synonym/business-rule normalization
     detected_synonyms: Optional[Dict[str, str]]
+    metric_hints: Optional[List[Dict[str, Any]]]   # C4: business terms -> exact SQL
+    is_follow_up: Optional[bool]                    # C8
+    chosen_sql: Optional[str]                       # C9: reading the user picked
+    chosen_interpretation: Optional[str]
 
     # schema_retrieval output
     relevant_tables: Optional[List[str]]
@@ -24,8 +30,15 @@ class AgentState(TypedDict):
     join_context: Optional[str]          # FK join paths between the selected tables
 
     # sql_generation output
-    sql_query: Optional[str]
+    sql_query: Optional[str]             # the chosen candidate
     attempts: int
+    candidates: Optional[List[Dict[str, Any]]]     # C1: every candidate + its validity/result
+    confidence: Optional[float]                    # C1: share of candidates that agreed
+    candidate_groups: Optional[int]
+    needs_clarification: Optional[bool]            # C9
+    clarification_options: Optional[List[Dict[str, Any]]]
+    empty_result_retry: Optional[bool]             # C1: regenerate once on an empty result
+    empty_rechecked: Optional[bool]
 
     # validation output
     is_valid: Optional[bool]
@@ -49,11 +62,24 @@ class AgentState(TypedDict):
     attempt_history: Annotated[List[Dict[str, Any]], operator.add]
 
 
-def make_initial_state(question: str) -> AgentState:
+def make_initial_state(question: str, history: Optional[List[Dict[str, Any]]] = None) -> AgentState:
     """Single place that defines a fresh state (used by main.py, server.py
-    and tests/run_eval.py, so adding a field never needs 3 edits)."""
+    and tests/run_eval.py, so adding a field never needs 3 edits).
+    history = previous turns of the same conversation (C8), newest last."""
     return {
         "user_input": question,
+        "history": history or [],
+        "metric_hints": None,
+        "is_follow_up": False,
+        "chosen_sql": None,
+        "chosen_interpretation": None,
+        "candidates": None,
+        "confidence": None,
+        "candidate_groups": None,
+        "needs_clarification": False,
+        "clarification_options": None,
+        "empty_result_retry": False,
+        "empty_rechecked": False,
         "resolved_input": None,
         "detected_synonyms": None,
         "relevant_tables": None,
@@ -72,4 +98,17 @@ def make_initial_state(question: str) -> AgentState:
         "truncated": None,
         "final_answer": None,
         "attempt_history": [],
+    }
+
+
+def make_turn(final_state: dict) -> dict:
+    """C8: what one finished question leaves behind for the next one in the
+    same conversation (kept small: no rows, no prompts)."""
+    return {
+        "question": final_state.get("resolved_input") or final_state.get("user_input"),
+        "sql": final_state.get("sql_query"),
+        "relevant_tables": final_state.get("relevant_tables") or [],
+        "answer": final_state.get("final_answer"),
+        "clarification_options": final_state.get("clarification_options")
+        if final_state.get("needs_clarification") else None,
     }

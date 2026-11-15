@@ -4,16 +4,13 @@ SQL-writing prompt so the model doesn't have to guess join columns.
 Also finds "bridge" tables needed to connect selected tables.
 """
 
-import json
-import os
 from collections import deque
-from app.config import SCHEMA_DATA_DIR
+from app.schema.catalog import get_relationships
 
 
 def _load_relationships():
-    path = os.path.join(SCHEMA_DATA_DIR, "relationships.json")
-    with open(path, "r") as f:
-        return json.load(f)
+    # C10: real foreign keys from the DB + declared extras (catalog.py)
+    return get_relationships()
 
 
 def _neighbors() -> dict:

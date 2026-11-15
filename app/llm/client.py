@@ -20,20 +20,23 @@ from app.config import (
 )
 
 
-def call_llm(system_prompt: str, user_message: str, node_name: str = "default") -> str:
+def call_llm(system_prompt: str, user_message: str, node_name: str = "default",
+             temperature: float = 0.0) -> str:
+    """temperature 0 = deterministic; >0 is used to sample alternative SQL
+    candidates for majority voting (C1)."""
     if LLM_PROVIDER == "anthropic":
         model = NODE_MODELS_ANTHROPIC.get(node_name, "claude-sonnet-4-6")
-        return _call_anthropic(system_prompt, user_message, model)
+        return _call_anthropic(system_prompt, user_message, model, temperature)
     elif LLM_PROVIDER == "ollama":
         model = NODE_MODELS_OLLAMA.get(node_name, "phi4-mini")
-        return _call_ollama(system_prompt, user_message, model, node_name)
+        return _call_ollama(system_prompt, user_message, model, node_name, temperature)
     else:
         raise RuntimeError(
             f"Unknown LLM_PROVIDER '{LLM_PROVIDER}' -- must be 'ollama' or 'anthropic'."
         )
 
 
-def _call_anthropic(system_prompt: str, user_message: str, model: str) -> str:
+def _call_anthropic(system_prompt: str, user_message: str, model: str, temperature: float = 0.0) -> str:
     import anthropic  # pip install anthropic
 
     if not ANTHROPIC_API_KEY:
@@ -45,13 +48,15 @@ def _call_anthropic(system_prompt: str, user_message: str, model: str) -> str:
     response = client.messages.create(
         model=model,
         max_tokens=1000,
+        temperature=temperature,
         system=system_prompt,
         messages=[{"role": "user", "content": user_message}],
     )
     return response.content[0].text
 
 
-def _call_ollama(system_prompt: str, user_message: str, model: str, node_name: str = "default") -> str:
+def _call_ollama(system_prompt: str, user_message: str, model: str, node_name: str = "default",
+                 temperature: float = 0.0) -> str:
     import requests  # pip install requests
 
     try:
@@ -64,6 +69,7 @@ def _call_ollama(system_prompt: str, user_message: str, model: str, node_name: s
                     {"role": "user", "content": user_message},
                 ],
                 "stream": False,
+                "options": {"temperature": temperature},
             },
             timeout=120,
         )

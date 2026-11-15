@@ -160,6 +160,9 @@ def main():
             "relevant_tables": state.get("relevant_tables"),
             "table_selection": state.get("table_selection"),
             "routing_ok": routing_ok, "blocked": state.get("blocked"),
+            "confidence": state.get("confidence"),
+            "needs_clarification": state.get("needs_clarification"),
+            "candidates": [c.get("sql") for c in state.get("candidates") or []],
             "attempt_history": state.get("attempt_history"),
         }
         results.append(r)
@@ -188,6 +191,7 @@ def main():
 
     print("\n========== SUMMARY ==========")
     print(f"Execution accuracy : {pct(passed, n)}")
+    print(f"Asked to clarify   : {pct(sum(bool(r.get('needs_clarification')) for r in acc_cases), n)}")
     print(f"Valid on 1st try   : {pct(first_try, n)}")
     print(f"Fixed by retry     : {recovered}")
     print(f"No final answer    : {pct(no_answer, n)}")

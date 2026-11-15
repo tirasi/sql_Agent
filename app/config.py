@@ -78,3 +78,23 @@ DEBUG_TRACE = os.getenv("DEBUG_TRACE", "false").lower() in ("1", "true", "yes")
 # Only tables/columns described in schema_data/tables.json are readable by
 # generated SQL; access_policy.json can hide more columns on top of that.
 ACCESS_POLICY_FILE = os.getenv("ACCESS_POLICY_FILE", "access_policy.json")
+
+# --- Answer quality (C1, C7, C8, C9, C10) ---
+# C1: how many SQL-generation calls per question. Call 1 is deterministic
+#     (temperature 0); the rest are sampled (temperature 0.7). Their RESULTS
+#     are compared and the majority answer wins. 1 = old single-shot behaviour.
+SQL_CANDIDATES = int(os.getenv("SQL_CANDIDATES", "3"))
+# C9: if the candidate queries disagree with no majority, ask the user which
+#     reading they meant instead of guessing.
+CLARIFY_ON_DISAGREEMENT = os.getenv("CLARIFY_ON_DISAGREEMENT", "true").lower() in ("1", "true", "yes")
+# C7: "today" for relative dates ("last month"). Empty = the real date.
+#     Set e.g. REFERENCE_DATE=2024-07-15 to make evals reproducible.
+REFERENCE_DATE = os.getenv("REFERENCE_DATE", "")
+# C8: how many previous turns of a conversation are kept per session.
+HISTORY_TURNS = int(os.getenv("HISTORY_TURNS", "3"))
+# C10: tables/columns found in the live DB but NOT documented in tables.json
+#      are hidden unless this is true (security first: S3 allow-list).
+AUTO_EXPOSE_SCHEMA = os.getenv("AUTO_EXPOSE_SCHEMA", "false").lower() in ("1", "true", "yes")
+# C10: with more tables than this, only the best-matching ones are shown to
+#      the router LLM, so the prompt stays small on big schemas.
+ROUTER_MAX_TABLES = int(os.getenv("ROUTER_MAX_TABLES", "20"))

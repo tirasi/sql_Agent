@@ -1,10 +1,18 @@
 [
   {
     "rule": "counting_customers",
-    "description": "Questions asking 'how many customers' who did X should use COUNT(DISTINCT customers.id), not COUNT(orders.id), to avoid double-counting customers with multiple qualifying orders."
+    "tables": ["customers", "orders"],
+    "description": "Questions asking 'how many customers' who did X should use COUNT(DISTINCT customers.id), not COUNT(orders.id), to avoid double-counting customers with multiple qualifying orders.",
+    "check": {
+      "when_question": "\\bhow many\\b.*\\bcustomers?\\b",
+      "when_sql": "\\borders\\b",
+      "sql_must_match": "count\\s*\\(\\s*distinct",
+      "message": "count customers with COUNT(DISTINCT customers.id) (or DISTINCT orders.customer_id) when orders are joined, so a customer with several orders is counted once."
+    }
   },
   {
     "rule": "product_name_matching",
+    "tables": ["orders"],
     "description": "Product names in orders.product should be matched case-insensitively, since user phrasing (e.g. 'notebooks') may be plural while stored values (e.g. 'Notebook') are singular and capitalized."
   }
 ]

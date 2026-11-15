@@ -10,6 +10,7 @@ from app.nodes.sql_generation import sql_generation_node
 from app.nodes.validation import validation_node
 from app.nodes.execution import execution_node
 from app.nodes.response_generation import response_generation_node
+from app.nodes.clarify import clarify_node
 from app.config import MAX_SQL_ATTEMPTS
 
 
@@ -44,11 +45,13 @@ def _route_after_validation(state: AgentState) -> str:
 
 
 def _route_after_execution(state: AgentState) -> str:
-    if not state.get("execution_error"):
-        return "response_generation"
-    if state["attempts"] >= MAX_SQL_ATTEMPTS:
-        return "give_up"
-    return "sql_generation"            # NEW: runtime errors get a retry too
+    if state.get("execution_error"):
+        return "give_up" if state["attempts"] >= MAX_SQL_ATTEMPTS else "sql_generation"
+    if state.get("needs_clarification"):
+        return "clarify"                   # C9: readings disagree -> ask
+    if state.get("empty_result_retry") and state["attempts"] < MAX_SQL_ATTEMPTS:
+        return "sql_generation"            # C1: re-check an empty result once
+    return "response_generation"
 
 
 def build_graph():
@@ -62,6 +65,7 @@ def build_graph():
     graph.add_node("execution", execution_node)
     graph.add_node("response_generation", response_generation_node)
     graph.add_node("give_up", give_up_node)
+    graph.add_node("clarify", clarify_node)
 
     graph.add_edge(START, "intent_guard")
     graph.add_conditional_edges(
@@ -78,10 +82,11 @@ def build_graph():
     )
     graph.add_conditional_edges(
         "execution", _route_after_execution,
-        {"response_generation": "response_generation",
+        {"response_generation": "response_generation", "clarify": "clarify",
          "sql_generation": "sql_generation", "give_up": "give_up"},
     )
     graph.add_edge("response_generation", END)
     graph.add_edge("give_up", END)
+    graph.add_edge("clarify", END)
 
     return graph.compile()

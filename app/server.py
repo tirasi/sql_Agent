@@ -11,17 +11,53 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.graph.nlq_sql_graph import build_graph
-from app.state.agent_state import AgentState, make_initial_state
-from app.config import SCHEMA_DATA_DIR, DEBUG_TRACE
+from app.state.agent_state import AgentState, make_initial_state, make_turn
+from app.config import SCHEMA_DATA_DIR, DEBUG_TRACE, HISTORY_TURNS
 from app.database.connection import is_column_readable
 import logging
+import re
+import threading
+from collections import OrderedDict, deque
 
 log = logging.getLogger("nlq_sql")
+
+# C11: compile the LangGraph ONCE at startup (it used to be rebuilt on every
+# request). A compiled graph is stateless, so all requests can share it.
+GRAPH = build_graph()
+
+# C8: conversation memory, per browser session, in memory. Bounded: at most
+# HISTORY_TURNS turns per session and _MAX_SESSIONS sessions (oldest dropped).
+_MAX_SESSIONS = 500
+_SESSIONS: "OrderedDict[str, deque]" = OrderedDict()
+_SESSIONS_LOCK = threading.Lock()
+_SESSION_ID = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
+
+
+def _get_history(session_id: str | None) -> list:
+    if not session_id:
+        return []
+    with _SESSIONS_LOCK:
+        turns = _SESSIONS.get(session_id)
+        if turns is not None:
+            _SESSIONS.move_to_end(session_id)
+        return list(turns or [])
+
+
+def _save_turn(session_id: str | None, final_state: dict) -> None:
+    if not session_id:
+        return
+    with _SESSIONS_LOCK:
+        turns = _SESSIONS.setdefault(session_id, deque(maxlen=HISTORY_TURNS))
+        turns.append(make_turn(final_state))
+        _SESSIONS.move_to_end(session_id)
+        while len(_SESSIONS) > _MAX_SESSIONS:
+            _SESSIONS.popitem(last=False)
 
 # S7: fields that can leak schema details or raw DB errors. Sent to the
 # browser only when DEBUG_TRACE=true; always logged server-side.
 _DEBUG_ONLY_FIELDS = {"validation_error", "execution_error", "attempt_history",
-                      "schema_context", "join_context", "table_selection"}
+                      "schema_context", "join_context", "table_selection",
+                      "candidates", "history"}
 
 
 def _public_state(node_state: dict) -> dict:
@@ -37,6 +73,7 @@ app = FastAPI(title="NLQ SQL Agent Dashboard")
 
 class QueryPayload(BaseModel):
     question: str
+    session_id: str | None = None   # C8: same id = same conversation
 
 def load_schema_file(filename: str):
     path = os.path.join(SCHEMA_DATA_DIR, filename)
@@ -67,18 +104,20 @@ async def get_schema_info():
 
 @app.post("/api/query")
 async def query_stream(payload: QueryPayload):
-    graph = build_graph()
-    initial_state = make_initial_state(payload.question)
+    session_id = payload.session_id if payload.session_id and _SESSION_ID.match(payload.session_id) else None
+    initial_state = make_initial_state(payload.question, _get_history(session_id))
     
     def event_generator():
         try:
             # Yield started signal
             yield f"data: {json.dumps({'event': 'started'})}\n\n"
             
-            for step in graph.stream(initial_state, stream_mode="updates"):
+            final_state = dict(initial_state)
+            for step in GRAPH.stream(initial_state, stream_mode="updates"):
                 if not step:
                     continue
                 node_name = list(step.keys())[0]
+                final_state.update(step[node_name] or {})
                 node_state = _public_state(step[node_name] or {})
                 
                 # Filter state to ensure everything is JSON serializable
@@ -92,6 +131,7 @@ async def query_stream(payload: QueryPayload):
                 
                 yield f"data: {json.dumps({'event': 'update', 'node': node_name, 'state': serializable_state})}\n\n"
                 
+            _save_turn(session_id, final_state)
             yield f"data: {json.dumps({'event': 'completed'})}\n\n"
         except Exception as e:
             log.exception("query failed: %s", payload.question)

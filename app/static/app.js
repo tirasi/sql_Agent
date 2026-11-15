@@ -1,6 +1,12 @@
 // S4: every value that comes from the DB, the LLM or the server is escaped
 // before it goes into innerHTML, so a stored value like
 // <img src=x onerror=...> is shown as text instead of running as code.
+// C8: one id per page load = one conversation, so follow-up questions
+// ("what about Mumbai?") and clarification answers ("2") work.
+const SESSION_ID = (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : 'sess-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+
 function esc(value) {
     return String(value ?? '')
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -112,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ question })
+                body: JSON.stringify({ question, session_id: SESSION_ID })
             });
 
             if (!response.ok) {
@@ -274,6 +280,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     html += `<div class="detail-line" style="color: var(--accent-red);"><span class="detail-key">DB Error:</span> ${esc(state.execution_error)}</div>`;
                 } else if (state.rows) {
                     html += `<div class="detail-line"><span class="detail-key">Query Result:</span> <span class="detail-val">${state.rows.length} rows, ${state.columns ? state.columns.length : 0} columns</span></div>`;
+                    if (state.confidence !== undefined && state.confidence !== null) {
+                        html += `<div class="detail-line"><span class="detail-key">Agreement:</span> <span class="detail-val">${Math.round(state.confidence * 100)}% of candidates, ${esc(state.candidate_groups)} distinct result(s)</span></div>`;
+                    }
+                    if (state.needs_clarification) {
+                        html += `<div class="detail-line"><span class="detail-key">Ambiguous:</span> <span class="detail-val">asking which reading you meant</span></div>`;
+                    }
                 }
                 break;
                 

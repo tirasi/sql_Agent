@@ -18,13 +18,12 @@ Two connections on purpose:
     per request (S6).
 """
 
-import json
 import os
 import sqlite3
 from contextlib import contextmanager
 import threading
 from functools import lru_cache
-from app.config import DB_PATH, SCHEMA_DATA_DIR, ACCESS_POLICY_FILE
+from app.config import DB_PATH
 
 #checks if connection exists, if yes then sets it connection, else false
 _connection: sqlite3.Connection | None = None
@@ -57,22 +56,13 @@ _ALLOWED_FUNCTIONS = {
 
 @lru_cache(maxsize=1)
 def _readable_columns() -> dict[str, set[str]]:
-    """S3: table -> readable columns. Built from schema_data/tables.json (the
-    catalog the LLM is shown) minus access_policy.json hidden_columns.
-    Anything not in the catalog -- sqlite_master, undocumented tables or
-    columns -- is unreadable."""
-    with open(os.path.join(SCHEMA_DATA_DIR, "tables.json")) as f:
-        tables = json.load(f)
-    hidden: dict = {}
-    policy_path = os.path.join(SCHEMA_DATA_DIR, ACCESS_POLICY_FILE)
-    if os.path.exists(policy_path):
-        with open(policy_path) as f:
-            hidden = json.load(f).get("hidden_columns", {})
-    out = {}
-    for table, meta in tables.items():
-        blocked = {c.lower() for c in hidden.get(table, [])}
-        out[table.lower()] = {c.lower() for c in meta["columns"]} - blocked
-    return out
+    """S3: table -> readable columns. Comes from the schema catalog (C10):
+    live DB columns that are documented in tables.json, minus
+    access_policy.json hidden_columns. Anything else -- sqlite_master,
+    undocumented tables or columns -- is unreadable."""
+    from app.schema.catalog import readable_columns   # local import: avoids a cycle
+    get_connection()                                   # make sure the DB exists first
+    return readable_columns()
 
 
 def is_column_readable(table: str, column: str) -> bool:

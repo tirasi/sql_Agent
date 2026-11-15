@@ -1,12 +1,16 @@
 {
-  "notebooks": "Notebook",
-  "notebook": "Notebook",
-  "backpacks": "Backpack",
-  "backpack": "Backpack",
-  "pens": "Pen Set",
-  "pen set": "Pen Set",
-  "clients": "customers",
-  "buyers": "customers",
-  "purchases": "orders",
-  "sales": "orders"
+  "_comment": "values: casual word -> exact stored value. tables: casual word -> table name. Both are safe to rewrite in the question. Words that mean a CALCULATION (sales, revenue, spend) belong in metrics.json, not here.",
+  "values": {
+    "notebooks": "Notebook",
+    "notebook": "Notebook",
+    "backpacks": "Backpack",
+    "backpack": "Backpack",
+    "pens": "Pen Set",
+    "pen set": "Pen Set"
+  },
+  "tables": {
+    "clients": "customers",
+    "buyers": "customers",
+    "purchases": "orders"
+  }
 }

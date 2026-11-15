@@ -184,7 +184,7 @@ def test_c8_independent_question_is_not_follow_up():
 # ---------- C9: ambiguity -> clarifying question -> reuse picked SQL ----------
 BY_COUNT = "SELECT c.name FROM customers c JOIN orders o ON o.customer_id = c.id GROUP BY c.id ORDER BY count(*) DESC, c.id LIMIT 1"   # Asha
 BY_SPEND = "SELECT c.name FROM customers c JOIN orders o ON o.customer_id = c.id GROUP BY c.id ORDER BY sum(o.amount) DESC LIMIT 1"     # Kabir
-BY_BIGGEST = "SELECT c.name FROM customers c JOIN orders o ON o.customer_id = c.id ORDER BY o.amount DESC LIMIT 1"                       # Ravi
+BY_BIGGEST = "SELECT c.name FROM customers c ORDER BY c.name DESC LIMIT 1"                                                             # Ravi
 
 
 def test_c9_disagreement_asks_and_pick_reuses_sql():
@@ -244,3 +244,153 @@ def test_c11_server_builds_graph_once():
     with mock.patch.object(server, "build_graph") as bg:
         assert server.GRAPH is not None
         bg.assert_not_called()
+
+
+# ---------- benchmark follow-ups (BIRD smoke test, 16 Nov) ----------
+def test_schema_shows_example_values():
+    ctx = retriever.get_full_schema_context(["orders"])
+    assert "order_date: TEXT (YYYY-MM-DD)  (e.g. '2024-02-01'" in ctx
+
+
+def test_date_context_does_not_assume_format():
+    p = sg._date_context()
+    assert "Dates are stored as TEXT in YYYY-MM-DD" not in p and "SUBSTR(col, 1, 4)" in p
+
+
+def test_error_hint_points_to_owning_table():
+    h = sg.error_hint("no such column: T2.amount")
+    assert "orders" in h and "alias T2" in h
+    assert "Available tables" in sg.error_hint("no such table: sales")
+
+
+def test_retry_prompt_includes_hint():
+    # a column no table has can't be repaired in code -> LLM retry gets a hint
+    s = run("Total amount per customer?", [
+        fence("SELECT c.name, sum(o.price) FROM customers c JOIN orders o ON o.customer_id = c.id GROUP BY c.id")] * 3 + [
+        fence("SELECT c.name, sum(o.amount) FROM customers c JOIN orders o ON o.customer_id = c.id GROUP BY c.id")])
+    assert "no table has a column named price" in s["_prompts"][-1] and len(s["rows"]) == 4
+
+
+def test_benchmark_lenient_match():
+    sys.path.insert(0, str(ROOT / "tests"))
+    from run_benchmark import lenient_match
+    assert lenient_match([(1, 2, 0.5)], [(0.5,)])
+    assert not lenient_match([(1, 2)], [(0.5,)])
+
+
+def test_alias_mixup_repaired_without_llm():
+    bad = ("SELECT SUBSTR(T1.order_date, 1, 4) AS y FROM orders AS T1 JOIN customers AS T2 "
+           "ON T1.customer_id = T2.id WHERE T2.city = 'Jaipur' GROUP BY y ORDER BY SUM(T2.amount) DESC LIMIT 1")
+    s = run("Which year had the most spend from Jaipur?", [fence(bad)] * 3)
+    assert s["attempts"] == 1 and "SUM(T1.amount)" in s["sql_query"] and s["rows"] == [("2024",)]
+
+
+def test_alias_repair_leaves_ambiguous_cases_alone():
+    from app.sql.repair import repair_alias
+    cols = {"a": {"id", "x"}, "b": {"id", "x"}}
+    assert repair_alias("SELECT T3.x FROM a T1 JOIN b T2 ON T1.id = T2.id", "no such column: T3.x", cols) is None
+    assert repair_alias('SELECT T2."x" FROM a AS T1 JOIN c AS T2 ON 1', "no such column: T2.x", {"a": {"x"}, "c": {"y"}}) == 'SELECT T1."x" FROM a AS T1 JOIN c AS T2 ON 1'
+
+
+# ---------- deterministic logic fixes (app/sql/improve.py) ----------
+from app.sql.improve import improve_sql   # noqa: E402
+
+
+def test_fix_count_condition_and_integer_division():
+    sql, notes = improve_sql("SELECT count(city = 'Jaipur') / count(city = 'Mumbai') AS r FROM customers", "ratio?")
+    assert "SUM(CASE WHEN" in sql and "1.0 *" in sql and len(notes) == 2
+    s = run("Ratio of Jaipur to Mumbai customers?", [fence("SELECT count(city = 'Jaipur') / count(city = 'Mumbai') AS r FROM customers")] * 3)
+    assert s["rows"] == [(2.0,)]
+
+
+def test_fix_fanout_ranking():
+    q = "Which customer had the least spend?"
+    bad = "SELECT c.name FROM customers c JOIN orders o ON o.customer_id = c.id ORDER BY o.amount ASC LIMIT 1"
+    sql, notes = improve_sql(bad, q)
+    assert "GROUP BY c.name" in sql and "SUM(o.amount)" in sql
+    assert run(q, [fence(bad)] * 3)["rows"] == [("Meera Shah",)]        # lowest TOTAL, not lowest single order
+
+
+def test_fanout_not_applied_to_single_row_questions():
+    bad = "SELECT c.name FROM customers c JOIN orders o ON o.customer_id = c.id ORDER BY o.amount DESC LIMIT 1"
+    assert improve_sql(bad, "Which customer placed the largest single order?")[1] == []
+
+
+def test_fix_period_grouping_and_projection():
+    q = "Which year had the most orders?"
+    bad = "SELECT order_date, COUNT(*) AS n FROM orders GROUP BY order_date ORDER BY n DESC LIMIT 1"
+    sql, notes = improve_sql(bad, q)
+    assert "SUBSTR(order_date, 1, 4)" in sql and "COUNT(*) AS n" not in sql
+    assert run(q, [fence(bad)] * 3)["rows"] == [("2024",)]
+
+
+def test_projection_kept_when_question_wants_the_number():
+    sql, notes = improve_sql("SELECT name, COUNT(*) AS n FROM customers GROUP BY name ORDER BY n DESC LIMIT 1",
+                             "How many orders did the top customer place?")
+    assert notes == []
+
+
+def test_bird_debit_card_cases(tmp_path, monkeypatch):
+    """The three failures from the BIRD smoke test, on a copy of their schema."""
+    import sqlite3, json
+    from app.schema import catalog as cat_mod, retriever as ret_mod
+    db = tmp_path / "debit.sqlite"
+    c = sqlite3.connect(db)
+    c.executescript("""
+      CREATE TABLE customers(CustomerID INTEGER PRIMARY KEY, Segment TEXT, Currency TEXT);
+      CREATE TABLE yearmonth(CustomerID INTEGER, Date TEXT, Consumption REAL);
+      INSERT INTO customers VALUES (1,'LAM','CZK'),(2,'LAM','EUR'),(3,'SME','CZK'),(4,'LAM','CZK');
+      INSERT INTO yearmonth VALUES (1,'201201',5),(1,'201202',50),(2,'201201',20),(2,'201202',21),
+                                   (4,'201201',30),(4,'201301',1),(3,'201301',100),(3,'201302',100);
+    """)
+    c.close()
+    sd = tmp_path / "sd"; sd.mkdir()
+    (sd / "tables.json").write_text(json.dumps({
+        "customers": {"description": "c", "columns": {"CustomerID": "id", "Segment": "s", "Currency": "c"}},
+        "yearmonth": {"description": "y", "columns": {"CustomerID": "id", "Date": "YYYYMM", "Consumption": "gas"}}}))
+    monkeypatch.setattr(cat_mod, "DB_PATH", str(db))
+    monkeypatch.setattr(cat_mod, "SCHEMA_DATA_DIR", str(sd))
+    import app.database.connection as conn_mod
+    monkeypatch.setattr(conn_mod, "DB_PATH", str(db))
+    cat_mod.reset_cache(); ret_mod.column_examples.cache_clear(); conn_mod._readable_columns.cache_clear()
+    try:
+        # 1471: majority answer used COUNT(condition)
+        sql, _ = improve_sql("SELECT count(Currency = 'EUR') / count(Currency = 'CZK') AS ratio_eur_czk FROM customers",
+                             "What is the ratio of customers who pay in EUR against customers who pay in CZK?")
+        assert sqlite3.connect(db).execute(sql).fetchall() == [(1 / 3,)]
+        # 1472: ranked customers by one monthly row
+        sql, _ = improve_sql("SELECT T1.CustomerID FROM customers AS T1 JOIN yearmonth AS T2 ON T1.CustomerID = T2.CustomerID "
+                             "WHERE T1.Segment = 'LAM' AND T2.Date BETWEEN '201201' AND '201212' ORDER BY T2.Consumption ASC LIMIT 1",
+                             "In 2012, who had the least consumption in LAM?")
+        assert sqlite3.connect(db).execute(sql).fetchall() == [(4,)]       # total 30 (not customer 1's single 5)
+        # 1479: grouped by month + returned the total
+        sql, _ = improve_sql("SELECT T1.Date, SUM(T1.Consumption) AS TotalConsumption FROM yearmonth AS T1 JOIN customers AS T2 "
+                             "ON T1.CustomerID = T2.CustomerID WHERE T2.Currency = 'CZK' GROUP BY T1.Date ORDER BY TotalConsumption DESC LIMIT 1",
+                             "Which year recorded the most consumption of gas paid in CZK?")
+        assert sqlite3.connect(db).execute(sql).fetchall() == [("2013",)]
+    finally:
+        cat_mod.reset_cache(); ret_mod.column_examples.cache_clear(); conn_mod._readable_columns.cache_clear()
+
+
+def test_fix_conditional_groupby_and_derived_projection():
+    q = "What was the difference in spend between Jaipur and Mumbai customers?"
+    bad = ("SELECT SUM(CASE WHEN c.city = 'Jaipur' THEN o.amount ELSE 0 END) AS j, "
+           "SUM(CASE WHEN c.city = 'Mumbai' THEN o.amount ELSE 0 END) AS m, "
+           "(SUM(CASE WHEN c.city = 'Jaipur' THEN o.amount ELSE 0 END) - SUM(CASE WHEN c.city = 'Mumbai' THEN o.amount ELSE 0 END)) AS diff "
+           "FROM customers c JOIN orders o ON o.customer_id = c.id GROUP BY c.city")
+    sql, notes = improve_sql(bad, q)
+    assert "GROUP BY" not in sql and " AS j" not in sql and len(notes) == 2
+    assert run(q, [fence(bad)] * 3)["rows"] == [(590.0 - 1200.0,)]
+
+
+def test_groupby_kept_when_column_is_output():
+    sql, notes = improve_sql("SELECT c.city, SUM(CASE WHEN o.product = 'Notebook' THEN 1 ELSE 0 END) FROM customers c "
+                             "JOIN orders o ON o.customer_id = c.id GROUP BY c.city", "notebooks per city")
+    assert "GROUP BY" in sql
+
+
+def test_sampling_noise_answers_instead_of_asking():
+    # three single-reading replies that all disagree: noise, not ambiguity
+    s = run("Who is the top customer?", [fence(BY_COUNT), fence(BY_SPEND), fence(BY_BIGGEST)])
+    assert not s["needs_clarification"] and s["rows"] == [("Asha Patel",)]   # the temperature-0 candidate
+    assert "1 of 3 candidate queries" in s["final_answer"]

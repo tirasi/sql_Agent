@@ -24,6 +24,7 @@ from datetime import date
 from app.state.agent_state import AgentState
 from app.llm.client import call_llm
 from app.config import SQL_CANDIDATES, REFERENCE_DATE
+from app.schema.catalog import get_catalog
 
 PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
 MAX_CANDIDATES = 5
@@ -133,11 +134,41 @@ def today() -> str:
 
 
 def _date_context() -> str:
+    """C7: the reference date, WITHOUT assuming a storage format. The old text
+    said "dates are stored as YYYY-MM-DD", true for dummy.db but wrong for
+    e.g. BIRD's yearmonth.Date ('201201'), so the model used strftime(),
+    which returns NULL on that format. The schema now shows example values."""
     d = today()
-    return (f"Today's date is {d}. Dates are stored as TEXT in YYYY-MM-DD format. For relative "
-            f"dates use this date, e.g. last 30 days: order_date >= date('{d}', '-30 days'); "
-            f"last calendar month: strftime('%Y-%m', order_date) = strftime('%Y-%m', date('{d}', 'start of month', '-1 month')). "
-            f"Do not use date('now').")
+    return (f"Today's date is {d}. Look at the example values in the schema to see how each "
+            f"date column is stored (e.g. 'YYYY-MM-DD', 'YYYYMM', a year number) and compare in "
+            f"that same format; for example, the year of 'YYYYMM' text is SUBSTR(col, 1, 4). "
+            f"strftime()/date() only work on 'YYYY-MM-DD...' text. For relative dates use the "
+            f"date above, e.g. date('{d}', '-30 days'). Do not use date('now').")
+
+
+def error_hint(error: str | None) -> str:
+    """Turn a bare SQLite error into a concrete pointer. Small models often
+    cannot fix 'no such column: T2.Consumption' from the message alone
+    (BIRD q1479 failed 3 times); naming the table that HAS the column does."""
+    if not error:
+        return ""
+    cat = get_catalog()
+    m = re.search(r"no such column: (?:(\w+)\.)?(\S+)", error)
+    if m:
+        alias, col = m.group(1), m.group(2).strip('"`[]')
+        owners = [t for t, meta in cat.items() if col.lower() in {c.lower() for c in meta["columns"]}]
+        if owners:
+            tip = f"Hint: column {col} exists in table(s): {', '.join(owners)}."
+            if alias:
+                tip += f" In your query the alias {alias} does not point to that table; use the alias of {owners[0]}."
+            return "\n" + tip
+        return f"\nHint: no table has a column named {col}. Use only columns listed in the schema."
+    m = re.search(r"no such table: (\S+)", error)
+    if m:
+        return f"\nHint: there is no table {m.group(1)}. Available tables: {', '.join(cat)}."
+    if "ambiguous column name" in error:
+        return "\nHint: prefix the column with its table alias (e.g. T1.col)."
+    return ""
 
 
 def _metric_context(state: AgentState) -> str:
@@ -185,20 +216,26 @@ def sql_generation_node(state: AgentState) -> dict:
         temps = [0.0] + [0.7] * max(0, SQL_CANDIDATES - 1)
     else:
         system_prompt = _load_prompt("sql_retry.md").format(
-            error=problem, previous_query=state.get("sql_query"), **ctx)
+            error=problem + error_hint(problem), previous_query=state.get("sql_query"), **ctx)
         temps = [0.0]
 
     # identical SQL from two calls is run once but counts as two votes:
     # the model producing the same query again is evidence of agreement
     cands, by_key = [], {}
-    for t in temps:
-        for c in parse_candidates(call_llm(system_prompt, question, node_name="sql_generation", temperature=t)):
+    # "multi" = this query came from a reply that itself offered SEVERAL readings:
+    # the model saw real ambiguity. Disagreement between single-reading replies
+    # is just sampling noise (C9 only asks the user about the former).
+    for call_no, t in enumerate(temps):
+        parsed = parse_candidates(call_llm(system_prompt, question, node_name="sql_generation", temperature=t))
+        multi = len(parsed) > 1
+        for c in parsed:
             key = _norm_sql(c["sql"])
             if key in by_key:
                 by_key[key]["votes"] += 1
                 by_key[key]["interpretation"] = by_key[key]["interpretation"] or c["interpretation"]
+                by_key[key]["multi"] = by_key[key]["multi"] or multi
             elif len(cands) < MAX_CANDIDATES:
-                by_key[key] = {**c, "votes": 1}
+                by_key[key] = {**c, "votes": 1, "call": call_no, "multi": multi}
                 cands.append(by_key[key])
     cands = cands or [{"sql": "", "interpretation": None, "votes": 1}]
 

@@ -7,9 +7,16 @@ mentions.
 import json
 import os
 import re
+from functools import lru_cache
 from app.config import SCHEMA_DATA_DIR
 from app.schema.catalog import get_catalog
-from app.database.connection import is_column_readable
+from app.database.connection import is_column_readable, readonly_connection
+
+_EXAMPLES_PER_COLUMN = 3
+_EXAMPLE_MAX_CHARS = 40
+_INSTRUCTION_LIKE = re.compile(
+    r"(ignore|disregard|forget)\b.{0,40}\b(instruction|previous|above|rules)|you are now|system prompt",
+    re.IGNORECASE)
 
 
 def _load(filename: str, default=None):
@@ -43,14 +50,46 @@ def get_full_schema_context(table_names: list[str]) -> str:
         if name not in cat:
             continue
         lines.append(f"TABLE {name}: {cat[name]['description']}")
+        examples = column_examples(name)
         for col, col_desc in cat[name]["columns"].items():
             if is_column_readable(name, col):          # S3
-                lines.append(f"  - {col}: {col_desc}")
+                ex = examples.get(col)
+                ex_txt = f"  (e.g. {', '.join(repr(v) for v in ex)})" if ex else ""
+                lines.append(f"  - {col}: {col_desc}{ex_txt}")
     rules = get_rules(table_names)
     if rules:
         lines.append("\nBUSINESS RULES:")
         lines.extend(f"  - {r['description']}" for r in rules)
     return "\n".join(lines)
+
+
+@lru_cache(maxsize=256)
+def column_examples(table: str) -> dict[str, list[str]]:
+    """A few real stored values per column, so the model sees FORMATS:
+    a date column holding '201201' is YYYYMM, not YYYY-MM-DD (BIRD q1479
+    failed on exactly this). Read through the read-only, allow-listed
+    connection, so hidden columns (S3) are never sampled; values are short
+    and instruction-like text is skipped (S4)."""
+    out: dict[str, list[str]] = {}
+    cols = [c for c in get_catalog().get(table, {}).get("columns", {}) if is_column_readable(table, c)]
+    try:
+        with readonly_connection() as conn:
+            for col in cols:
+                vals = []
+                for (v,) in conn.execute(
+                        f'SELECT DISTINCT "{col}" FROM "{table}" WHERE "{col}" IS NOT NULL LIMIT 10'):
+                    if isinstance(v, (bytes, bytearray)):
+                        continue
+                    v = " ".join(str(v).split())
+                    if not v or _INSTRUCTION_LIKE.search(v):
+                        continue
+                    vals.append(v if len(v) <= _EXAMPLE_MAX_CHARS else v[:_EXAMPLE_MAX_CHARS] + "…")
+                    if len(vals) == _EXAMPLES_PER_COLUMN:
+                        break
+                out[col] = vals
+    except Exception:          # sampling is a hint only; never fail the request on it
+        pass
+    return out
 
 
 # ---------- C6: table names in the question, by word forms ----------

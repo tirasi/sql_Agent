@@ -8,7 +8,8 @@ Previous query:
 Write a CORRECTED SQLite query for the user's question. Put it in a ```sql
 fenced block with this line directly above it:
 -- interpretation: <what this query answers, in plain words>
-No other text. Use ONLY the schema and join paths below.
+No other text. Use ONLY the schema and join paths below. Select only the
+columns the question asks for, and follow any "Hint:" in the question.
 
 {date_context}
 

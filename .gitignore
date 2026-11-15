@@ -5,3 +5,4 @@ __pycache__/
 venv/
 tests/results_*.json
 .DS_Store
+tests/benchmark_*.jsonl

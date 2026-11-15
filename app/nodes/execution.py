@@ -10,8 +10,12 @@ answered a different question.
   (so `SELECT name` and `SELECT name, city` agree).
 - The group with the most votes wins (a query produced by two calls counts
   twice); confidence = its share of the votes of the candidates that ran.
-- C9: if groups disagree and none has a majority, the question is treated
-  as ambiguous -> needs_clarification, with one option per reading.
+- C9: the user is asked only for REAL ambiguity: no majority AND at least two
+  of the disagreeing results come from a reply where the model itself
+  offered several readings. Disagreement caused only by sampling noise is
+  answered with the deterministic (temperature 0) candidate, and the answer
+  carries a low-confidence note instead (BIRD q1479: the guess was right,
+  but the agent asked).
 - C1: if the winning result is EMPTY, the graph regenerates once with a hint
   to check filters/values (empty_result_retry). A second empty result is
   accepted as the real answer.
@@ -90,7 +94,13 @@ def execution_node(state: AgentState) -> dict:
     top = groups[0]
     chosen = top[0]
     confidence = round(votes(top) / sum(c.get("votes", 1) for c in ok), 2)
-    ambiguous = CLARIFY_ON_DISAGREEMENT and len(groups) > 1 and confidence <= 0.5
+    readings = sum(1 for g in groups if any(c.get("multi") for c in g))
+    ambiguous = CLARIFY_ON_DISAGREEMENT and len(groups) > 1 and confidence <= 0.5 and readings >= 2
+    if not ambiguous and confidence <= 0.5:
+        # no majority, no real ambiguity: trust the deterministic call (call 0)
+        top = min(groups, key=lambda g: min(c.get("call", 0) for c in g))
+        chosen = min(top, key=lambda c: c.get("call", 0))
+        confidence = round(votes(top) / sum(c.get("votes", 1) for c in ok), 2)
 
     out = {
         "candidates": candidates,

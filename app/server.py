@@ -11,7 +11,7 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.graph.nlq_sql_graph import build_graph
-from app.state.agent_state import AgentState
+from app.state.agent_state import AgentState, make_initial_state
 from app.config import SCHEMA_DATA_DIR
 
 app = FastAPI(title="NLQ SQL Agent Dashboard")
@@ -45,21 +45,7 @@ async def get_schema_info():
 @app.post("/api/query")
 async def query_stream(payload: QueryPayload):
     graph = build_graph()
-    initial_state: AgentState = {
-        "user_input": payload.question,
-        "resolved_input": None,
-        "detected_synonyms": None,
-        "relevant_tables": None,
-        "schema_context": None,
-        "sql_query": None,
-        "attempts": 0,
-        "is_valid": None,
-        "validation_error": None,
-        "rows": None,
-        "columns": None,
-        "execution_error": None,
-        "final_answer": None,
-    }
+    initial_state = make_initial_state(payload.question)
     
     def event_generator():
         try:

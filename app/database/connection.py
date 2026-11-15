@@ -1,32 +1,64 @@
 """
-Database connection. SQLite for local dev/testing right now -- swap this
-file's internals for Postgres/MySQL later (e.g. psycopg2/mysql-connector)
-without touching any node or graph code, since everything above this layer
-only calls get_connection() and executes plain SQL strings.
+Database connections. SQLite for local dev/testing right now.
+
+Two connections on purpose:
+- get_connection():          read/write. Only used for seeding the dummy DB
+                             and introspection (PRAGMA table_info etc.).
+- get_readonly_connection(): what LLM-generated SQL runs on. Three
+                             independent layers stop writes (defense in depth):
+    1. file opened with mode=ro        -> OS-level: SQLite can't write the file
+    2. PRAGMA query_only = ON          -> SQLite refuses any write statement
+    3. set_authorizer allow-list       -> only SELECT / column reads / functions
+                                          are allowed; INSERT, UPDATE, DELETE,
+                                          DROP, ATTACH, PRAGMA... are denied
+                                          at PREPARE time (so even EXPLAIN of
+                                          a DELETE is rejected).
 """
 
+import os
 import sqlite3
 from app.config import DB_PATH
 
 
 _connection: sqlite3.Connection | None = None
+_readonly_connection: sqlite3.Connection | None = None
+
+_ALLOWED_ACTIONS = {
+    sqlite3.SQLITE_SELECT,
+    sqlite3.SQLITE_READ,
+    sqlite3.SQLITE_FUNCTION,
+    getattr(sqlite3, "SQLITE_RECURSIVE", 33),  # WITH RECURSIVE ... CTEs
+}
+
+
+def _readonly_authorizer(action, arg1, arg2, db_name, trigger):
+    return sqlite3.SQLITE_OK if action in _ALLOWED_ACTIONS else sqlite3.SQLITE_DENY
 
 
 def get_connection() -> sqlite3.Connection:
-    """Returns a singleton connection, creating + seeding the dummy DB on
-    first call if it doesn't exist yet."""
+    """Read/write singleton, creating + seeding the dummy DB on first call."""
     global _connection
     if _connection is None:
-        is_new = DB_PATH == ":memory:" or not _db_file_exists()
+        is_new = DB_PATH == ":memory:" or not os.path.exists(DB_PATH)
         _connection = sqlite3.connect(DB_PATH, check_same_thread=False)
         if is_new:
             _seed_dummy_data(_connection)
     return _connection
 
 
-def _db_file_exists() -> bool:
-    import os
-    return os.path.exists(DB_PATH)
+def get_readonly_connection() -> sqlite3.Connection:
+    """Connection for running model-written SQL. Cannot modify the DB."""
+    global _readonly_connection
+    if _readonly_connection is None:
+        get_connection()  # make sure the file exists / is seeded first
+        if DB_PATH == ":memory:":
+            raise RuntimeError("Read-only mode needs a file DB; set DB_PATH to a .db file.")
+        uri = f"file:{os.path.abspath(DB_PATH)}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
+        conn.execute("PRAGMA query_only = ON")      # must run BEFORE the authorizer (it denies PRAGMA)
+        conn.set_authorizer(_readonly_authorizer)
+        _readonly_connection = conn
+    return _readonly_connection
 
 
 def _seed_dummy_data(conn: sqlite3.Connection) -> None:

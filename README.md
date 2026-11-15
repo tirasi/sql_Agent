@@ -8,12 +8,14 @@ Ask "Which customers in Jaipur placed orders, and what did they buy?" and get ba
 
 Most NLQ-to-SQL demos are a single prompt-and-pray call to an LLM. This project treats it as a proper multi-stage pipeline, because that's what production SQL generation actually requires: understanding what the user meant, knowing what data is available, writing syntactically and semantically correct SQL, and being able to recover when the first attempt is wrong.
 
-The agent is built as a LangGraph state machine with four core stages:
+The agent is built as a LangGraph state machine with these stages:
 
 1. **Context Resolution** — normalizes business rules, synonyms, and shorthand in the user's question (e.g. "notebooks" → `Notebook`, "pens" → `Pen Set`) into a resolved, unambiguous query.
 2. **Schema Retrieval** — identifies the relevant tables and columns for the question, and resolves the join paths between them (foreign key relationships), so the model never has to guess how tables relate.
 3. **SQL Generation** — drafts a SQLite query using the resolved input, schema context, and join paths. On validation failure, retries using a dedicated correction prompt that includes the previous query and the specific error, up to a configurable retry limit.
-4. **Response Generation** — turns the query results back into a plain-language answer.
+4. **Validation (read-only guard)** — checks the SQL with SQLite's parser on a read-only connection (read-only file + `query_only` + an authorizer allow-list). Any write (DELETE/DROP/UPDATE) is refused, never retried.
+5. **Execution** — runs the query; runtime errors are fed back into the retry loop.
+6. **Response Generation** — turns the query results back into a plain-language answer. If retries run out, a `give_up` node explains why instead of returning nothing.
 
 Every stage is inspectable through an execution trace UI, so you can see exactly what the agent resolved, which tables it selected, and what SQL it produced — and diagnose failures at the exact step they occur rather than treating the whole pipeline as a black box.
 
@@ -57,8 +59,8 @@ Rather than using one model for every step, each node is routed to a model sized
 | Node | Local (Ollama) | Hosted (Anthropic) |
 |---|---|---|
 | Schema Retrieval | `phi4-mini` | `claude-haiku-4-5` |
-| SQL Generation | `qwen2.5-coder:7b` | `claude-sonnet-4-6` |
-| Response Generation | `gemma3:4b` | `claude-haiku-4-5` |
+| SQL Generation | `qwen2.5-coder:3b` | `claude-sonnet-4-6` |
+| Response Generation | `qwen2.5:3b` | `claude-haiku-4-5` |
 
 Deterministic steps (schema loading, validation, query execution) never call an LLM at all.
 
@@ -100,8 +102,8 @@ Pull the models used by each node:
 
 ```bash
 ollama pull phi4-mini
-ollama pull qwen2.5-coder:7b
-ollama pull gemma3:4b
+ollama pull qwen2.5-coder:3b
+ollama pull qwen2.5:3b
 ```
 
 Make sure Ollama is running:

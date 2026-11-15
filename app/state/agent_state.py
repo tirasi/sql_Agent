@@ -3,11 +3,10 @@ Shared state passed between every node in the graph.
 
 Kept JSON-serializable on purpose (no live DB connections or client objects
 in here) -- that matters if you later add LangGraph checkpointing/persistence.
-Live resources (DB connection, LLM client) are injected into nodes via
-closures/dependency-injection in graph/nlq_sql_graph.py instead.
 """
 
-from typing import TypedDict, Optional, List, Dict, Any
+import operator
+from typing import TypedDict, Optional, List, Dict, Any, Annotated
 
 
 class AgentState(TypedDict):
@@ -20,7 +19,9 @@ class AgentState(TypedDict):
 
     # schema_retrieval output
     relevant_tables: Optional[List[str]]
-    schema_context: Optional[str]        # formatted schema text handed to the SQL-writing prompt
+    table_selection: Optional[Dict[str, List[str]]]  # table -> reasons it was picked
+    schema_context: Optional[str]        # column-level schema text for the SQL prompt
+    join_context: Optional[str]          # FK join paths between the selected tables
 
     # sql_generation output
     sql_query: Optional[str]
@@ -29,11 +30,42 @@ class AgentState(TypedDict):
     # validation output
     is_valid: Optional[bool]
     validation_error: Optional[str]
+    blocked: Optional[bool]              # query tried to modify the DB -> refused, no retry
 
     # execution output
     rows: Optional[List[Any]]
     columns: Optional[List[str]]
     execution_error: Optional[str]
 
-    # response_generation output
+    # response_generation / give_up output
     final_answer: Optional[str]
+
+    # Every attempt (SQL + error) is APPENDED here, never overwritten.
+    # Annotated[..., operator.add] is a LangGraph "reducer": when a node
+    # returns {"attempt_history": [entry]}, LangGraph does old + [entry]
+    # instead of replacing the list.
+    attempt_history: Annotated[List[Dict[str, Any]], operator.add]
+
+
+def make_initial_state(question: str) -> AgentState:
+    """Single place that defines a fresh state (used by main.py, server.py
+    and tests/run_eval.py, so adding a field never needs 3 edits)."""
+    return {
+        "user_input": question,
+        "resolved_input": None,
+        "detected_synonyms": None,
+        "relevant_tables": None,
+        "table_selection": None,
+        "schema_context": None,
+        "join_context": None,
+        "sql_query": None,
+        "attempts": 0,
+        "is_valid": None,
+        "validation_error": None,
+        "blocked": None,
+        "rows": None,
+        "columns": None,
+        "execution_error": None,
+        "final_answer": None,
+        "attempt_history": [],
+    }

@@ -10,5 +10,5 @@ def execute_sql(conn: sqlite3.Connection, query: str) -> tuple[list, list, str |
         rows = cur.fetchall()
         columns = [desc[0] for desc in cur.description] if cur.description else []
         return rows, columns, None
-    except sqlite3.Error as e:
+    except (sqlite3.Error, sqlite3.Warning) as e:
         return [], [], str(e)

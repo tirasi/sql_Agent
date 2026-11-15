@@ -112,6 +112,20 @@ Make sure Ollama is running:
 ollama serve
 ```
 
+If your server is busy on 11434 use this command after pulling models
+```bash
+for model in gemma3:4b qwen2.5-coder:7b phi4-mini:latest llama3.2:latest; do
+  curl http://localhost:11434/api/generate \
+    -d "{\"model\":\"$model\",\"prompt\":\"\",\"keep_alive\":-1}" \
+    -o /dev/null
+done
+```
+
+and then to check
+```bash
+ollama ps
+```
+
 Then start the app:
 
 ```bash

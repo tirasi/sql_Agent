@@ -100,6 +100,17 @@ def clean_sql(raw: str) -> str:
     return text.strip().rstrip(";").strip()
 
 
+_SQL_START = re.compile(r"^\s*(select|with|insert|update|delete|drop|alter|create|replace|pragma|attach|vacuum)\b",
+                        re.IGNORECASE)
+
+
+def looks_like_sql(text: str) -> bool:
+    """False for replies like "I'm sorry, but I can't assist with that." -- they
+    used to be sent to SQLite as if they were SQL. Write statements still count
+    as SQL so the read-only guard can see and refuse them."""
+    return bool(_SQL_START.match(text or ""))
+
+
 def parse_candidates(raw: str) -> list[dict]:
     """[{"sql", "interpretation"}] from one reply (one or several fenced queries)."""
     out = []
@@ -120,7 +131,7 @@ def parse_candidates(raw: str) -> list[dict]:
             sql = clean_sql(ch)
             if sql:
                 out.append({"sql": sql, "interpretation": interp[0].strip() if interp else None})
-    return [c for c in out if c["sql"]]
+    return [c for c in out if c["sql"] and looks_like_sql(c["sql"])]
 
 
 def _norm_sql(sql: str) -> str:
@@ -237,7 +248,9 @@ def sql_generation_node(state: AgentState) -> dict:
             elif len(cands) < MAX_CANDIDATES:
                 by_key[key] = {**c, "votes": 1, "call": call_no, "multi": multi}
                 cands.append(by_key[key])
-    cands = cands or [{"sql": "", "interpretation": None, "votes": 1}]
+    if not cands:
+        # the model answered in prose (a refusal, a question back ...) instead of SQL
+        cands = [{"sql": "", "interpretation": None, "votes": 1}]
 
     return {
         "candidates": cands,

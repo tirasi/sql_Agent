@@ -172,3 +172,24 @@ nlq_sql_app/
 ## License
 
 MIT
+
+## Ask a question, get the SQL
+
+```bash
+python app/ask.py                                   # interactive, on dummy.db (DB_PATH in .env)
+python app/ask.py "How many customers are there?"   # one question
+python app/ask.py --db path/to/any.sqlite           # any SQLite file, schema read automatically
+python app/ask.py --sql-only --candidates 1         # just the SQL, fastest
+```
+
+Shows the SQL (pretty-printed), any logic fixes applied in code, the result table,
+a plain-language answer and how many candidate queries agreed. Follow-up questions work;
+`/tables`, `/reset`, `exit` inside the prompt. The web UI (`python app/server.py`, then
+http://127.0.0.1:8000) shows the same plus the step-by-step trace.
+
+## Benchmark + lookback
+
+`python tests/run_benchmark.py --questions <mini_dev_sqlite.json> --db-root <dev_databases> --sample 100`
+scores the agent on BIRD Mini-Dev. Every run is added to `lookback.md` (command, what changed,
+score, and each question's gold SQL, our SQL and results). `python tests/show_results.py --failed`
+prints the SQL of the latest run.

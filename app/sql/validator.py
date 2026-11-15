@@ -31,7 +31,8 @@ def is_restricted_read(error: str | None) -> bool:
 
 def validate_sql(conn: sqlite3.Connection, query: str) -> tuple[bool, str | None]:
     if not query or not query.strip():
-        return False, "empty query"
+        return False, ("your reply contained no SQL query. Reply with exactly one SQLite SELECT "
+                       "query in a ```sql block, using only the tables in the schema.")
     try:
         conn.execute(f"EXPLAIN {query}")
         return True, None

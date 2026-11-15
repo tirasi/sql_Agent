@@ -394,3 +394,36 @@ def test_sampling_noise_answers_instead_of_asking():
     s = run("Who is the top customer?", [fence(BY_COUNT), fence(BY_SPEND), fence(BY_BIGGEST)])
     assert not s["needs_clarification"] and s["rows"] == [("Asha Patel",)]   # the temperature-0 candidate
     assert "1 of 3 candidate queries" in s["final_answer"]
+
+
+# ---------- app/ask.py ----------
+def test_ask_output_shows_sql_result_and_fixes():
+    from app.ask import format_state
+    bad = "SELECT c.name FROM customers c JOIN orders o ON o.customer_id = c.id ORDER BY o.amount ASC LIMIT 1"
+    s = run("Which customer had the least spend?", [fence(bad)] * 3, answer="{r1c1} spent the least.")
+    text = format_state(s)
+    assert "SQL:" in text and "GROUP BY" in text and "fixed in code" in text
+    assert "Meera Shah" in text and "Answer: Meera Shah spent the least." in text
+    assert "Result" not in format_state(s, sql_only=True)
+
+
+def test_ask_shows_clarification_and_refusal():
+    from app.ask import format_state
+    assert "read-only" in format_state(run("Delete all orders", []))  or "cannot add" in format_state(run("Delete all orders", []))
+
+
+def test_prose_reply_is_not_treated_as_sql():
+    from app.ask import format_state
+    s = run("How many customers are there?",
+            ["I'm sorry, but I can't assist with that."] * 3 + [fence("SELECT count(*) FROM customers")])
+    assert s["rows"] == [(4,)] and "contained no SQL query" in s["_prompts"][-1]
+    never = run("asdf", ["I'm sorry, but I can't assist with that."] * 6)
+    text = format_state(never)
+    assert "SQL:" not in text and "Sorry, I couldn't answer" in text
+
+
+def test_ask_rejects_pasted_commands():
+    from app.ask import main
+    with pytest.raises(SystemExit) as e:
+        main(["python3", "app/ask.py", "--sql-only"])
+    assert "looks like a command" in str(e.value)

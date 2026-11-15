@@ -34,7 +34,6 @@ every question, so a crash or Ctrl-C loses nothing.
 """
 
 import argparse
-import csv
 import json
 import os
 import random
@@ -49,6 +48,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TESTS = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT))
+from app.schema.bootstrap import build_schema_dir  # noqa: E402
 
 
 # ---------------------------------------------------------------- parent side
@@ -59,48 +60,6 @@ def find_db_file(db_root: Path, db_id: str) -> Path:
         if p.exists():
             return p
     raise FileNotFoundError(f"no {db_id}.sqlite under {db_root / db_id}")
-
-
-def _read_csv(path: Path) -> list[dict]:
-    for enc in ("utf-8-sig", "latin-1"):
-        try:
-            with open(path, newline="", encoding=enc) as f:
-                return [{(k or "").strip().lower(): (v or "").strip() for k, v in row.items()}
-                        for row in csv.DictReader(f)]
-        except UnicodeDecodeError:
-            continue
-    return []
-
-
-def build_schema_dir(db_file: Path, out_dir: Path) -> None:
-    """tables.json for one benchmark DB: every real table/column, with BIRD's
-    database_description/*.csv text as descriptions when present."""
-    conn = sqlite3.connect(f"file:{db_file}?mode=ro", uri=True)
-    tables = {}
-    desc_dir = db_file.parent / "database_description"
-    csv_by_table = {p.stem.lower(): p for p in desc_dir.glob("*.csv")} if desc_dir.exists() else {}
-    for (t,) in conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"):
-        cols = {r[1]: (r[2] or "untyped") for r in conn.execute(f'PRAGMA table_info("{t}")')}
-        by_lower = {c.lower(): c for c in cols}
-        if t.lower() in csv_by_table:
-            for row in _read_csv(csv_by_table[t.lower()]):
-                real = by_lower.get((row.get("original_column_name") or "").lower())
-                if not real:
-                    continue
-                parts = [cols[real]]
-                for key in ("column_description", "value_description"):
-                    v = " ".join((row.get(key) or "").split())
-                    if v and v.lower() not in ("nan", "none"):
-                        parts.append(v[:300])
-                cols[real] = " - ".join(parts)
-        tables[t] = {"description": f"Table {t}.", "columns": cols}
-    conn.close()
-    out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "tables.json").write_text(json.dumps(tables, indent=1))
-    for name, empty in (("relationships.json", []), ("business_rules.json", []),
-                        ("synonyms.json", {"values": {}, "tables": {}}), ("metrics.json", {}),
-                        ("access_policy.json", {"hidden_columns": {}})):
-        (out_dir / name).write_text(json.dumps(empty))
 
 
 def load_cases(path: Path) -> list[dict]:
@@ -210,6 +169,8 @@ def parent(args) -> None:
             cmd.append("--no-evidence")
         if args.oracle:
             cmd.append("--oracle")
+        if args.show_sql:
+            cmd.append("--show-sql")
         rc = subprocess.call(cmd, env=env, cwd=str(ROOT))
         if rc != 0:
             print(f"!! worker for {db_id} exited with code {rc}; re-run with --resume {out_path} to continue")
@@ -219,6 +180,14 @@ def parent(args) -> None:
     results = [json.loads(l) for l in out_path.read_text().splitlines() if l.strip()] if out_path.exists() else []
     wanted = {c["id"] for c in cases}
     summarise([r for r in results if r["id"] in wanted], out_path)
+
+    # lookback.md: a running log of every benchmark command and its queries/results
+    try:
+        import lookback
+        lookback.record_run(out_path, "python tests/run_benchmark.py " + " ".join(sys.argv[1:]))
+        print(f"Lookback updated: {lookback.LOOKBACK}")
+    except Exception as e:      # never lose a run because the log failed
+        print(f"(could not update lookback.md: {e})")
 
 
 # ---------------------------------------------------------------- worker side
@@ -310,6 +279,8 @@ def worker(args) -> None:
                 "confidence": state.get("confidence"),
                 "n_candidates": len(state.get("candidates") or []), "attempts": state.get("attempts"),
                 "pred_error": crash or state.get("execution_error") or state.get("validation_error"),
+                "pred_rows": [list(x) for x in pred[:5]], "pred_row_count": len(pred),
+                "gold_rows": [list(x) for x in (gold_rows or [])[:5]], "gold_row_count": len(gold_rows or []),
                 "gold_error": gold_error, "latency_s": round(latency, 2),
                 "relevant_tables": state.get("relevant_tables"),
                 "candidates": [{k: c.get(k) for k in ("sql", "interpretation", "votes", "valid", "error", "fixes",
@@ -321,6 +292,13 @@ def worker(args) -> None:
             out.flush()
             mark = "SKIP" if gold_error else ("PASS" if r["ex_strict"] else ("ASK " if clarified else "FAIL"))
             print(f"[{mark}] {c['id']} ({c['difficulty']}, {latency:.1f}s) {c['question'][:90]}", flush=True)
+            if mark in ("FAIL", "ASK ") or args.show_sql:
+                print(f"        gold: {' '.join(c['gold_sql'].split())}")
+                print(f"        ours: {' '.join((r['pred_sql'] or '(none)').split())}")
+                if r["pred_error"]:
+                    print(f"        error: {r['pred_error']}")
+                for note in [h["error"] for h in (r["trace"] or []) if (h.get("error") or "").startswith("logic fix")]:
+                    print(f"        {note}")
     for p in patches:
         p.stop()
 
@@ -337,6 +315,7 @@ def main():
     ap.add_argument("--no-evidence", action="store_true")
     ap.add_argument("--no-clarify", action="store_true")
     ap.add_argument("--oracle", action="store_true")
+    ap.add_argument("--show-sql", action="store_true", help="print gold + generated SQL for every question (failures always print)")
     ap.add_argument("--resume", help="jsonl file of an earlier run to continue")
     ap.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--cases", help=argparse.SUPPRESS)

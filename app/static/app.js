@@ -1,3 +1,12 @@
+// S4: every value that comes from the DB, the LLM or the server is escaped
+// before it goes into innerHTML, so a stored value like
+// <img src=x onerror=...> is shown as text instead of running as code.
+function esc(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Icons initialization
     lucide.createIcons();
@@ -177,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
             answerBody.innerHTML = `
                 <div class="error-card">
                     <h3><i data-lucide="alert-triangle"></i> Execution Error</h3>
-                    <p style="margin-top: 10px;">${error.message}</p>
+                    <p style="margin-top: 10px;">${esc(error.message)}</p>
                 </div>
             `;
             lucide.createIcons();
@@ -224,16 +233,16 @@ document.addEventListener('DOMContentLoaded', () => {
         switch (node) {
             case 'context_resolution':
                 if (state.resolved_input) {
-                    html += `<div class="detail-line"><span class="detail-key">Resolved Input:</span> <span class="detail-val-highlight">${state.resolved_input}</span></div>`;
+                    html += `<div class="detail-line"><span class="detail-key">Resolved Input:</span> <span class="detail-val-highlight">${esc(state.resolved_input)}</span></div>`;
                 }
                 if (state.detected_synonyms && Object.keys(state.detected_synonyms).length > 0) {
-                    html += `<div class="detail-line"><span class="detail-key">Synonyms Mapped:</span> <span class="detail-val-code">${JSON.stringify(state.detected_synonyms)}</span></div>`;
+                    html += `<div class="detail-line"><span class="detail-key">Synonyms Mapped:</span> <span class="detail-val-code">${esc(JSON.stringify(state.detected_synonyms))}</span></div>`;
                 }
                 break;
                 
             case 'schema_retrieval':
                 if (state.relevant_tables) {
-                    html += `<div class="detail-line"><span class="detail-key">Target Tables:</span> <span class="detail-val-highlight">${state.relevant_tables.join(', ')}</span></div>`;
+                    html += `<div class="detail-line"><span class="detail-key">Target Tables:</span> <span class="detail-val-highlight">${esc(state.relevant_tables.join(', '))}</span></div>`;
                 }
                 if (state.schema_context) {
                     html += `<div class="detail-line"><span class="detail-key">Context length:</span> <span class="detail-val">${state.schema_context.length} chars</span></div>`;
@@ -243,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'sql_generation':
                 if (state.sql_query) {
                     html += `<div class="detail-line"><span class="detail-key">Generated Query:</span></div>`;
-                    html += `<div class="detail-line" style="margin-top: 4px;"><span class="detail-val-code" style="word-break: break-all;">${state.sql_query}</span></div>`;
+                    html += `<div class="detail-line" style="margin-top: 4px;"><span class="detail-val-code" style="word-break: break-all;">${esc(state.sql_query)}</span></div>`;
                 }
                 if (state.attempts !== undefined) {
                     html += `<div class="detail-line"><span class="detail-key">Attempt:</span> <span class="detail-val">${state.attempts}</span></div>`;
@@ -256,13 +265,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     html += `<div class="detail-line"><span class="detail-key">Syntax Status:</span> <span class="${statusClass} font-semibold">${state.is_valid ? 'VALID' : 'INVALID'}</span></div>`;
                 }
                 if (state.validation_error) {
-                    html += `<div class="detail-line" style="color: var(--accent-red);"><span class="detail-key">Error:</span> ${state.validation_error}</div>`;
+                    html += `<div class="detail-line" style="color: var(--accent-red);"><span class="detail-key">Error:</span> ${esc(state.validation_error)}</div>`;
                 }
                 break;
                 
             case 'execution':
                 if (state.execution_error) {
-                    html += `<div class="detail-line" style="color: var(--accent-red);"><span class="detail-key">DB Error:</span> ${state.execution_error}</div>`;
+                    html += `<div class="detail-line" style="color: var(--accent-red);"><span class="detail-key">DB Error:</span> ${esc(state.execution_error)}</div>`;
                 } else if (state.rows) {
                     html += `<div class="detail-line"><span class="detail-key">Query Result:</span> <span class="detail-val">${state.rows.length} rows, ${state.columns ? state.columns.length : 0} columns</span></div>`;
                 }
@@ -294,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Render natural language answer
         answerBody.innerHTML = `
             <div class="answer-card">
-                ${state.final_answer.replace(/\n/g, '<br>')}
+                ${esc(state.final_answer).replace(/\n/g, '<br>')}
             </div>
         `;
         
@@ -308,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Populate Headers
                 let headersHtml = '<tr>';
                 state.columns.forEach(col => {
-                    headersHtml += `<th>${col}</th>`;
+                    headersHtml += `<th>${esc(col)}</th>`;
                 });
                 headersHtml += '</tr>';
                 resultsTable.querySelector('thead').innerHTML = headersHtml;
@@ -323,10 +332,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Row value can be simple values or nested lists
                         if (Array.isArray(row)) {
                             row.forEach(val => {
-                                rowsHtml += `<td>${val !== null ? val : 'NULL'}</td>`;
+                                rowsHtml += `<td>${val !== null ? esc(val) : 'NULL'}</td>`;
                             });
                         } else {
-                            rowsHtml += `<td>${row !== null ? row : 'NULL'}</td>`;
+                            rowsHtml += `<td>${row !== null ? esc(row) : 'NULL'}</td>`;
                         }
                         rowsHtml += '</tr>';
                     });
@@ -355,15 +364,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="table-item">
                             <div class="table-name" onclick="toggleColumnList('${tableName}')">
                                 <i data-lucide="chevron-right" class="chevron-icon" id="chevron-${tableName}"></i>
-                                <span>${tableName}</span>
+                                <span>${esc(tableName)}</span>
                             </div>
                             <div class="column-list hidden" id="cols-${tableName}">
                                 <div class="column-name" style="font-style: italic; color: var(--text-muted); margin-bottom: 4px;">
-                                    "${meta.description}"
+                                    "${esc(meta.description)}"
                                 </div>
                                 ${Object.entries(meta.columns).map(([colName, colDesc]) => `
                                     <div class="column-name">
-                                        <strong>${colName}</strong>: <span style="font-size: 0.75rem; opacity: 0.85;">${colDesc}</span>
+                                        <strong>${esc(colName)}</strong>: <span style="font-size: 0.75rem; opacity: 0.85;">${esc(colDesc)}</span>
                                     </div>
                                 `).join('')}
                             </div>
@@ -381,9 +390,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.synonyms && Object.keys(data.synonyms).length > 0) {
                 synonymsList.innerHTML = Object.entries(data.synonyms).map(([term, dbMapping]) => `
                     <div class="synonym-item">
-                        <span class="synonym-from">${term}</span>
+                        <span class="synonym-from">${esc(term)}</span>
                         <i data-lucide="arrow-right" style="width: 12px; color: var(--text-muted);"></i>
-                        <span class="synonym-to">${dbMapping}</span>
+                        <span class="synonym-to">${esc(dbMapping)}</span>
                     </div>
                 `).join('');
             } else {

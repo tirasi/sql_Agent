@@ -1,0 +1,4 @@
+{
+  "_comment": "Generated SQL may read ONLY tables/columns listed in tables.json. List extra columns to hide here, e.g. {\"customers\": [\"phone\", \"email\"]}. Hidden columns are refused at SQLite prepare time and never put into prompts.",
+  "hidden_columns": {}
+}

@@ -30,12 +30,14 @@ class AgentState(TypedDict):
     # validation output
     is_valid: Optional[bool]
     validation_error: Optional[str]
-    blocked: Optional[bool]              # query tried to modify the DB -> refused, no retry
+    blocked: Optional[bool]              # refused, no retry (see blocked_reason)
+    blocked_reason: Optional[str]        # "write_intent" (S9) | "write" | "restricted" (S3)
 
     # execution output
     rows: Optional[List[Any]]
     columns: Optional[List[str]]
     execution_error: Optional[str]
+    truncated: Optional[bool]            # S2: more rows existed than MAX_RESULT_ROWS
 
     # response_generation / give_up output
     final_answer: Optional[str]
@@ -63,9 +65,11 @@ def make_initial_state(question: str) -> AgentState:
         "is_valid": None,
         "validation_error": None,
         "blocked": None,
+        "blocked_reason": None,
         "rows": None,
         "columns": None,
         "execution_error": None,
+        "truncated": None,
         "final_answer": None,
         "attempt_history": [],
     }

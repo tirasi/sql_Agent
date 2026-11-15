@@ -8,6 +8,7 @@ real DB structurally. Different purposes, different consumers.
 import json
 import os
 from app.config import SCHEMA_DATA_DIR
+from app.database.connection import is_column_readable
 
 
 def _load(filename: str):
@@ -42,6 +43,8 @@ def get_full_schema_context(table_names: list[str]) -> str:
         meta = tables[name]
         lines.append(f"TABLE {name}: {meta['description']}")
         for col, col_desc in meta["columns"].items():
+            if not is_column_readable(name, col):   # S3: hidden columns never reach the prompt
+                continue
             lines.append(f"  - {col}: {col_desc}")
 
     if business_rules:

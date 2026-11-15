@@ -12,7 +12,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.graph.nlq_sql_graph import build_graph
 from app.state.agent_state import AgentState, make_initial_state
-from app.config import SCHEMA_DATA_DIR
+from app.config import SCHEMA_DATA_DIR, DEBUG_TRACE
+from app.database.connection import is_column_readable
+import logging
+
+log = logging.getLogger("nlq_sql")
+
+# S7: fields that can leak schema details or raw DB errors. Sent to the
+# browser only when DEBUG_TRACE=true; always logged server-side.
+_DEBUG_ONLY_FIELDS = {"validation_error", "execution_error", "attempt_history",
+                      "schema_context", "join_context", "table_selection"}
+
+
+def _public_state(node_state: dict) -> dict:
+    if DEBUG_TRACE:
+        return node_state
+    out = {k: v for k, v in node_state.items() if k not in _DEBUG_ONLY_FIELDS}
+    for k in ("validation_error", "execution_error"):
+        if node_state.get(k):
+            out[k] = "hidden (set DEBUG_TRACE=true to see details)"
+    return out
 
 app = FastAPI(title="NLQ SQL Agent Dashboard")
 
@@ -30,6 +49,10 @@ def load_schema_file(filename: str):
 async def get_schema_info():
     try:
         tables = load_schema_file("tables.json") or {}
+        # S3: don't advertise hidden columns in the schema panel either
+        tables = {t: {**m, "columns": {c: d for c, d in m.get("columns", {}).items()
+                                       if is_column_readable(t, c)}}
+                  for t, m in tables.items()}
         rules = load_schema_file("business_rules.json") or []
         synonyms = load_schema_file("synonyms.json") or {}
         relationships = load_schema_file("relationships.json") or []
@@ -56,7 +79,7 @@ async def query_stream(payload: QueryPayload):
                 if not step:
                     continue
                 node_name = list(step.keys())[0]
-                node_state = step[node_name]
+                node_state = _public_state(step[node_name] or {})
                 
                 # Filter state to ensure everything is JSON serializable
                 serializable_state = {}
@@ -71,7 +94,9 @@ async def query_stream(payload: QueryPayload):
                 
             yield f"data: {json.dumps({'event': 'completed'})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'event': 'error', 'error': str(e)})}\n\n"
+            log.exception("query failed: %s", payload.question)
+            msg = str(e) if DEBUG_TRACE else "Something went wrong while answering. Please try again."
+            yield f"data: {json.dumps({'event': 'error', 'error': msg})}\n\n"
             
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 

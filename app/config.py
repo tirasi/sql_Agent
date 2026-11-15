@@ -61,3 +61,20 @@ MAX_SQL_ATTEMPTS = int(os.getenv("MAX_SQL_ATTEMPTS", "3"))
 
 # --- Schema data files ---
 SCHEMA_DATA_DIR = os.getenv("SCHEMA_DATA_DIR", "schema_data")
+
+# --- Safety limits (S1, S2, S7) ---
+# S1: any single query is aborted after this many milliseconds (stops
+#     endless WITH RECURSIVE loops and huge cross joins).
+QUERY_TIMEOUT_MS = int(os.getenv("QUERY_TIMEOUT_MS", "3000"))
+# S2: at most this many rows are fetched from the DB per query ...
+MAX_RESULT_ROWS = int(os.getenv("MAX_RESULT_ROWS", "500"))
+# ... and at most this many are shown to the answer-writing LLM.
+ANSWER_SAMPLE_ROWS = int(os.getenv("ANSWER_SAMPLE_ROWS", "30"))
+# S7: when false, raw DB errors / attempt history / schema text are NOT sent
+#     to the browser (they are still logged server-side). Turn on locally.
+DEBUG_TRACE = os.getenv("DEBUG_TRACE", "false").lower() in ("1", "true", "yes")
+
+# --- Access policy (S3) ---
+# Only tables/columns described in schema_data/tables.json are readable by
+# generated SQL; access_policy.json can hide more columns on top of that.
+ACCESS_POLICY_FILE = os.getenv("ACCESS_POLICY_FILE", "access_policy.json")

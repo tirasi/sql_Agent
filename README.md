@@ -88,9 +88,8 @@ cp .env.example .env
 ```
 
 ```env
-LLM_PROVIDER=ollama          # "ollama" or "anthropic"
+LLM_PROVIDER=ollama          
 OLLAMA_HOST=http://localhost:11434
-ANTHROPIC_API_KEY=           # required only if LLM_PROVIDER=anthropic
 DB_PATH=dummy.db
 MAX_SQL_ATTEMPTS=3
 SCHEMA_DATA_DIR=schema_data

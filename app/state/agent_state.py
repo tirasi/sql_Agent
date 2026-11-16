@@ -63,8 +63,8 @@ class AgentState(TypedDict):
 
 
 def make_initial_state(question: str, history: Optional[List[Dict[str, Any]]] = None) -> AgentState:
-    """Single place that defines a fresh state (used by main.py, server.py
-    and tests/run_eval.py, so adding a field never needs 3 edits).
+    """Single place that defines a fresh state (used by ask.py, server.py
+    and the bench/ scripts, so adding a field never needs 3 edits).
     history = previous turns of the same conversation (C8), newest last."""
     return {
         "user_input": question,

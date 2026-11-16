@@ -1,0 +1,45 @@
+{
+ "benchmark_20261116_025048.jsonl": {
+  "command": "python tests/run_benchmark.py --questions \"$BIRD_Q\" --db-root \"$BIRD_DB\" --oracle --limit 20",
+  "commit": "9ad8824",
+  "note": "Harness check: gold SQL fed in as the model's answer (no LLM). 100% means the runner and scoring work."
+ },
+ "benchmark_20261116_025108.jsonl": {
+  "command": "python tests/run_benchmark.py --questions \"$BIRD_Q\" --db-root \"$BIRD_DB\" --limit 5 --candidates 1",
+  "commit": "9ad8824",
+  "note": "First real run after the S1-S9 and C1-C11 fixes. Failures: extra columns (1471, 1476), YYYY-MM-DD date assumption + alias mix-up (1479), MIN instead of SUM (1472)."
+ },
+ "benchmark_20261116_025633.jsonl": {
+  "command": "python tests/run_benchmark.py --questions \"$BIRD_Q\" --db-root \"$BIRD_DB\" --db debit_card_specializing --limit 5 --candidates 1",
+  "commit": "9ad8824",
+  "note": "Added: 'select only asked columns' prompt rule, example values per column, date format no longer assumed, retry error hints, EX lenient metric. 1476 fixed."
+ },
+ "benchmark_20261116_030137.jsonl": {
+  "command": "python tests/run_benchmark.py --questions \"$BIRD_Q\" --db-root \"$BIRD_DB\" --db debit_card_specializing --limit 5 --candidates 1",
+  "commit": "9ad8824",
+  "note": "Added: deterministic alias repair (app/sql/repair.py). 1479 now runs first try but groups by month."
+ },
+ "benchmark_20261116_030416.jsonl": {
+  "command": "python tests/run_benchmark.py --questions \"$BIRD_Q\" --db-root \"$BIRD_DB\" --db debit_card_specializing --limit 5 --candidates 3",
+  "commit": "9ad8824",
+  "note": "Same code, 3 candidates (voting). 1479 became a clarifying question instead of a wrong answer."
+ },
+ "benchmark_20261116_031330.jsonl": {
+  "command": "python tests/run_benchmark.py --questions \"$BIRD_Q\" --db-root \"$BIRD_DB\" --db debit_card_specializing --limit 5 --candidates 3",
+  "commit": "9ad8824",
+  "note": "Added: code-level logic fixes (app/sql/improve.py: COUNT(condition), integer division, ranking by one child row, year grouping, ranking-only columns) + plan-first prompt. 1471 and 1472 fixed."
+ },
+ "benchmark_20261116_033008.jsonl": {
+  "command": "python tests/run_benchmark.py --questions \"$BIRD_Q\" --db-root \"$BIRD_DB\" --db debit_card_specializing --limit 5 --candidates 3 --show-sql",
+  "commit": "747ce73",
+  "note": "Added: conditional GROUP BY + derived-column rules, ask only on real ambiguity, SQL printed in output. Crashed after Q1471 (bug in --show-sql printing, fixed afterwards)."
+ },
+ "benchmark_20261116_034707.jsonl": {
+  "command": "python bench/run_benchmark.py --questions /Users/trashisharma/bird/minidev/MINIDEV/mini_dev_sqlite.json --db-root /Users/trashisharma/bird/minidev/MINIDEV/dev_databases --oracle --limit 3",
+  "commit": "b84b441"
+ },
+ "benchmark_20261116_034733.jsonl": {
+  "command": "python bench/run_benchmark.py --questions /Users/trashisharma/bird/minidev/MINIDEV/mini_dev_sqlite.json --db-root /Users/trashisharma/bird/minidev/MINIDEV/dev_databases --oracle --limit 3 --show-sql",
+  "commit": "b84b441"
+ }
+}

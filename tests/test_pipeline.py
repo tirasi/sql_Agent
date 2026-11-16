@@ -272,7 +272,7 @@ def test_retry_prompt_includes_hint():
 
 
 def test_benchmark_lenient_match():
-    sys.path.insert(0, str(ROOT / "tests"))
+    sys.path.insert(0, str(ROOT / "bench"))
     from run_benchmark import lenient_match
     assert lenient_match([(1, 2, 0.5)], [(0.5,)])
     assert not lenient_match([(1, 2)], [(0.5,)])
@@ -427,3 +427,55 @@ def test_ask_rejects_pasted_commands():
     with pytest.raises(SystemExit) as e:
         main(["python3", "app/ask.py", "--sql-only"])
     assert "looks like a command" in str(e.value)
+
+
+# ---------- screenshot 16 Nov: "ratio of Jaipur customers to Mumbai customers" ----------
+SCREENSHOT_SQL = ("SELECT CASE WHEN city = 'Jaipur' THEN COUNT(*) ELSE 0 END AS jaipur_count, "
+                  "CASE WHEN city = 'Mumbai' THEN COUNT(*) ELSE 0 END AS mumbai_count FROM customers GROUP BY city")
+
+
+def test_aggregate_in_case_and_ratio_completion():
+    q = "What is the ratio of Jaipur customers to Mumbai customers?"
+    sql, notes = improve_sql(SCREENSHOT_SQL, q)
+    assert "GROUP BY" not in sql and "AS ratio" in sql and "1.0 *" in sql
+    assert run(q, [fence(SCREENSHOT_SQL)] * 3, answer="The ratio is {r1c1}.")["rows"] == [(2.0,)]
+    # order follows the question
+    sql2, _ = improve_sql(SCREENSHOT_SQL, "What is the ratio of Mumbai customers to Jaipur customers?")
+    import sqlite3
+    assert sqlite3.connect("dummy.db").execute(sql2).fetchall() == [(0.5,)]
+
+
+def test_llm_arithmetic_words_are_rejected():
+    rows = [(0, 0), (2, 0), (0, 1)]
+    assert not rg._numbers_are_grounded("There are twice as many Jaipur customers as Mumbai customers.", rows, "ratio?")
+    assert not rg._numbers_are_grounded("There are four customers.", [(3,)], "how many?")
+    assert rg._numbers_are_grounded("There are four customers.", [(4,)], "how many?")
+    assert rg._numbers_are_grounded("Jaipur has twice as many.", [(2.0,)], "ratio?")      # computed by the SQL
+
+
+# ---------- BIRD full-run analysis (38 questions, 16 Nov) ----------
+def test_missing_join_added():
+    # city is in customers, the query only reads orders (like BIRD 1521: Country in gasstations)
+    s = run("How many orders came from Jaipur?", [fence("SELECT COUNT(*) FROM orders WHERE city = 'Jaipur'")] * 3)
+    assert s["rows"] == [(3,)] and s["attempts"] == 1 and "JOIN customers" in s["sql_query"]
+
+
+def test_aggregate_in_where_moved_to_having():
+    bad = "SELECT c.name FROM customers AS c JOIN orders AS o ON o.customer_id = c.id WHERE COUNT(o.id) > 1"
+    s = run("Which customers placed more than one order?", [fence(bad)] * 3)
+    assert sorted(r[0] for r in s["rows"]) == ["Asha Patel", "Kabir Singh"] and "HAVING" in s["sql_query"]
+
+
+def test_ranking_projection_keeps_asked_number():
+    sql, notes = improve_sql("SELECT c.name, AVG(o.amount) AS avg_price FROM customers c JOIN orders o "
+                             "ON o.customer_id = c.id GROUP BY c.name ORDER BY avg_price DESC LIMIT 1",
+                             "Who is the top customer and how much is their average order?")
+    assert "AVG(o.amount)" in sql.split("FROM")[0]
+
+
+def test_groupby_rechecked_after_projection():
+    # like BIRD 1528: component column dropped, its GROUP BY must go too
+    bad = ("SELECT product, CAST(SUM(CASE WHEN product = 'Notebook' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) AS pct "
+           "FROM orders WHERE customer_id = 4 GROUP BY product")
+    s = run("What is the percentage of Notebook orders for customer 4?", [fence(bad)] * 3)
+    assert s["rows"] == [(50.0,)]

@@ -1,195 +1,89 @@
 # NLQ-to-SQL Agent
 
-A natural language to SQL agent built with LangGraph that turns plain-English questions into validated, executable SQL queries — with full visibility into every reasoning step along the way.
+Ask a question in plain English, get a validated SQL query, the result, and an answer — from a
+LangGraph agent that runs on small local models (Ollama) and **knows when not to trust itself**:
+it compares several candidate queries, fixes common SQL logic mistakes in code, asks when a
+question is genuinely ambiguous, and can never modify the database.
 
-Ask "Which customers in Jaipur placed orders, and what did they buy?" and get back a correct, schema-aware SQL query, not a guess.
-
-## Overview
-
-Most NLQ-to-SQL demos are a single prompt-and-pray call to an LLM. This project treats it as a proper multi-stage pipeline, because that's what production SQL generation actually requires: understanding what the user meant, knowing what data is available, writing syntactically and semantically correct SQL, and being able to recover when the first attempt is wrong.
-
-The agent is built as a LangGraph state machine with these stages:
-
-1. **Context Resolution** — normalizes business rules, synonyms, and shorthand in the user's question (e.g. "notebooks" → `Notebook`, "pens" → `Pen Set`) into a resolved, unambiguous query.
-2. **Schema Retrieval** — identifies the relevant tables and columns for the question, and resolves the join paths between them (foreign key relationships), so the model never has to guess how tables relate.
-3. **SQL Generation** — drafts a SQLite query using the resolved input, schema context, and join paths. On validation failure, retries using a dedicated correction prompt that includes the previous query and the specific error, up to a configurable retry limit.
-4. **Validation (read-only guard)** — checks the SQL with SQLite's parser on a read-only connection (read-only file + `query_only` + an authorizer allow-list). Any write (DELETE/DROP/UPDATE) is refused, never retried.
-5. **Execution** — runs the query; runtime errors are fed back into the retry loop.
-6. **Response Generation** — turns the query results back into a plain-language answer. If retries run out, a `give_up` node explains why instead of returning nothing.
-
-Every stage is inspectable through an execution trace UI, so you can see exactly what the agent resolved, which tables it selected, and what SQL it produced — and diagnose failures at the exact step they occur rather than treating the whole pipeline as a black box.
-
-## Architecture
+## Pipeline
 
 ```
-User Question
-     │
-     ▼
-┌─────────────────────┐
-│  Context Resolution  │  → normalizes synonyms & business rules
-└─────────────────────┘
-     │
-     ▼
-┌─────────────────────┐
-│  Schema Retrieval     │  → selects target tables + join paths
-└─────────────────────┘
-     │
-     ▼
-┌─────────────────────┐
-│  SQL Generation       │  → drafts query (retries on validation failure)
-└─────────────────────┘
-     │
-     ▼
-┌─────────────────────┐
-│  Validation            │  → checks generated SQL before execution
-└─────────────────────┘
-     │
-     ▼
-┌─────────────────────┐
-│  Response Generation │  → plain-language answer from results
-└─────────────────────┘
+question
+  → intent_guard          refuse write requests ("delete …") before any LLM call
+  → context_resolution    value/table synonyms, metric terms ("sales" = SUM(amount)), follow-ups
+  → schema_retrieval      tables via LLM router + word forms + stored values + FK bridges
+  → sql_generation        up to 3 candidate queries (plan line + interpretation each)
+  → validation            read-only parse check, alias repair, logic fixes, business rules
+  → execution             run all candidates, vote on results, confidence score
+  → response_generation   answer with values filled in from the rows (no invented numbers)
+     or clarify           "did you mean 1) … 2) …?" when readings disagree
 ```
 
-Each node is a discrete, testable unit in the LangGraph state graph, with shared state (`AgentState`) carrying the resolved input, schema context, join context, generated SQL, attempt count, and validation errors between stages.
+Retries feed the specific error (plus a hint) back to the model; empty results are re-checked once.
 
-## Model Routing
-
-Rather than using one model for every step, each node is routed to a model sized for what that step actually requires — classification-style steps use small, fast models; SQL generation (the step that actually determines correctness) uses a coding-tuned model.
-
-| Node | Local (Ollama) | Hosted (Anthropic) |
-|---|---|---|
-| Schema Retrieval | `phi4-mini` | `claude-haiku-4-5` |
-| SQL Generation | `qwen2.5-coder:3b` | `claude-sonnet-4-6` |
-| Response Generation | `qwen2.5:3b` | `claude-haiku-4-5` |
-
-Deterministic steps (schema loading, validation, query execution) never call an LLM at all.
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.10+
-- [Ollama](https://ollama.com) installed and running locally, **or** an Anthropic API key
-
-### Installation
+## Setup
 
 ```bash
-git clone https://github.com/<your-username>/nlq-sql-agent.git
-cd nlq-sql-agent
-pip install -r requirements.txt
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt pytest
+cp .env.example .env                  # LLM_PROVIDER=ollama (default) or anthropic
+ollama pull phi4-mini && ollama pull qwen2.5-coder:3b && ollama pull qwen2.5:3b
+python -m pytest tests -q             # offline tests, no LLM needed
 ```
 
-### Configuration
-
-Copy the example environment file and set your provider:
+## Use it
 
 ```bash
-cp .env.example .env
+python app/ask.py                                   # interactive, on dummy.db
+python app/ask.py "How many customers are there?"   # one question
+python app/ask.py --db path/to/any.sqlite           # any SQLite file; schema read from the file
+python app/ask.py --sql-only --candidates 1         # just the SQL, fastest
+python app/server.py                                # web UI with step-by-step trace: http://127.0.0.1:8000
 ```
 
-```env
-LLM_PROVIDER=ollama          
-OLLAMA_HOST=http://localhost:11434
-DB_PATH=dummy.db
-MAX_SQL_ATTEMPTS=3
-SCHEMA_DATA_DIR=schema_data
-```
+In `ask.py`: follow-up questions work, answer a clarifying question with its number,
+`/tables`, `/reset`, `exit`.
 
-### Running with Ollama (free, local)
-
-Pull the models used by each node:
+## Measure it
 
 ```bash
-ollama pull phi4-mini
-ollama pull qwen2.5-coder:3b
-ollama pull qwen2.5:3b
+python bench/run_benchmark.py --questions <mini_dev_sqlite.json> --db-root <dev_databases> --sample 100
+python bench/show_results.py --failed               # SQL of the latest run
+python bench/quick_eval.py                          # 23 questions on dummy.db (incl. safety)
 ```
 
-Make sure Ollama is running:
+Scores BIRD Mini-Dev by execution accuracy (strict, best guess, lenient). Every run is added to
+[`bench/lookback.md`](bench/lookback.md): command, what changed, score, and each question's SQL and results.
 
-```bash
-ollama serve
-```
-
-If your server is busy on 11434 use this command after pulling models
-```bash
-for model in gemma3:4b qwen2.5-coder:7b phi4-mini:latest llama3.2:latest; do
-  curl http://localhost:11434/api/generate \
-    -d "{\"model\":\"$model\",\"prompt\":\"\",\"keep_alive\":-1}" \
-    -o /dev/null
-done
-```
-
-and then to check
-```bash
-ollama ps
-```
-
-Then start the app:
-
-```bash
-python app/main.py
-```
-
-### Running with Anthropic
-
-Set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` in `.env`, then run the same start command. No local models required.
-
-## Project Structure
+## Project layout
 
 ```
-nlq_sql_app/
-├── app/
-│   ├── graph/              # LangGraph nodes (context_resolution, schema_retrieval, sql_generation, ...)
-│   ├── llm/
-│   │   └── client.py       # single call_llm() entry point, provider + per-node model routing
-│   ├── prompts/            # prompt templates (sql_generation.md, sql_retry.md, ...)
-│   ├── state/
-│   │   └── agent_state.py  # shared LangGraph state definition
-│   ├── config.py            # environment-driven configuration
-│   └── main.py
-├── schema_data/            # table/column/relationship definitions
-├── dummy.db                 # sample SQLite database
-├── .env.example
-└── requirements.txt
+app/
+  ask.py, server.py, static/       command-line and web front ends
+  graph/nlq_sql_graph.py           the LangGraph wiring and routing
+  nodes/                           one file per graph node (see pipeline)
+  sql/                             validator, executor (timeout, row cap), repair.py, improve.py (logic fixes)
+  schema/                          catalog (live DB introspection), retriever, value index, bootstrap
+  database/connection.py           read-only connection + authorizer (allow-listed tables, columns, functions)
+  llm/client.py                    one call_llm() for Ollama/Anthropic, per-node model routing
+  prompts/  state/  config.py
+schema_data/                       descriptions, synonyms, metrics, business rules, access policy for dummy.db
+bench/                             benchmark + eval scripts, lookback.md, results/
+tests/                             test_security.py (S1–S9), test_pipeline.py (C1–C11 + logic fixes)
 ```
 
-## Design Principles
+## Safety
 
-- **Free and self-hostable by default.** The default configuration requires no paid API — everything runs locally through Ollama.
-- **No hidden fallbacks.** Every stage either produces a real, schema-grounded result or fails loudly with a clear error, rather than silently returning a generic default.
-- **Retry with context, not from scratch.** Failed SQL generation attempts are corrected using the specific validation error and the previous query, not a blind re-roll.
-- **Model size matched to task.** Small, fast models handle classification-style steps; a coding-tuned model handles the step that actually determines correctness.
-- **Full execution transparency.** Every intermediate step — resolved input, target tables, join paths, generated query, attempt count — is inspectable, not just the final answer.
+Generated SQL runs on a read-only connection with a SQLite authorizer: only catalogued
+tables/columns and allow-listed functions are readable, writes/PRAGMA/ATTACH are refused at
+prepare time, each query has a timeout and row cap, and every request gets its own connection.
+Database values are treated as data in prompts, and all values are escaped in the web UI.
 
-## Roadmap
+## Configuration
 
-- [ ] Support for Postgres/MySQL alongside SQLite
-- [ ] Configurable schema auto-discovery from a live database connection
-- [ ] Query result caching for repeated questions
-- [ ] Expanded synonym/business-rule mapping via a configurable dictionary
+All settings are environment variables — see `.env.example` (models, `SQL_CANDIDATES`,
+`QUERY_TIMEOUT_MS`, `MAX_RESULT_ROWS`, `DEBUG_TRACE`, `REFERENCE_DATE`, `AUTO_EXPOSE_SCHEMA` …).
 
 ## License
 
 MIT
-
-## Ask a question, get the SQL
-
-```bash
-python app/ask.py                                   # interactive, on dummy.db (DB_PATH in .env)
-python app/ask.py "How many customers are there?"   # one question
-python app/ask.py --db path/to/any.sqlite           # any SQLite file, schema read automatically
-python app/ask.py --sql-only --candidates 1         # just the SQL, fastest
-```
-
-Shows the SQL (pretty-printed), any logic fixes applied in code, the result table,
-a plain-language answer and how many candidate queries agreed. Follow-up questions work;
-`/tables`, `/reset`, `exit` inside the prompt. The web UI (`python app/server.py`, then
-http://127.0.0.1:8000) shows the same plus the step-by-step trace.
-
-## Benchmark + lookback
-
-`python tests/run_benchmark.py --questions <mini_dev_sqlite.json> --db-root <dev_databases> --sample 100`
-scores the agent on BIRD Mini-Dev. Every run is added to `lookback.md` (command, what changed,
-score, and each question's gold SQL, our SQL and results). `python tests/show_results.py --failed`
-prints the SQL of the latest run.

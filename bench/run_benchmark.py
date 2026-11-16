@@ -15,7 +15,7 @@ Scores reported:
                  returned helper columns the question didn't ask for.
 
 Usage (from the project root, Ollama running or LLM_PROVIDER=anthropic):
-    python tests/run_benchmark.py \
+    python bench/run_benchmark.py \
         --questions ~/bird/minidev/MINIDEV/mini_dev_sqlite.json \
         --db-root   ~/bird/minidev/MINIDEV/dev_databases \
         --limit 50 --candidates 1
@@ -47,7 +47,8 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TESTS = Path(__file__).resolve().parent
+BENCH = Path(__file__).resolve().parent
+RESULTS = BENCH / "results"
 sys.path.insert(0, str(ROOT))
 from app.schema.bootstrap import build_schema_dir  # noqa: E402
 
@@ -134,8 +135,9 @@ def parent(args) -> None:
     elif args.limit:
         cases = cases[:args.limit]
 
+    RESULTS.mkdir(exist_ok=True)
     out_path = Path(args.resume) if args.resume else \
-        TESTS / f"benchmark_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl"
+        RESULTS / f"benchmark_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl"
     done = set()
     if out_path.exists():
         done = {json.loads(l)["id"] for l in out_path.read_text().splitlines() if l.strip()}
@@ -184,7 +186,7 @@ def parent(args) -> None:
     # lookback.md: a running log of every benchmark command and its queries/results
     try:
         import lookback
-        lookback.record_run(out_path, "python tests/run_benchmark.py " + " ".join(sys.argv[1:]))
+        lookback.record_run(out_path, "python bench/run_benchmark.py " + " ".join(sys.argv[1:]))
         print(f"Lookback updated: {lookback.LOOKBACK}")
     except Exception as e:      # never lose a run because the log failed
         print(f"(could not update lookback.md: {e})")
@@ -303,10 +305,21 @@ def worker(args) -> None:
         p.stop()
 
 
+def _find_bird(name: str, dir_: bool) -> str | None:
+    """Look for the BIRD Mini-Dev files under ~/bird (where the setup steps unzip them)."""
+    base = Path.home() / "bird"
+    if not base.exists():
+        return None
+    for p in sorted(base.rglob(name)):
+        if p.is_dir() == dir_ and "__MACOSX" not in p.parts:
+            return str(p)
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--questions", help="BIRD/Spider question json")
-    ap.add_argument("--db-root", help="folder with <db_id>/<db_id>.sqlite")
+    ap.add_argument("--questions", help="BIRD/Spider question json (default: $BIRD_Q, else found under ~/bird)")
+    ap.add_argument("--db-root", help="folder with <db_id>/<db_id>.sqlite (default: $BIRD_DB, else found under ~/bird)")
     ap.add_argument("--db", help="only this db_id")
     ap.add_argument("--limit", type=int, help="first N questions")
     ap.add_argument("--sample", type=int, help="random N questions (seed 42)")
@@ -324,8 +337,12 @@ def main():
     if args.worker:
         worker(args)
     else:
+        args.questions = args.questions or os.getenv("BIRD_Q") or _find_bird("mini_dev_sqlite.json", dir_=False)
+        args.db_root = args.db_root or os.getenv("BIRD_DB") or _find_bird("dev_databases", dir_=True)
         if not (args.questions and args.db_root):
-            ap.error("--questions and --db-root are required")
+            ap.error("could not find the BIRD files. Pass --questions <mini_dev_sqlite.json> "
+                     "--db-root <dev_databases>, or unzip minidev.zip into ~/bird")
+        print(f"questions: {args.questions}\ndatabases: {args.db_root}")
         parent(args)
 
 

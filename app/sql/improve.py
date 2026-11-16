@@ -19,6 +19,13 @@ These are recognised in the parsed query (sqlglot AST) and rewritten:
 4. period_grouping     "Which year ...?" grouped by the full date (201201 = a
                        MONTH). If the question says year/month and the column's
                        stored values are longer dates, group by SUBSTR(col,...).
+8. aggregate_in_case   CASE WHEN city='Jaipur' THEN COUNT(*) ELSE 0 END ... GROUP BY city
+                       (aggregate INSIDE the CASE: one mostly-zero row per city).
+                       -> SUM(CASE WHEN city='Jaipur' THEN 1 ELSE 0 END); rule 6 then
+                       drops the GROUP BY.
+9. ratio_completion    "What is the ratio of A to B?" but the query returns two counts
+                       and no ratio. -> 1.0 * A / B, with A/B ordered as the question
+                       mentions them.
 6. conditional_groupby GROUP BY Currency + SUM(CASE WHEN Currency='CZK' ...) - SUM(CASE WHEN
                        Currency='EUR' ...): the CASE already splits by currency,
                        so grouping by it (without outputting it) breaks the
@@ -186,8 +193,14 @@ def _period_grouping(select: exp.Select, question: str, notes: list) -> None:
         notes.append(f"period_grouping: grouped by full date {target} -> SUBSTR({target}, 1, {n}) ({unit})")
 
 
+# the question ALSO asks for a number ("... and how much is the average price?"):
+# the aggregate is part of the answer, not a ranking helper (BIRD 1531)
+_ASKS_FOR_NUMBER = re.compile(r"\b(how (?:much|many)|average|avg|total|amount|sum|count|number of|price|cost|"
+                              r"percentage|ratio)\b", re.IGNORECASE)
+
+
 def _ranking_projection(select: exp.Select, question: str, notes: list) -> None:
-    if not (_IDENTITY_Q.search(question) and _SUPERLATIVE.search(question)):
+    if not (_IDENTITY_Q.search(question) and _SUPERLATIVE.search(question)) or _ASKS_FOR_NUMBER.search(question):
         return
     if not (select.args.get("order") and select.args.get("limit")):
         return
@@ -203,6 +216,55 @@ def _ranking_projection(select: exp.Select, question: str, notes: list) -> None:
     select.set("expressions", keep)
     notes.append("ranking_projection: dropped ranking-only column(s) "
                  + ", ".join(e.sql("sqlite") for e in drop) + " from SELECT")
+
+
+def _aggregate_in_case(tree: exp.Expression, notes: list) -> None:
+    fixed = 0
+    for case in list(tree.find_all(exp.Case)):
+        if case.find_ancestor(*_AGG) or len(case.args.get("ifs") or []) != 1:
+            continue
+        branch = case.args["ifs"][0]
+        agg, default = branch.args.get("true"), case.args.get("default")
+        if not isinstance(agg, _AGG):
+            continue
+        if default is not None and not (isinstance(default, exp.Null) or
+                                        (isinstance(default, exp.Literal) and default.this in ("0", "0.0"))):
+            continue
+        cond = branch.this.copy()
+        inner = agg.this
+        if isinstance(agg, exp.Count) and (inner is None or isinstance(inner, exp.Star)):
+            new = exp.Sum(this=exp.Case(ifs=[exp.If(this=cond, true=exp.Literal.number(1))],
+                                        default=exp.Literal.number(0)))
+        elif isinstance(agg, exp.Sum):
+            new = exp.Sum(this=exp.Case(ifs=[exp.If(this=cond, true=inner.copy())], default=exp.Literal.number(0)))
+        else:   # COUNT(x), AVG, MAX, MIN: rows outside the condition become NULL and are ignored
+            new = type(agg)(this=exp.Case(ifs=[exp.If(this=cond, true=inner.copy())]))
+        case.replace(new)
+        fixed += 1
+    if fixed:
+        notes.append(f"aggregate_in_case: {fixed} x CASE WHEN cond THEN AGG(...) -> AGG(CASE WHEN cond ...)")
+
+
+_RATIO_Q = re.compile(r"\bratio\b|\btimes as (?:many|much)\b|\btimes (?:more|bigger|larger)\b", re.IGNORECASE)
+
+
+def _ratio_completion(select: exp.Select, question: str, notes: list) -> None:
+    if not _RATIO_Q.search(question) or len(select.selects) != 2 or select.find(exp.Div):
+        return
+    a, b = (e.unalias() for e in select.selects)
+    if not (isinstance(a, _AGG) and isinstance(b, _AGG)):
+        return
+
+    def first_mention(e):
+        pos = [question.lower().find(str(l.this).lower()) for l in e.find_all(exp.Literal) if l.is_string]
+        pos = [p for p in pos if p >= 0]
+        return min(pos) if pos else None
+    pa, pb = first_mention(a), first_mention(b)
+    if pa is not None and pb is not None and pb < pa:
+        a, b = b, a                                    # numerator = the one the question names first
+    ratio = exp.Div(this=exp.Mul(this=exp.Literal.number("1.0"), expression=a.copy()), expression=b.copy())
+    select.set("expressions", [exp.alias_(ratio, "ratio")])
+    notes.append("ratio_completion: question asks for a ratio; replaced the two counts with 1.0 * A / B")
 
 
 def _conditional_groupby(select: exp.Select, notes: list) -> None:
@@ -260,12 +322,20 @@ def improve_sql(sql: str, question: str) -> tuple[str, list[str]]:
     notes: list[str] = []
     try:
         _count_condition(tree, notes)
+        _aggregate_in_case(tree, notes)
         _integer_division(tree, notes)
         _conditional_groupby(tree, notes)
+        _ratio_completion(tree, question, notes)
         _derived_projection(tree, question, notes)
         _fanout_ranking(tree, question, notes)
         _period_grouping(tree, question, notes)
         _ranking_projection(tree, question, notes)
+        # projections may have removed a column that was only grouped on (BIRD 1528:
+        # Segment dropped, GROUP BY Segment left behind) -> check the GROUP BY again
+        before = len(notes)
+        _conditional_groupby(tree, notes)
+        if len(notes) > before and any(n.startswith("conditional_groupby") for n in notes[:before]):
+            notes.pop()                                  # same rule already reported
     except Exception:
         return sql, []
     return (tree.sql(dialect="sqlite") if notes else sql), notes

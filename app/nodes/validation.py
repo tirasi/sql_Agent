@@ -2,9 +2,10 @@
 Node 4: validation
 Checks EVERY candidate query (C1) on a fresh read-only connection (S6):
   1. SQLite parses it (EXPLAIN) under the read-only authorizer;
-  1b. if it fails with an alias mix-up ("no such column: T2.x" where x is in
-      the table aliased T1), it is repaired in code and re-checked -- no
-      LLM retry needed (app/sql/repair.py);
+  1b. some failures are repaired in code and re-checked, no LLM retry needed
+      (app/sql/repair.py): an alias mix-up ("no such column: T2.x" where x is in
+      the table aliased T1), a column from a table that was never joined (the
+      JOIN is added), an aggregate in WHERE (moved to HAVING);
   1c. if it is valid, common LOGIC mistakes are rewritten in code
       (COUNT(condition), integer division, ranking a customer by one child
       row, grouping by a full date for a "which year" question, ranking
@@ -25,8 +26,8 @@ from app.state.agent_state import AgentState
 from app.database.connection import readonly_connection
 from app.sql.validator import validate_sql
 from app.schema.retriever import check_rules
-from app.schema.catalog import readable_columns
-from app.sql.repair import repair_alias
+from app.schema.catalog import readable_columns, get_catalog, get_relationships
+from app.sql.repair import repair_alias, repair_missing_join, repair_where_aggregate
 from app.sql.improve import improve_sql
 
 REFUSALS = {
@@ -49,11 +50,15 @@ def validation_node(state: AgentState) -> dict:
             for _ in range(3):                      # up to 3 bad references per query
                 if ok:
                     break
-                fixed = repair_alias(c["sql"], error, readable_columns())
+                fixed, how = repair_alias(c["sql"], error, readable_columns()), "repaired alias in code"
+                if not fixed:
+                    fixed, how = repair_missing_join(c["sql"], error, get_catalog(), get_relationships()), "added missing JOIN in code"
+                if not fixed:
+                    fixed, how = repair_where_aggregate(c["sql"], error), "moved aggregate from WHERE to HAVING in code"
                 if not fixed:
                     break
                 history.append({"attempt": state.get("attempts", 0), "stage": "validation",
-                                "sql": c["sql"], "error": f"{error} -> repaired alias in code"})
+                                "sql": c["sql"], "error": f"{error} -> {how}"})
                 c = {**c, "sql": fixed, "repaired": True}
                 conn.last_denial = None
                 ok, error = validate_sql(conn, c["sql"])

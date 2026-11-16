@@ -1,25 +1,25 @@
 """
 Show the generated SQL from a benchmark results file.
 
-    python tests/show_results.py                       # latest results file, all questions
-    python tests/show_results.py --failed              # only questions that were not correct
-    python tests/show_results.py tests/benchmark_X.jsonl --id 1476 --candidates
+    python bench/show_results.py                       # latest results file, all questions
+    python bench/show_results.py --failed              # only questions that were not correct
+    python bench/show_results.py bench/results/benchmark_X.jsonl --id 1476 --candidates
 """
 import argparse
 import json
 from pathlib import Path
 
-TESTS = Path(__file__).resolve().parent
+RESULTS = Path(__file__).resolve().parent / "results"
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("file", nargs="?", help="results .jsonl (default: newest in tests/)")
+    ap.add_argument("file", nargs="?", help="results .jsonl (default: newest in bench/results/)")
     ap.add_argument("--failed", action="store_true", help="only questions not strictly correct")
     ap.add_argument("--id", type=int, help="only this question id")
     ap.add_argument("--candidates", action="store_true", help="also show every candidate query + trace")
     a = ap.parse_args()
-    path = Path(a.file) if a.file else max(TESTS.glob("benchmark_*.jsonl"), key=lambda p: p.stat().st_mtime)
+    path = Path(a.file) if a.file else max(RESULTS.glob("benchmark_*.jsonl"), key=lambda p: p.stat().st_mtime)
     print(f"file: {path}\n")
     for line in path.read_text().splitlines():
         if not line.strip():

@@ -1,8 +1,10 @@
 __pycache__/
 *.pyc
+.pytest_cache/
 .env
 .venv/
 venv/
-tests/results_*.json
 .DS_Store
-tests/benchmark_*.jsonl
+# benchmark outputs (bench/lookback.md and bench/results/runs.json ARE tracked)
+bench/results/*.jsonl
+bench/results/quick_eval_*.json

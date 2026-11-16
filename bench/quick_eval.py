@@ -1,7 +1,8 @@
 """
 Evaluation harness for the NLQ-to-SQL agent.
 
-Runs every question in tests/eval_set.json through the full LangGraph
+Quick check on the small dummy.db (23 questions, incl. 3 safety cases).
+Runs every question in bench/dummy_eval.json through the full LangGraph
 pipeline and reports:
   - execution accuracy  : agent's result set matches the gold query's result
   - first-try validity  : SQL passed validation on attempt 1 (no retries)
@@ -13,8 +14,8 @@ pipeline and reports:
 Works on a temporary COPY of dummy.db, so your real DB is never modified.
 
 Usage (from the project root, with Ollama running):
-    python tests/run_eval.py
-    python tests/run_eval.py --only 7,8,9      # run selected question ids
+    python bench/quick_eval.py
+    python bench/quick_eval.py --only 7,8,9      # run selected question ids
 """
 
 import argparse
@@ -31,7 +32,7 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TESTS = Path(__file__).resolve().parent
+BENCH = Path(__file__).resolve().parent
 
 # Point the app at a throwaway copy of the DB BEFORE importing app.* modules
 # (config.py reads DB_PATH at import time; load_dotenv won't override it).
@@ -107,7 +108,7 @@ def main():
     ap.add_argument("--only", help="comma-separated question ids to run")
     args = ap.parse_args()
 
-    cases = json.loads((TESTS / "eval_set.json").read_text())
+    cases = json.loads((BENCH / "dummy_eval.json").read_text())
     if args.only:
         wanted = {int(x) for x in args.only.split(",")}
         cases = [c for c in cases if c["id"] in wanted]
@@ -205,7 +206,8 @@ def main():
         rs = [r for r in acc_cases if r["category"] == c]
         print(f"  {c:<10} {pct(sum(r['passed'] for r in rs), len(rs))}")
 
-    out = TESTS / f"results_{datetime.now():%Y%m%d_%H%M%S}.json"
+    (BENCH / "results").mkdir(exist_ok=True)
+    out = BENCH / "results" / f"quick_eval_{datetime.now():%Y%m%d_%H%M%S}.json"
     out.write_text(json.dumps(results, indent=2, default=str))
     print(f"\nFull results saved to {out.relative_to(ROOT)}")
 

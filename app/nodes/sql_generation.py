@@ -177,6 +177,9 @@ def error_hint(error: str | None) -> str:
     m = re.search(r"no such table: (\S+)", error)
     if m:
         return f"\nHint: there is no table {m.group(1)}. Available tables: {', '.join(cat)}."
+    if "misuse of aggregate" in error:
+        return ("\nHint: COUNT/SUM/AVG/MAX/MIN cannot be used in WHERE. Put those conditions in "
+                "HAVING after a GROUP BY (e.g. GROUP BY T1.id HAVING COUNT(T2.id) > 10).")
     if "ambiguous column name" in error:
         return "\nHint: prefix the column with its table alias (e.g. T1.col)."
     return ""

@@ -2,7 +2,7 @@
 Prepare schema_data for ANY SQLite database (BIRD/Spider benchmark DBs, or
 your own file): a tables.json listing every real table/column, with
 descriptions taken from BIRD-style database_description/*.csv when present,
-plus empty synonyms/metrics/rules. Used by tests/run_benchmark.py and app/ask.py.
+plus empty synonyms/metrics/rules. Used by bench/run_benchmark.py and app/ask.py.
 """
 
 import csv

@@ -52,7 +52,27 @@ def _numbers(text: str) -> set[str]:
     return out
 
 
+_NUMBER_WORDS = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+                 "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "twenty": 20, "hundred": 100}
+_RELATION = re.compile(r"\b(twice|double|thrice|triple|half|quarter|times as|times more|times the|"
+                       r"percent|per cent|ratio)\b|%", re.IGNORECASE)
+
+
 def _numbers_are_grounded(answer: str, rows: list, question: str) -> bool:
+    """C2: every number in the answer must be in the result. Spelled-out numbers
+    count too ("four customers"), and relation words ("twice as many", "half")
+    are only allowed when the query computed the value itself (one cell): the
+    LLM must not do arithmetic on the rows (screenshot: two counts in, "twice
+    as many" out)."""
+    words = re.sub(r"\b(" + "|".join(_NUMBER_WORDS) + r")\b",
+                   lambda m: str(_NUMBER_WORDS[m.group(1).lower()]), answer, flags=re.IGNORECASE)
+    single_cell = len(rows) == 1 and len(rows[0]) == 1
+    if _RELATION.search(answer) and not single_cell and not _RELATION.search(question):
+        return False
+    if _RELATION.search(answer) and not single_cell and len(rows) != 1:
+        return False
+    answer = words
+
     allowed = _numbers(question) | {str(len(rows))}
     for row in rows:
         for v in (row if isinstance(row, (list, tuple)) else [row]):

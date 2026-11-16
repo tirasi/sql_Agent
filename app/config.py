@@ -1,23 +1,11 @@
 """
-Central configuration, loaded from environment variables (.env).
+All settings, read once from environment variables / .env (see .env.example).
 
-LLM_PROVIDER now defaults to "ollama" (free, local) so the app actually
-generates real SQL out of the box, instead of the "mock" stand-in used
-during initial wiring/testing. The mock provider only pattern-matches a
-couple of hardcoded phrases ("how many" + a product name) and returns a
-generic fallback query otherwise -- it never reads schema_context or
-join_context, so it will not produce correct SQL for anything beyond the
-handful of cases it was written for. Switch back to "mock" only if you
-want zero-setup testing of graph wiring with no LLM calls at all, or to
-"anthropic" if you have API budget and want the strongest quality on
-sql_generation.
-
-Requirements for LLM_PROVIDER=ollama:
-- Ollama must be installed and running locally (OLLAMA_HOST below).
-- Each model in NODE_MODELS_OLLAMA must be pulled first, e.g.:
-    ollama pull phi4-mini
-    ollama pull qwen2.5-coder:7b
-    ollama pull gemma3:4b
+LLM: LLM_PROVIDER = "ollama" (free, local; default) or "anthropic". Each graph
+node can use a different model (NODE_MODELS_* below); pull the Ollama ones first:
+    ollama pull phi4-mini && ollama pull qwen2.5-coder:3b && ollama pull qwen2.5:3b
+Sections below: LLM, database, retries, safety limits (S1-S7), access policy
+(S3), answer quality (C1, C7-C10).
 """
 
 import os
@@ -39,7 +27,7 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 NODE_MODELS_OLLAMA = {
     "schema_retrieval":    "phi4-mini",        # fast classification: "which tables?"
     "sql_generation":      "qwen2.5-coder:3b", # coding-tuned, best free option for SQL syntax
-    "response_generation": "qwen2.5:3b",        # plain-language summary, low stakes
+    "response_generation": "qwen2.5:3b",       # plain-language summary, low stakes
 }
 
 # PAID (Anthropic) -- what to switch to if you have API budget / GPUs.

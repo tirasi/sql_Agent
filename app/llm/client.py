@@ -104,7 +104,7 @@ def _call_ollama(system_prompt: str, user_message: str, model: str, node_name: s
 
 def check_provider_ready() -> list[str]:
     """Preflight: returns a list of problems (empty list = ready).
-    Run before main.py / the eval so a missing model fails in 1 clear line
+    Run before ask.py / a benchmark so a missing model fails in 1 clear line
     instead of 23 identical crashes."""
     if LLM_PROVIDER == "anthropic":
         return [] if ANTHROPIC_API_KEY else ["ANTHROPIC_API_KEY not set in .env"]

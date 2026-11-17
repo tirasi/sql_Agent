@@ -15,6 +15,9 @@ Every run of `bench/run_benchmark.py`, oldest first: the command, what changed b
 | [7](#run-7) | 16 Nov 2026, 03:30 | `--questions … --db-root … --db debit_card_specializing --limit 5 --candidates 3 --show-sql` | 1 | 100% (1/1) | 100% (1/1) | 100% (1/1) | 0% (0/1) | 18.9s |
 | [8](#run-8) | 16 Nov 2026, 03:47 | `--questions /Users/trashisharma/bird/minidev/MINIDEV/mini_dev_sqlite.json --db-root /Users/trashisharma/bird/minidev/MINIDEV/dev_databases --oracle --limit 3` | 3 | 100% (3/3) | 100% (3/3) | 100% (3/3) | 0% (0/3) | 0.1s |
 | [9](#run-9) | 16 Nov 2026, 03:47 | `--questions /Users/trashisharma/bird/minidev/MINIDEV/mini_dev_sqlite.json --db-root /Users/trashisharma/bird/minidev/MINIDEV/dev_databases --oracle --limit 3 --show-sql` | 3 | 100% (3/3) | 100% (3/3) | 100% (3/3) | 0% (0/3) | 0.1s |
+| [10](#run-10) | 16 Nov 2026, 12:57 | `not recorded` | 38 | 34% (13/38) | 34% (13/38) | 34% (13/38) | 5% (2/38) | 22.5s |
+| [11](#run-11) | 16 Nov 2026, 14:06 | `not recorded` | 67 | 45% (30/67) | 45% (30/67) | 46% (31/67) | 3% (2/67) | 18.2s |
+| [12](#run-12) | 16 Nov 2026, 14:27 | `--candidates 1` | 500 | 34% (168/499) | 34% (168/499) | 36% (180/499) | 1% (6/499) | 31.1s |
 
 ## Run 1
 
@@ -2017,3 +2020,24194 @@ WHERE
 
 - Our result: 1 row(s): (459.9562642870894,)
 - Gold result: 1 row(s): (459.9562642870894,)
+
+## Run 10
+
+- **When:** 16 Nov 2026, 12:57
+- **Results file:** `bench/results/benchmark_20261116_125752.jsonl`
+- **Command:** `not recorded`
+
+### Q1471: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 17.49s*
+
+**Question:** What is the ratio of customers who pay in EUR against customers who pay in CZK?
+
+**Hint:** ratio of customers who pay in EUR against customers who pay in CZK = count(Currency = 'EUR') / count(Currency = 'CZK').
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(Currency = 'EUR', 1, 0)) AS REAL) / SUM(IIF(Currency = 'CZK', 1, 0)) AS ratio
+FROM customers
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN Currency = 'EUR' THEN 1 ELSE 0 END) AS REAL) / COUNT(*)
+FROM customers
+```
+
+- Our result: 1 row(s): (0.06167400881057269,)
+- Gold result: 1 row(s): (0.06572769953051644,)
+
+### Q1472: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 14.76s*
+
+**Question:** In 2012, who had the least consumption in LAM?
+
+**Hint:** Year 2012 can be presented as Between 201201 And 201212; The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.CustomerID
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'LAM' AND SUBSTRING(T2.Date, 1, 4) = '2012'
+GROUP BY
+  T1.CustomerID
+ORDER BY
+  SUM(T2.Consumption) ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.CustomerID
+FROM yearmonth AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Date BETWEEN '201201' AND '201212' AND T2.Segment = 'LAM'
+GROUP BY
+  T1.CustomerID
+ORDER BY
+  SUM(T1.Consumption) ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (47273,)
+- Gold result: 1 row(s): (47273,)
+
+### Q1473: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 15.33s*
+
+**Question:** What was the average monthly consumption of customers in SME for the year 2013?
+
+**Hint:** Average Monthly consumption = AVG(Consumption) / 12; Year 2013 can be presented as Between 201301 And 201312; The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T2.Consumption) / 12
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  SUBSTRING(T2.Date, 1, 4) = '2013' AND T1.Segment = 'SME'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T2.Consumption) / 12 AS AverageMonthlyConsumption
+FROM customers AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'SME' AND T2.Date BETWEEN '201301' AND '201312'
+```
+
+- Our result: 1 row(s): (459.9562642870894,)
+- Gold result: 1 row(s): (459.9562642870894,)
+
+### Q1476: PASS
+
+*debit_card_specializing, challenging, confidence 1.0, 2 attempt(s), 32.39s*
+
+**Question:** What was the difference in gas consumption between CZK-paying customers and EUR-paying customers in 2012?
+
+**Hint:** Year 2012 can be presented as Between 201201 And 201212; The first 4 strings of the Date values in the yearmonth table can represent year; Difference in Consumption = CZK customers consumption in 2012 - EUR customers consumption in 2012
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(IIF(T1.Currency = 'CZK', T2.Consumption, 0)) - SUM(IIF(T1.Currency = 'EUR', T2.Consumption, 0))
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  SUBSTRING(T2.Date, 1, 4) = '2012'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    SUM(CASE WHEN T1.Currency = 'CZK' THEN T2.Consumption ELSE 0 END) - SUM(CASE WHEN T1.Currency = 'EUR' THEN T2.Consumption ELSE 0 END)
+  ) AS Difference
+FROM customers AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Date BETWEEN '201201' AND '201212'
+```
+
+- Our result: 1 row(s): (402524570.17,)
+- Gold result: 1 row(s): (402524570.17,)
+- Fix applied: no such column: Currency
+- Fix applied: no such column: Currency
+- Fix applied: no such column: Currency
+- Fix applied: logic fix in code: conditional_groupby: removed GROUP BY t1.currency (already split by CASE, not in output); derived_projection: kept only the computed column; dropped components CZK_Consumption, EUR_Consumption
+
+### Q1479: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 13.67s*
+
+**Question:** Which year recorded the most consumption of gas paid in CZK?
+
+**Hint:** The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUBSTRING(T2.Date, 1, 4)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Currency = 'CZK'
+GROUP BY
+  SUBSTRING(T2.Date, 1, 4)
+ORDER BY
+  SUM(T2.Consumption) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUBSTRING(Date, 1, 4) AS Year
+FROM yearmonth
+JOIN customers
+  ON yearmonth.CustomerID = customers.CustomerID
+WHERE
+  customers.Currency = 'CZK'
+GROUP BY
+  Year
+ORDER BY
+  SUM(Consumption) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('2013',)
+- Gold result: 1 row(s): ('2013',)
+- Fix applied: logic fix in code: ranking_projection: dropped ranking-only column(s) SUM(Consumption) AS TotalConsumption from SELECT
+
+### Q1480: FAIL
+
+*debit_card_specializing, moderate, confidence None, 3 attempt(s), 25.61s*
+
+**Question:** What was the gas consumption peak month for SME customers in 2013?
+
+**Hint:** Year 2013 can be presented as Between 201301 And 201312; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUBSTRING(T2.Date, 5, 2)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  SUBSTRING(T2.Date, 1, 4) = '2013' AND T1.Segment = 'SME'
+GROUP BY
+  SUBSTRING(T2.Date, 5, 2)
+ORDER BY
+  SUM(T2.Consumption) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Month,
+  MAX(T1.Consumption) AS PeakConsumption
+FROM yearmonth AS T1
+JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Segment = 'SME' AND T1.Date BETWEEN '201301' AND '201312'
+GROUP BY
+  T2.Month
+ORDER BY
+  PeakConsumption DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('04',)
+- Error: `no such column: T2.Month`
+- Fix applied: no such column: T2.Month
+- Fix applied: no such column: T2.Month
+- Fix applied: no such column: T2.Month
+
+### Q1481: FAIL
+
+*debit_card_specializing, challenging, confidence None, 3 attempt(s), 71.32s*
+
+**Question:** What is the difference in the annual average consumption of the customers with the least amount of consumption paid in CZK for 2013 between SME and LAM, LAM and KAM, and KAM and SME?
+
+**Hint:** annual average consumption of customer with the lowest consumption in each segment = total consumption per year / the number of customer with lowest consumption in each segment; Difference in annual average = SME's annual average - LAM's annual average; Difference in annual average = LAM's annual average - KAM's annual average; Year 2013 can be presented as Between 201301 And 201312; The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T1.Segment = 'SME', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID) - CAST(SUM(IIF(T1.Segment = 'LAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID),
+  CAST(SUM(IIF(T1.Segment = 'LAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID) - CAST(SUM(IIF(T1.Segment = 'KAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID),
+  CAST(SUM(IIF(T1.Segment = 'KAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID) - CAST(SUM(IIF(T1.Segment = 'SME', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Currency = 'CZK'
+  AND T2.Consumption = (
+    SELECT
+      MIN(Consumption)
+    FROM yearmonth
+  )
+  AND T2.Date BETWEEN 201301 AND 201312
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Segment1,
+  Segment2,
+  (
+    AnnualAverageConsumption1 - AnnualAverageConsumption2
+  ) AS Difference
+FROM (
+  SELECT
+    Segment AS Segment1,
+    SUM(Consumption) / COUNT(*) AS AnnualAverageConsumption
+  FROM yearmonth
+  JOIN customers
+    ON yearmonth.CustomerID = customers.CustomerID
+  WHERE
+    STRFTIME('%Y', Date) BETWEEN '201301' AND '201312' AND Currency = 'CZK'
+  GROUP BY
+    Segment
+  ORDER BY
+    AnnualAverageConsumption ASC
+  LIMIT 1
+) AS T1
+JOIN (
+  SELECT
+    Segment AS Segment2,
+    SUM(Consumption) / COUNT(*) AS AnnualAverageConsumption
+  FROM yearmonth
+  JOIN customers
+    ON yearmonth.CustomerID = customers.CustomerID
+  WHERE
+    STRFTIME('%Y', Date) BETWEEN '201301' AND '201312' AND Currency = 'CZK'
+  GROUP BY
+    Segment
+  ORDER BY
+    AnnualAverageConsumption ASC
+  LIMIT 2
+) AS T2
+  ON T1.Segment1 = T2.Segment2
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (0.0, 582092.86, -582092.86)
+- Error: `no such column: AnnualAverageConsumption1`
+- Fix applied: no such column: Segment1
+- Fix applied: no such column: AnnualAverageConsumption1
+
+### Q1482: ASKED (best guess wrong)
+
+*debit_card_specializing, challenging, confidence 0.33, 1 attempt(s), 42.2s*
+
+**Question:** Which of the three segments—SME, LAM and KAM—has the biggest and lowest percentage increases in consumption paid in EUR between 2012 and 2013?
+
+**Hint:** Increase or Decrease = consumption for 2013 - consumption for 2012; Percentage of Increase = (Increase or Decrease / consumption for 2013) * 100%; The first 4 strings of the Date values in the yearmonth table can represent year
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST((
+    SUM(IIF(T1.Segment = 'SME' AND T2.Date LIKE '2013%', T2.Consumption, 0)) - SUM(IIF(T1.Segment = 'SME' AND T2.Date LIKE '2012%', T2.Consumption, 0))
+  ) AS REAL) * 100 / SUM(IIF(T1.Segment = 'SME' AND T2.Date LIKE '2012%', T2.Consumption, 0)),
+  CAST(SUM(IIF(T1.Segment = 'LAM' AND T2.Date LIKE '2013%', T2.Consumption, 0)) - SUM(IIF(T1.Segment = 'LAM' AND T2.Date LIKE '2012%', T2.Consumption, 0)) AS REAL) * 100 / SUM(IIF(T1.Segment = 'LAM' AND T2.Date LIKE '2012%', T2.Consumption, 0)),
+  CAST(SUM(IIF(T1.Segment = 'KAM' AND T2.Date LIKE '2013%', T2.Consumption, 0)) - SUM(IIF(T1.Segment = 'KAM' AND T2.Date LIKE '2012%', T2.Consumption, 0)) AS REAL) * 100 / SUM(IIF(T1.Segment = 'KAM' AND T2.Date LIKE '2012%', T2.Consumption, 0))
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  c.Segment,
+  1.0 * (
+    SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) - SUM(CASE WHEN ym.Date LIKE '2012%' THEN ym.Consumption ELSE 0 END)
+  ) / SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) * 100 AS percentage_increase
+FROM yearmonth AS ym
+JOIN customers AS c
+  ON ym.CustomerID = c.CustomerID
+WHERE
+  c.Segment IN ('SME', 'LAM', 'KAM')
+GROUP BY
+  c.Segment
+ORDER BY
+  percentage_increase DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('KAM', 87.62548387814994)
+- Gold result: 1 row(s): (545.4018999790969, 681.5824574939339, 708.1124062978664)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...); ranking_projection: dropped ranking-only column(s) SUM(CASE WHEN ym.Date LIKE '2012%' THEN ym.Consumption ELSE 0 END) AS consumption_2012, SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) AS consumption_2013 from SELECT
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...); ranking_projection: dropped ranking-only column(s) SUM(CASE WHEN ym.Date LIKE '2012%' THEN ym.Consumption ELSE 0 END) AS consumption_2012, SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) AS consumption_2013 from SELECT
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q1483: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 12.75s*
+
+**Question:** How much did customer 6 consume in total between August and November 2013?
+
+**Hint:** Between August And November 2013 refers to Between 201308 And 201311; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(Consumption)
+FROM yearmonth
+WHERE
+  CustomerID = 6 AND Date BETWEEN '201308' AND '201311'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(Consumption)
+FROM yearmonth
+WHERE
+  CustomerID = 6 AND Date BETWEEN '201308' AND '201311'
+```
+
+- Our result: 1 row(s): (1224.96,)
+- Gold result: 1 row(s): (1224.96,)
+
+### Q1484: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 12.91s*
+
+**Question:** How many more "discount" gas stations does the Czech Republic have compared to Slovakia?
+
+**Hint:** Czech Republic can be represented as the Country value in gasstations table is 'CZE'; Slovakia can be represented as the Country value in the gasstations table is 'SVK';  Computation of more "discount" gas stations= Total no. of discount gas stations in Czech Republic - Total no. of discount gas stations in Slovakia
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(IIF(Country = 'CZE', 1, 0)) - SUM(IIF(Country = 'SVK', 1, 0))
+FROM gasstations
+WHERE
+  Segment = 'Discount'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN Country = 'CZE' THEN 1 ELSE 0 END) AS CzechDiscountCount,
+  SUM(CASE WHEN Country = 'SVK' THEN 1 ELSE 0 END) AS SlovakDiscountCount
+FROM gasstations
+```
+
+- Our result: 1 row(s): (4836, 880)
+- Gold result: 1 row(s): (176,)
+
+### Q1486: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 20.04s*
+
+**Question:** Is it true that more SMEs pay in Czech koruna than in euros? If so, how many more?
+
+**Hint:** Amount of more SMEs = Total of SMEs pay using Currency CZK - Total of SMEs pay using Currency EUR
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(Currency = 'CZK') - SUM(Currency = 'EUR')
+FROM customers
+WHERE
+  Segment = 'SME'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN Currency = 'CZK' THEN Amount ELSE 0 END) - SUM(CASE WHEN Currency = 'EUR' THEN Amount ELSE 0 END) AS AmountDifference
+FROM customers
+JOIN transactions_1k
+  ON customers.CustomerID = transactions_1k.CustomerID
+WHERE
+  Segment = 'SME'
+```
+
+- Our result: 1 row(s): (3843,)
+- Gold result: 1 row(s): (23505,)
+
+### Q1490: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 2 attempt(s), 19.56s*
+
+**Question:** How many percent of LAM customer consumed more than 46.73?
+
+**Hint:** Percentage of LAM customer consumed more than 46.73 = (Total no. of LAM customers who consumed more than 46.73 / Total no. of LAM customers) * 100.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T2.Consumption > 46.73, 1, 0)) AS REAL) * 100 / COUNT(T1.CustomerID)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'LAM'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.Consumption > 46.73 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.CustomerID) AS percentage
+FROM customers AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'LAM'
+```
+
+- Our result: 1 row(s): (98.5267932135058,)
+- Gold result: 1 row(s): (98.5267932135058,)
+- Fix applied: no such column: usage
+
+### Q1493: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 13.57s*
+
+**Question:** In February 2012, what percentage of customers consumed more than 528.3?
+
+**Hint:** February 2012 refers to '201202' in yearmonth.date; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(Consumption > 528.3, 1, 0)) AS REAL) * 100 / COUNT(CustomerID)
+FROM yearmonth
+WHERE
+  Date = '201202'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM yearmonth
+WHERE
+  STRFTIME('%Y', Date) = '2012'
+  AND STRFTIME('%m', Date) = '02'
+  AND Consumption > 528.3
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (66.62300807683911,)
+
+### Q1498: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 10.98s*
+
+**Question:** What is the highest monthly consumption in the year 2012?
+
+**Hint:** The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(Consumption)
+FROM yearmonth
+WHERE
+  SUBSTRING(Date, 1, 4) = '2012'
+GROUP BY
+  SUBSTRING(Date, 5, 2)
+ORDER BY
+  SUM(Consumption) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  MAX(Consumption)
+FROM yearmonth
+WHERE
+  Date LIKE '2012%'
+```
+
+- Our result: 1 row(s): (445279.69,)
+- Gold result: 1 row(s): (51787161.74,)
+
+### Q1500: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 12.52s*
+
+**Question:** Please list the product description of the products consumed in September, 2013.
+
+**Hint:** September 2013 refers to 201309; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.Description
+FROM transactions_1k AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+INNER JOIN products AS T3
+  ON T1.ProductID = T3.ProductID
+WHERE
+  T2.Date = '201309'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Description
+FROM products AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.ProductID = T1.ProductID
+WHERE
+  T2.Date LIKE '201309%'
+```
+
+- Our result: 100000 row(s): ('Rucní zadání',), ('Rucní zadání',), ('Rucní zadání',), ('Rucní zadání',), ('Rucní zadání',) … (100000 rows total)
+- Gold result: 976 row(s): ('Nafta',), ('Nafta',), ('Provoz.nápl.',), ('Natural',), ('Nafta',) … (976 rows total)
+- Fix applied: no such column: T2.ProductID -> repaired alias in code
+
+### Q1501: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 14.27s*
+
+**Question:** Please list the countries of the gas stations with transactions taken place in June, 2013.
+
+**Hint:** June 2013 refers to '201306'; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.Country
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN yearmonth AS T3
+  ON T1.CustomerID = T3.CustomerID
+WHERE
+  T3.Date = '201306'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Country
+FROM gasstations AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.GasStationID = T2.CustomerID
+WHERE
+  T2.Date LIKE '201306%'
+```
+
+- Our result: 2344 row(s): ('CZE',), ('CZE',), ('CZE',), ('CZE',), ('CZE',) … (2344 rows total)
+- Gold result: 2 row(s): ('CZE',), ('SVK',)
+
+### Q1505: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 14.69s*
+
+**Question:** Among the customers who paid in euro, how many of them have a monthly consumption of over 1000?
+
+**Hint:** Pays in euro = Currency = 'EUR'.
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM yearmonth AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Currency = 'EUR' AND T1.Consumption > 1000.00
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM customers
+JOIN yearmonth
+  ON customers.CustomerID = yearmonth.CustomerID
+WHERE
+  customers.Currency = 'EUR' AND yearmonth.Consumption > 1000
+```
+
+- Our result: 1 row(s): (2730,)
+- Gold result: 1 row(s): (2730,)
+
+### Q1506: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 2 attempt(s), 19.05s*
+
+**Question:** Please list the product descriptions of the transactions taken place in the gas stations in the Czech Republic.
+
+**Hint:** Czech Republic can be represented as the Country value in the gasstations table is 'CZE'; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T3.Description
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN products AS T3
+  ON T1.ProductID = T3.ProductID
+WHERE
+  T2.Country = 'CZE'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Description
+FROM transactions_1k AS T1
+INNER JOIN products AS T2
+  ON T1.ProductID = T2.ProductID
+INNER JOIN gasstations AS T3
+  ON T1.GasStationID = T3.GasStationID
+WHERE
+  T3.Country = 'CZE'
+```
+
+- Our result: 933 row(s): ('Nafta',), ('Nafta',), ('Provoz.nápl.',), ('Natural',), ('Nafta',) … (933 rows total)
+- Gold result: 21 row(s): ('Nafta',), ('Provoz.nápl.',), ('Natural',), ('Nemrz.kapal.',), ('Oleje,tuky',) … (21 rows total)
+- Fix applied: no such column: T1.Country
+
+### Q1507: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 2 attempt(s), 15.67s*
+
+**Question:** Please list the disparate time of the transactions taken place in the gas stations from chain no. 11.
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.Time
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T2.ChainID = 11
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  Time
+FROM transactions_1k
+WHERE
+  GasStationID = 11
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('14:29:00',), ('11:55:00',)
+
+### Q1509: FAIL
+
+*debit_card_specializing, moderate, confidence None, 3 attempt(s), 21.29s*
+
+**Question:** Among the transactions made in the gas stations in the Czech Republic, how many of them are taken place after 2012/1/1?
+
+**Hint:** Czech Republic can be represented as the Country value in the gasstations table is 'CZE'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.TransactionID)
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T2.Country = 'CZE' AND STRFTIME('%Y', T1.Date) >= '2012'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM transactions_1k
+WHERE
+  Date > '2012-01-01' AND Country = 'CZE'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (933,)
+- Error: `no such column: Country`
+- Fix applied: no such column: Country
+- Fix applied: no such column: Country
+- Fix applied: no such column: Country
+
+### Q1514: FAIL
+
+*debit_card_specializing, simple, confidence None, 3 attempt(s), 22.32s*
+
+**Question:** What kind of currency did the customer paid at 16:25:00 in 2012/8/24?
+
+**Hint:** '2012/8/24' can be represented by '2012-08-24'; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T3.Currency
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN customers AS T3
+  ON T1.CustomerID = T3.CustomerID
+WHERE
+  T1.Date = '2012-08-24' AND T1.Time = '16:25:00'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Currency
+FROM transactions_1k
+WHERE
+  Date = '2012-08-24' AND Time = '16:25:00'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('CZK',)
+- Error: `no such column: Currency`
+- Fix applied: no such column: Currency
+- Fix applied: no such column: Currency
+- Fix applied: no such column: Currency
+
+### Q1515: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 14.57s*
+
+**Question:** What segment did the customer have at 2012/8/23 21:20:00?
+
+**Hint:** '2012/8/23' can be represented by '2012-08-23'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Segment
+FROM transactions_1k AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.date = '2012-08-23' AND T1.time = '21:20:00'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Segment
+FROM customers AS T1
+INNER JOIN transactions_1k AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Date = '2012-08-23' AND T2.Time = '21:20:00'
+```
+
+- Our result: 1 row(s): ('KAM',)
+- Gold result: 1 row(s): ('KAM',)
+
+### Q1521: FAIL
+
+*debit_card_specializing, moderate, confidence None, 3 attempt(s), 24.13s*
+
+**Question:** For all the transactions happened during 8:00-9:00 in 2012/8/26, how many happened in CZE?
+
+**Hint:** Czech Republic can be represented as the Country value in the gasstations table is 'CZE'; '2012/8/26' can be represented by '2012-08-26'; during 8:00-9:00 can be represented as Time BETWEEN '08:00:00' AND '09:00:00'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.TransactionID)
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T1.Date = '2012-08-26'
+  AND T1.Time BETWEEN '08:00:00' AND '09:00:00'
+  AND T2.Country = 'CZE'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Country,
+  COUNT(*)
+FROM transactions_1k
+WHERE
+  Time BETWEEN '08:00:00' AND '09:00:00' AND Date = '2012-08-26' AND Country = 'CZE'
+GROUP BY
+  Country
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (14,)
+- Error: `no such column: Country`
+- Fix applied: no such column: Country
+- Fix applied: no such column: Country
+- Fix applied: no such column: Country
+
+### Q1524: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 3 attempt(s), 22.4s*
+
+**Question:** What's the nationality of the customer who spent 548.4 in 2012/8/24?
+
+**Hint:** '2012/8/24' can be represented by '2012-08-24'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Country
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T1.Date = '2012-08-24' AND T1.Price = 548.4
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Currency
+FROM customers AS T1
+INNER JOIN transactions_1k AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Date = '2012-08-24' AND T2.Amount = 548.4
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('CZE',)
+
+### Q1525: ASKED (best guess wrong)
+
+*debit_card_specializing, simple, confidence 0.33, 1 attempt(s), 15.17s*
+
+**Question:** What is the percentage of the customers who used EUR in 2012/8/25?
+
+**Hint:** '2012/8/25' can be represented by '2012-08-25'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T2.Currency = 'EUR', 1, 0)) AS REAL) * 100 / COUNT(T1.CustomerID)
+FROM transactions_1k AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Date = '2012-08-25'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM customers
+```
+
+- Our result: 1 row(s): (32461,)
+- Gold result: 1 row(s): (1.6470588235294117,)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q1526: FAIL
+
+*debit_card_specializing, challenging, confidence 1.0, 2 attempt(s), 26.05s*
+
+**Question:** For the customer who paid 634.8 in 2012/8/25, what was the consumption decrease rate from Year 2012 to 2013?
+
+**Hint:** '2012/8/24' can be represented by '2012-08-24'; Consumption decrease rate = (consumption_2012 - consumption_2013) / consumption_2012
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(SUBSTRING(Date, 1, 4) = '2012', Consumption, 0)) - SUM(IIF(SUBSTRING(Date, 1, 4) = '2013', Consumption, 0)) AS REAL) / SUM(IIF(SUBSTRING(Date, 1, 4) = '2012', Consumption, 0))
+FROM yearmonth
+WHERE
+  CustomerID = (
+    SELECT
+      T1.CustomerID
+    FROM transactions_1k AS T1
+    INNER JOIN gasstations AS T2
+      ON T1.GasStationID = T2.GasStationID
+    WHERE
+      T1.Date = '2012-08-25' AND T1.Price = 1513.12
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Consumption AS consumption_2012,
+  T2.Consumption AS consumption_2013,
+  (
+    T1.Consumption - T2.Consumption
+  ) / T1.Consumption AS consumption_decrease_rate
+FROM yearmonth AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Date = '2012-08-25' AND T2.Date = '2013-08-25' AND T1.Consumption = 634.8
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (None,)
+
+### Q1528: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 13.45s*
+
+**Question:** What is the percentage of "premium" against the overall segment in Country = "SVK"?
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(Country = 'SVK' AND Segment = 'Premium', 1, 0)) AS REAL) * 100 / SUM(IIF(Country = 'SVK', 1, 0))
+FROM gasstations
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN Segment = 'Premium' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) AS Percentage_Premium
+FROM gasstations
+WHERE
+  Country = 'SVK'
+GROUP BY
+  Segment
+```
+
+- Our result: 5 row(s): (0.0,), (0.0,), (0.0,), (100.0,), (0.0,)
+- Gold result: 1 row(s): (35.68181818181818,)
+- Fix applied: logic fix in code: derived_projection: kept only the computed column; dropped components Segment
+
+### Q1529: FAIL
+
+*debit_card_specializing, moderate, confidence 0.67, 1 attempt(s), 19.44s*
+
+**Question:** What is the amount spent by customer "38508" at the gas stations? How much had the customer spent in January 2012?
+
+**Hint:** January 2012 refers to the Date value = '201201'
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(T1.Price),
+  SUM(IIF(T3.Date = '201201', T1.Price, 0))
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN yearmonth AS T3
+  ON T1.CustomerID = T3.CustomerID
+WHERE
+  T1.CustomerID = '38508'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(Amount)
+FROM transactions_1k
+WHERE
+  CustomerID = 38508 AND Date LIKE '201201%'
+```
+
+- Our result: 1 row(s): (None,)
+- Gold result: 1 row(s): (68740.2, 3437.01)
+
+### Q1531: FAIL
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 20.75s*
+
+**Question:** Who is the top spending customer and how much is the average price per single item purchased by this customer? What currency was being used?
+
+**Hint:** average price per single item = Total(price) / Total(amount)
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.CustomerID,
+  SUM(T2.Price / T2.Amount),
+  T1.Currency
+FROM customers AS T1
+INNER JOIN transactions_1k AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.CustomerID = (
+    SELECT
+      CustomerID
+    FROM yearmonth
+    ORDER BY
+      Consumption DESC
+    LIMIT 1
+  )
+GROUP BY
+  T2.CustomerID,
+  T1.Currency
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  c.CustomerID,
+  c.Currency
+FROM transactions_1k AS t
+JOIN customers AS c
+  ON t.CustomerID = c.CustomerID
+GROUP BY
+  c.CustomerID
+ORDER BY
+  AVG(t.Price) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (13665, 'CZK')
+- Gold result: 1 row(s): (12459, 203.8560787354258, 'CZK')
+- Fix applied: logic fix in code: ranking_projection: dropped ranking-only column(s) AVG(t.Price) AS AveragePricePerItem from SELECT
+
+### Q1533: FAIL
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 15.74s*
+
+**Question:** For all the people who paid more than 29.00 per unit of product id No.5. Give their consumption status in the August of 2012.
+
+**Hint:** August of 2012 refers to the Date value = '201208' ; Price per unit of product = Price / Amount;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Consumption
+FROM transactions_1k AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Price / T1.Amount > 29.00 AND T1.ProductID = 5 AND T2.Date = '201208'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CustomerID,
+  SUM(Amount) AS TotalUsage
+FROM transactions_1k
+WHERE
+  ProductID = 5 AND Price / Amount > 29.00 AND STRFTIME('%Y%m', Date) = '201208'
+GROUP BY
+  CustomerID
+```
+
+- Our result: 9 row(s): (5443, 2), (6768, 2), (7626, 1), (18831, 1), (20447, 2) … (9 rows total)
+- Gold result: 10 row(s): (1903.2,), (88265.39,), (1129.2,), (126157.7,), (126157.7,) … (10 rows total)
+
+### Q1312: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 14.89s*
+
+**Question:** What's Angela Sanders's major?
+
+**Hint:** Angela Sanders is the full name; full name refers to first_name, last_name; major refers to major_name.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.first_name = 'Angela' AND T1.last_name = 'Sanders'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.first_name = 'Angela' AND T1.last_name = 'Sanders'
+```
+
+- Our result: 1 row(s): ('Business',)
+- Gold result: 1 row(s): ('Business',)
+
+### Q1317: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 17.58s*
+
+**Question:** Among the students from the Student_Club who attended the event "Women's Soccer", how many of them want a T-shirt that's in medium size?
+
+**Hint:** Women's Soccer is an event name; T-shirt that is in medium size refers to t_shirt_size = 'Medium'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.event_id)
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN member AS T3
+  ON T2.link_to_member = T3.member_id
+WHERE
+  T1.event_name = 'Women''s Soccer' AND T3.t_shirt_size = 'Medium'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM attendance AS T1
+INNER JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T1.link_to_event = 'rec2N69DMcrqN9PJC' AND T2.t_shirt_size = 'Medium'
+```
+
+- Our result: 1 row(s): (7,)
+- Gold result: 1 row(s): (7,)
+
+### Q1322: FAIL
+
+*student_club, moderate, confidence 1.0, 2 attempt(s), 25.82s*
+
+**Question:** Among the events attended by more than 10 members of the Student_Club, how many of them are meetings?
+
+**Hint:** meetings events refers to type = 'Meeting'; attended by more than 10 members refers to COUNT(event_id) > 10
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+GROUP BY
+  T1.event_id
+HAVING
+  COUNT(T2.link_to_event) > 10
+EXCEPT
+SELECT
+  T1.event_name
+FROM event AS T1
+WHERE
+  T1.type = 'Meeting'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(event_id)
+FROM event
+WHERE
+  type = 'Meeting'
+GROUP BY
+  event_id
+HAVING
+  COUNT(event_id) > 10
+```
+
+- Our result: 0 rows
+- Gold result: 9 row(s): ('Community Theater',), ('Food Bank',), ('Football game',), ('Laugh Out Loud',), ('November Speaker',) … (9 rows total)
+
+### Q1323: FAIL
+
+*student_club, moderate, confidence None, 3 attempt(s), 35.25s*
+
+**Question:** List all the names of events that had an attendance of over 20 students but were not fundraisers.
+
+**Hint:** name of events refers to event_name; attendance of over 20 students COUNT(event_id) > 20.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+GROUP BY
+  T1.event_id
+HAVING
+  COUNT(T2.link_to_event) > 20
+EXCEPT
+SELECT
+  T1.event_name
+FROM event AS T1
+WHERE
+  T1.type = 'Fundraiser'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.type <> 'Fundraiser' AND COUNT(T2.link_to_event) > 20
+```
+
+- Our result: 0 rows
+- Gold result: 8 row(s): ('November Meeting',), ('November Speaker',), ('October Meeting',), ('October Speaker',), ('Registration',) … (8 rows total)
+- Error: `misuse of aggregate function COUNT()`
+- Fix applied: no such column: T2.event_id -> repaired alias in code
+
+### Q1331: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 18.73s*
+
+**Question:** What is the amount of the funds that the Vice President received?
+
+**Hint:** 'Vice President' is a position of Student Club; funds received refers to amount.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.amount
+FROM member AS T1
+INNER JOIN income AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.position = 'Vice President'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(amount)
+FROM income AS T1
+INNER JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T2.position = 'Vice President'
+```
+
+- Our result: 1 row(s): (50,)
+- Gold result: 1 row(s): (50,)
+
+### Q1334: FAIL
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 18.15s*
+
+**Question:** List the full name of the Student_Club members that grew up in Illinois state.
+
+**Hint:** full name of member refers to first_name, last_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN zip_code AS T2
+  ON T1.zip = T2.zip_code
+WHERE
+  T2.state = 'Illinois'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN zip_code AS T2
+  ON T1.zip = T2.zip_code
+WHERE
+  T2.state = 'Illinois' AND T1.position = 'Member'
+```
+
+- Our result: 2 row(s): ('Trent', 'Smith'), ('Tyler', 'Hewitt')
+- Gold result: 3 row(s): ('Trent', 'Smith'), ('Tyler', 'Hewitt'), ('Annabella', 'Warren')
+
+### Q1338: FAIL
+
+*student_club, moderate, confidence 1.0, 2 attempt(s), 63.55s*
+
+**Question:** Was each expense in October Meeting on October 8, 2019 approved?
+
+**Hint:** event_name = 'October Meeting' where event_date = '2019-10-08'; approved = True means expenses was approved; approved = False means expenses was not approved
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.approved
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+WHERE
+  T1.event_name = 'October Meeting' AND T1.event_date LIKE '2019-10-08%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  approved
+FROM expense
+JOIN budget
+  ON expense.link_to_budget = budget.budget_id
+JOIN event
+  ON budget.link_to_event = event.event_id
+WHERE
+  event.event_name = 'October Meeting'
+  AND event.event_date = '2019-10-08'
+  AND expense.approved = 'true'
+```
+
+- Our result: 0 rows
+- Gold result: 3 row(s): ('true',), ('true',), ('true',)
+
+### Q1339: FAIL
+
+*student_club, challenging, confidence 1.0, 1 attempt(s), 48.44s*
+
+**Question:** Calculate the total average cost that Elijah Allen spent in the events on September and October.
+
+**Hint:** Elijah Allen is the full name; full name refers to first_name, last_name; The 5th and 6th string of the expense_date in the expense table can refer to month; events in September and October refers to month(expense_date) = 9 OR month(expense_date) = 10
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T2.cost)
+FROM member AS T1
+INNER JOIN expense AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.last_name = 'Allen'
+  AND T1.first_name = 'Elijah'
+  AND (
+    SUBSTRING(T2.expense_date, 6, 2) = '09'
+    OR SUBSTRING(T2.expense_date, 6, 2) = '10'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T3.cost) AS average_cost
+FROM member AS T1
+JOIN attendance AS T2
+  ON T1.member_id = T2.link_to_member
+JOIN expense AS T3
+  ON T2.link_to_event = T2.link_to_event
+WHERE
+  T1.first_name = 'Elijah'
+  AND T1.last_name = 'Allen'
+  AND STRFTIME('%m', T3.expense_date) IN ('09', '10')
+GROUP BY
+  T1.member_id
+```
+
+- Our result: 1 row(s): (68.0040909090909,)
+- Gold result: 1 row(s): (74.0775,)
+- Fix applied: no such column: T2.cost -> repaired alias in code
+- Fix applied: no such column: T3.link_to_event -> repaired alias in code
+
+## Run 11
+
+- **When:** 16 Nov 2026, 14:06
+- **Results file:** `bench/results/benchmark_20261116_140616.jsonl`
+- **Command:** `not recorded`
+
+### Q1471: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 13.62s*
+
+**Question:** What is the ratio of customers who pay in EUR against customers who pay in CZK?
+
+**Hint:** ratio of customers who pay in EUR against customers who pay in CZK = count(Currency = 'EUR') / count(Currency = 'CZK').
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(Currency = 'EUR', 1, 0)) AS REAL) / SUM(IIF(Currency = 'CZK', 1, 0)) AS ratio
+FROM customers
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN Currency = 'EUR' THEN 1 ELSE 0 END) AS REAL) / COUNT(*)
+FROM customers
+```
+
+- Our result: 1 row(s): (0.06167400881057269,)
+- Gold result: 1 row(s): (0.06572769953051644,)
+
+### Q1472: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 14.08s*
+
+**Question:** In 2012, who had the least consumption in LAM?
+
+**Hint:** Year 2012 can be presented as Between 201201 And 201212; The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.CustomerID
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'LAM' AND SUBSTRING(T2.Date, 1, 4) = '2012'
+GROUP BY
+  T1.CustomerID
+ORDER BY
+  SUM(T2.Consumption) ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.CustomerID
+FROM yearmonth AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Date BETWEEN '201201' AND '201212' AND T2.Segment = 'LAM'
+GROUP BY
+  T1.CustomerID
+ORDER BY
+  SUM(T1.Consumption) ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (47273,)
+- Gold result: 1 row(s): (47273,)
+
+### Q1473: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 14.05s*
+
+**Question:** What was the average monthly consumption of customers in SME for the year 2013?
+
+**Hint:** Average Monthly consumption = AVG(Consumption) / 12; Year 2013 can be presented as Between 201301 And 201312; The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T2.Consumption) / 12
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  SUBSTRING(T2.Date, 1, 4) = '2013' AND T1.Segment = 'SME'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T2.Consumption) / 12 AS AverageMonthlyConsumption
+FROM customers AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'SME' AND T2.Date BETWEEN '201301' AND '201312'
+```
+
+- Our result: 1 row(s): (459.9562642870894,)
+- Gold result: 1 row(s): (459.9562642870894,)
+
+### Q1476: PASS
+
+*debit_card_specializing, challenging, confidence 1.0, 2 attempt(s), 31.5s*
+
+**Question:** What was the difference in gas consumption between CZK-paying customers and EUR-paying customers in 2012?
+
+**Hint:** Year 2012 can be presented as Between 201201 And 201212; The first 4 strings of the Date values in the yearmonth table can represent year; Difference in Consumption = CZK customers consumption in 2012 - EUR customers consumption in 2012
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(IIF(T1.Currency = 'CZK', T2.Consumption, 0)) - SUM(IIF(T1.Currency = 'EUR', T2.Consumption, 0))
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  SUBSTRING(T2.Date, 1, 4) = '2012'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    SUM(CASE WHEN T1.Currency = 'CZK' THEN T2.Consumption ELSE 0 END) - SUM(CASE WHEN T1.Currency = 'EUR' THEN T2.Consumption ELSE 0 END)
+  ) AS Difference
+FROM customers AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Date BETWEEN '201201' AND '201212'
+```
+
+- Our result: 1 row(s): (402524570.17,)
+- Gold result: 1 row(s): (402524570.17,)
+- Fix applied: no such column: Currency
+- Fix applied: no such column: Currency
+- Fix applied: no such column: Currency
+- Fix applied: logic fix in code: conditional_groupby: removed GROUP BY t1.currency (already split by CASE, not in output); derived_projection: kept only the computed column; dropped components CZK_Consumption, EUR_Consumption
+
+### Q1479: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 12.96s*
+
+**Question:** Which year recorded the most consumption of gas paid in CZK?
+
+**Hint:** The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUBSTRING(T2.Date, 1, 4)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Currency = 'CZK'
+GROUP BY
+  SUBSTRING(T2.Date, 1, 4)
+ORDER BY
+  SUM(T2.Consumption) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUBSTRING(Date, 1, 4) AS Year
+FROM yearmonth
+JOIN customers
+  ON yearmonth.CustomerID = customers.CustomerID
+WHERE
+  customers.Currency = 'CZK'
+GROUP BY
+  Year
+ORDER BY
+  SUM(Consumption) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('2013',)
+- Gold result: 1 row(s): ('2013',)
+- Fix applied: logic fix in code: ranking_projection: dropped ranking-only column(s) SUM(Consumption) AS TotalConsumption from SELECT
+
+### Q1480: FAIL
+
+*debit_card_specializing, moderate, confidence None, 3 attempt(s), 27.31s*
+
+**Question:** What was the gas consumption peak month for SME customers in 2013?
+
+**Hint:** Year 2013 can be presented as Between 201301 And 201312; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUBSTRING(T2.Date, 5, 2)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  SUBSTRING(T2.Date, 1, 4) = '2013' AND T1.Segment = 'SME'
+GROUP BY
+  SUBSTRING(T2.Date, 5, 2)
+ORDER BY
+  SUM(T2.Consumption) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Month,
+  MAX(T1.Consumption) AS PeakConsumption
+FROM yearmonth AS T1
+JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Segment = 'SME' AND T1.Date BETWEEN '201301' AND '201312'
+GROUP BY
+  T2.Month
+ORDER BY
+  PeakConsumption DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('04',)
+- Error: `no such column: T2.Month`
+- Fix applied: no such column: T2.Month
+- Fix applied: no such column: T2.Month
+- Fix applied: no such column: T2.Month
+
+### Q1481: FAIL
+
+*debit_card_specializing, challenging, confidence None, 3 attempt(s), 72.15s*
+
+**Question:** What is the difference in the annual average consumption of the customers with the least amount of consumption paid in CZK for 2013 between SME and LAM, LAM and KAM, and KAM and SME?
+
+**Hint:** annual average consumption of customer with the lowest consumption in each segment = total consumption per year / the number of customer with lowest consumption in each segment; Difference in annual average = SME's annual average - LAM's annual average; Difference in annual average = LAM's annual average - KAM's annual average; Year 2013 can be presented as Between 201301 And 201312; The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T1.Segment = 'SME', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID) - CAST(SUM(IIF(T1.Segment = 'LAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID),
+  CAST(SUM(IIF(T1.Segment = 'LAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID) - CAST(SUM(IIF(T1.Segment = 'KAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID),
+  CAST(SUM(IIF(T1.Segment = 'KAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID) - CAST(SUM(IIF(T1.Segment = 'SME', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Currency = 'CZK'
+  AND T2.Consumption = (
+    SELECT
+      MIN(Consumption)
+    FROM yearmonth
+  )
+  AND T2.Date BETWEEN 201301 AND 201312
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Segment1,
+  Segment2,
+  (
+    AnnualAverageConsumption1 - AnnualAverageConsumption2
+  ) AS Difference
+FROM (
+  SELECT
+    Segment AS Segment1,
+    SUM(Consumption) / COUNT(*) AS AnnualAverageConsumption
+  FROM yearmonth
+  JOIN customers
+    ON yearmonth.CustomerID = customers.CustomerID
+  WHERE
+    STRFTIME('%Y', Date) BETWEEN '201301' AND '201312' AND Currency = 'CZK'
+  GROUP BY
+    Segment
+  ORDER BY
+    AnnualAverageConsumption ASC
+  LIMIT 1
+) AS T1
+JOIN (
+  SELECT
+    Segment AS Segment2,
+    SUM(Consumption) / COUNT(*) AS AnnualAverageConsumption
+  FROM yearmonth
+  JOIN customers
+    ON yearmonth.CustomerID = customers.CustomerID
+  WHERE
+    STRFTIME('%Y', Date) BETWEEN '201301' AND '201312' AND Currency = 'CZK'
+  GROUP BY
+    Segment
+  ORDER BY
+    AnnualAverageConsumption ASC
+  LIMIT 2
+) AS T2
+  ON T1.Segment1 = T2.Segment2
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (0.0, 582092.86, -582092.86)
+- Error: `no such column: AnnualAverageConsumption1`
+- Fix applied: no such column: Segment1
+- Fix applied: no such column: AnnualAverageConsumption1
+
+### Q1482: ASKED (best guess wrong)
+
+*debit_card_specializing, challenging, confidence 0.33, 1 attempt(s), 42.65s*
+
+**Question:** Which of the three segments—SME, LAM and KAM—has the biggest and lowest percentage increases in consumption paid in EUR between 2012 and 2013?
+
+**Hint:** Increase or Decrease = consumption for 2013 - consumption for 2012; Percentage of Increase = (Increase or Decrease / consumption for 2013) * 100%; The first 4 strings of the Date values in the yearmonth table can represent year
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST((
+    SUM(IIF(T1.Segment = 'SME' AND T2.Date LIKE '2013%', T2.Consumption, 0)) - SUM(IIF(T1.Segment = 'SME' AND T2.Date LIKE '2012%', T2.Consumption, 0))
+  ) AS REAL) * 100 / SUM(IIF(T1.Segment = 'SME' AND T2.Date LIKE '2012%', T2.Consumption, 0)),
+  CAST(SUM(IIF(T1.Segment = 'LAM' AND T2.Date LIKE '2013%', T2.Consumption, 0)) - SUM(IIF(T1.Segment = 'LAM' AND T2.Date LIKE '2012%', T2.Consumption, 0)) AS REAL) * 100 / SUM(IIF(T1.Segment = 'LAM' AND T2.Date LIKE '2012%', T2.Consumption, 0)),
+  CAST(SUM(IIF(T1.Segment = 'KAM' AND T2.Date LIKE '2013%', T2.Consumption, 0)) - SUM(IIF(T1.Segment = 'KAM' AND T2.Date LIKE '2012%', T2.Consumption, 0)) AS REAL) * 100 / SUM(IIF(T1.Segment = 'KAM' AND T2.Date LIKE '2012%', T2.Consumption, 0))
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  c.Segment,
+  1.0 * (
+    SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) - SUM(CASE WHEN ym.Date LIKE '2012%' THEN ym.Consumption ELSE 0 END)
+  ) / SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) * 100 AS percentage_increase
+FROM yearmonth AS ym
+JOIN customers AS c
+  ON ym.CustomerID = c.CustomerID
+WHERE
+  c.Segment IN ('SME', 'LAM', 'KAM')
+GROUP BY
+  c.Segment
+ORDER BY
+  percentage_increase DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('KAM', 87.62548387814994)
+- Gold result: 1 row(s): (545.4018999790969, 681.5824574939339, 708.1124062978664)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...); ranking_projection: dropped ranking-only column(s) SUM(CASE WHEN ym.Date LIKE '2012%' THEN ym.Consumption ELSE 0 END) AS consumption_2012, SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) AS consumption_2013 from SELECT
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...); ranking_projection: dropped ranking-only column(s) SUM(CASE WHEN ym.Date LIKE '2012%' THEN ym.Consumption ELSE 0 END) AS consumption_2012, SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) AS consumption_2013 from SELECT
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q1483: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 11.98s*
+
+**Question:** How much did customer 6 consume in total between August and November 2013?
+
+**Hint:** Between August And November 2013 refers to Between 201308 And 201311; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(Consumption)
+FROM yearmonth
+WHERE
+  CustomerID = 6 AND Date BETWEEN '201308' AND '201311'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(Consumption)
+FROM yearmonth
+WHERE
+  CustomerID = 6 AND Date BETWEEN '201308' AND '201311'
+```
+
+- Our result: 1 row(s): (1224.96,)
+- Gold result: 1 row(s): (1224.96,)
+
+### Q1484: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 11.63s*
+
+**Question:** How many more "discount" gas stations does the Czech Republic have compared to Slovakia?
+
+**Hint:** Czech Republic can be represented as the Country value in gasstations table is 'CZE'; Slovakia can be represented as the Country value in the gasstations table is 'SVK';  Computation of more "discount" gas stations= Total no. of discount gas stations in Czech Republic - Total no. of discount gas stations in Slovakia
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(IIF(Country = 'CZE', 1, 0)) - SUM(IIF(Country = 'SVK', 1, 0))
+FROM gasstations
+WHERE
+  Segment = 'Discount'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN Country = 'CZE' THEN 1 ELSE 0 END) AS CzechDiscountCount,
+  SUM(CASE WHEN Country = 'SVK' THEN 1 ELSE 0 END) AS SlovakDiscountCount
+FROM gasstations
+```
+
+- Our result: 1 row(s): (4836, 880)
+- Gold result: 1 row(s): (176,)
+
+### Q1486: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 17.73s*
+
+**Question:** Is it true that more SMEs pay in Czech koruna than in euros? If so, how many more?
+
+**Hint:** Amount of more SMEs = Total of SMEs pay using Currency CZK - Total of SMEs pay using Currency EUR
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(Currency = 'CZK') - SUM(Currency = 'EUR')
+FROM customers
+WHERE
+  Segment = 'SME'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN Currency = 'CZK' THEN Amount ELSE 0 END) - SUM(CASE WHEN Currency = 'EUR' THEN Amount ELSE 0 END) AS AmountDifference
+FROM customers
+JOIN transactions_1k
+  ON customers.CustomerID = transactions_1k.CustomerID
+WHERE
+  Segment = 'SME'
+```
+
+- Our result: 1 row(s): (3843,)
+- Gold result: 1 row(s): (23505,)
+
+### Q1490: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 2 attempt(s), 17.13s*
+
+**Question:** How many percent of LAM customer consumed more than 46.73?
+
+**Hint:** Percentage of LAM customer consumed more than 46.73 = (Total no. of LAM customers who consumed more than 46.73 / Total no. of LAM customers) * 100.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T2.Consumption > 46.73, 1, 0)) AS REAL) * 100 / COUNT(T1.CustomerID)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'LAM'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.Consumption > 46.73 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.CustomerID) AS percentage
+FROM customers AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'LAM'
+```
+
+- Our result: 1 row(s): (98.5267932135058,)
+- Gold result: 1 row(s): (98.5267932135058,)
+- Fix applied: no such column: usage
+
+### Q1493: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 11.44s*
+
+**Question:** In February 2012, what percentage of customers consumed more than 528.3?
+
+**Hint:** February 2012 refers to '201202' in yearmonth.date; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(Consumption > 528.3, 1, 0)) AS REAL) * 100 / COUNT(CustomerID)
+FROM yearmonth
+WHERE
+  Date = '201202'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM yearmonth
+WHERE
+  STRFTIME('%Y', Date) = '2012'
+  AND STRFTIME('%m', Date) = '02'
+  AND Consumption > 528.3
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (66.62300807683911,)
+
+### Q1498: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 9.46s*
+
+**Question:** What is the highest monthly consumption in the year 2012?
+
+**Hint:** The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(Consumption)
+FROM yearmonth
+WHERE
+  SUBSTRING(Date, 1, 4) = '2012'
+GROUP BY
+  SUBSTRING(Date, 5, 2)
+ORDER BY
+  SUM(Consumption) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  MAX(Consumption)
+FROM yearmonth
+WHERE
+  Date LIKE '2012%'
+```
+
+- Our result: 1 row(s): (445279.69,)
+- Gold result: 1 row(s): (51787161.74,)
+
+### Q1500: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 10.86s*
+
+**Question:** Please list the product description of the products consumed in September, 2013.
+
+**Hint:** September 2013 refers to 201309; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.Description
+FROM transactions_1k AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+INNER JOIN products AS T3
+  ON T1.ProductID = T3.ProductID
+WHERE
+  T2.Date = '201309'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Description
+FROM products AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.ProductID = T1.ProductID
+WHERE
+  T2.Date LIKE '201309%'
+```
+
+- Our result: 100000 row(s): ('Rucní zadání',), ('Rucní zadání',), ('Rucní zadání',), ('Rucní zadání',), ('Rucní zadání',) … (100000 rows total)
+- Gold result: 976 row(s): ('Nafta',), ('Nafta',), ('Provoz.nápl.',), ('Natural',), ('Nafta',) … (976 rows total)
+- Fix applied: no such column: T2.ProductID -> repaired alias in code
+
+### Q1501: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 12.39s*
+
+**Question:** Please list the countries of the gas stations with transactions taken place in June, 2013.
+
+**Hint:** June 2013 refers to '201306'; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.Country
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN yearmonth AS T3
+  ON T1.CustomerID = T3.CustomerID
+WHERE
+  T3.Date = '201306'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Country
+FROM gasstations AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.GasStationID = T2.CustomerID
+WHERE
+  T2.Date LIKE '201306%'
+```
+
+- Our result: 2344 row(s): ('CZE',), ('CZE',), ('CZE',), ('CZE',), ('CZE',) … (2344 rows total)
+- Gold result: 2 row(s): ('CZE',), ('SVK',)
+
+### Q1505: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 12.72s*
+
+**Question:** Among the customers who paid in euro, how many of them have a monthly consumption of over 1000?
+
+**Hint:** Pays in euro = Currency = 'EUR'.
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM yearmonth AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Currency = 'EUR' AND T1.Consumption > 1000.00
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM customers
+JOIN yearmonth
+  ON customers.CustomerID = yearmonth.CustomerID
+WHERE
+  customers.Currency = 'EUR' AND yearmonth.Consumption > 1000
+```
+
+- Our result: 1 row(s): (2730,)
+- Gold result: 1 row(s): (2730,)
+
+### Q1506: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 2 attempt(s), 17.32s*
+
+**Question:** Please list the product descriptions of the transactions taken place in the gas stations in the Czech Republic.
+
+**Hint:** Czech Republic can be represented as the Country value in the gasstations table is 'CZE'; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T3.Description
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN products AS T3
+  ON T1.ProductID = T3.ProductID
+WHERE
+  T2.Country = 'CZE'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Description
+FROM transactions_1k AS T1
+INNER JOIN products AS T2
+  ON T1.ProductID = T2.ProductID
+INNER JOIN gasstations AS T3
+  ON T1.GasStationID = T3.GasStationID
+WHERE
+  T3.Country = 'CZE'
+```
+
+- Our result: 933 row(s): ('Nafta',), ('Nafta',), ('Provoz.nápl.',), ('Natural',), ('Nafta',) … (933 rows total)
+- Gold result: 21 row(s): ('Nafta',), ('Provoz.nápl.',), ('Natural',), ('Nemrz.kapal.',), ('Oleje,tuky',) … (21 rows total)
+- Fix applied: no such column: T1.Country
+
+### Q1507: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 2 attempt(s), 13.83s*
+
+**Question:** Please list the disparate time of the transactions taken place in the gas stations from chain no. 11.
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.Time
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T2.ChainID = 11
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  Time
+FROM transactions_1k
+WHERE
+  GasStationID = 11
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('14:29:00',), ('11:55:00',)
+
+### Q1509: FAIL
+
+*debit_card_specializing, moderate, confidence None, 3 attempt(s), 19.4s*
+
+**Question:** Among the transactions made in the gas stations in the Czech Republic, how many of them are taken place after 2012/1/1?
+
+**Hint:** Czech Republic can be represented as the Country value in the gasstations table is 'CZE'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.TransactionID)
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T2.Country = 'CZE' AND STRFTIME('%Y', T1.Date) >= '2012'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM transactions_1k
+WHERE
+  Date > '2012-01-01' AND Country = 'CZE'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (933,)
+- Error: `no such column: Country`
+- Fix applied: no such column: Country
+- Fix applied: no such column: Country
+- Fix applied: no such column: Country
+
+### Q1514: FAIL
+
+*debit_card_specializing, simple, confidence None, 3 attempt(s), 20.1s*
+
+**Question:** What kind of currency did the customer paid at 16:25:00 in 2012/8/24?
+
+**Hint:** '2012/8/24' can be represented by '2012-08-24'; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T3.Currency
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN customers AS T3
+  ON T1.CustomerID = T3.CustomerID
+WHERE
+  T1.Date = '2012-08-24' AND T1.Time = '16:25:00'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Currency
+FROM transactions_1k
+WHERE
+  Date = '2012-08-24' AND Time = '16:25:00'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('CZK',)
+- Error: `no such column: Currency`
+- Fix applied: no such column: Currency
+- Fix applied: no such column: Currency
+- Fix applied: no such column: Currency
+
+### Q1515: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 13.35s*
+
+**Question:** What segment did the customer have at 2012/8/23 21:20:00?
+
+**Hint:** '2012/8/23' can be represented by '2012-08-23'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Segment
+FROM transactions_1k AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.date = '2012-08-23' AND T1.time = '21:20:00'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Segment
+FROM customers AS T1
+INNER JOIN transactions_1k AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Date = '2012-08-23' AND T2.Time = '21:20:00'
+```
+
+- Our result: 1 row(s): ('KAM',)
+- Gold result: 1 row(s): ('KAM',)
+
+### Q1521: FAIL
+
+*debit_card_specializing, moderate, confidence None, 3 attempt(s), 22.15s*
+
+**Question:** For all the transactions happened during 8:00-9:00 in 2012/8/26, how many happened in CZE?
+
+**Hint:** Czech Republic can be represented as the Country value in the gasstations table is 'CZE'; '2012/8/26' can be represented by '2012-08-26'; during 8:00-9:00 can be represented as Time BETWEEN '08:00:00' AND '09:00:00'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.TransactionID)
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T1.Date = '2012-08-26'
+  AND T1.Time BETWEEN '08:00:00' AND '09:00:00'
+  AND T2.Country = 'CZE'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Country,
+  COUNT(*)
+FROM transactions_1k
+WHERE
+  Time BETWEEN '08:00:00' AND '09:00:00' AND Date = '2012-08-26' AND Country = 'CZE'
+GROUP BY
+  Country
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (14,)
+- Error: `no such column: Country`
+- Fix applied: no such column: Country
+- Fix applied: no such column: Country
+- Fix applied: no such column: Country
+
+### Q1524: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 3 attempt(s), 20.78s*
+
+**Question:** What's the nationality of the customer who spent 548.4 in 2012/8/24?
+
+**Hint:** '2012/8/24' can be represented by '2012-08-24'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Country
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T1.Date = '2012-08-24' AND T1.Price = 548.4
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Currency
+FROM customers AS T1
+INNER JOIN transactions_1k AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Date = '2012-08-24' AND T2.Amount = 548.4
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('CZE',)
+
+### Q1525: ASKED (best guess wrong)
+
+*debit_card_specializing, simple, confidence 0.33, 1 attempt(s), 13.89s*
+
+**Question:** What is the percentage of the customers who used EUR in 2012/8/25?
+
+**Hint:** '2012/8/25' can be represented by '2012-08-25'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T2.Currency = 'EUR', 1, 0)) AS REAL) * 100 / COUNT(T1.CustomerID)
+FROM transactions_1k AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Date = '2012-08-25'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM customers
+```
+
+- Our result: 1 row(s): (32461,)
+- Gold result: 1 row(s): (1.6470588235294117,)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q1526: FAIL
+
+*debit_card_specializing, challenging, confidence 1.0, 2 attempt(s), 23.93s*
+
+**Question:** For the customer who paid 634.8 in 2012/8/25, what was the consumption decrease rate from Year 2012 to 2013?
+
+**Hint:** '2012/8/24' can be represented by '2012-08-24'; Consumption decrease rate = (consumption_2012 - consumption_2013) / consumption_2012
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(SUBSTRING(Date, 1, 4) = '2012', Consumption, 0)) - SUM(IIF(SUBSTRING(Date, 1, 4) = '2013', Consumption, 0)) AS REAL) / SUM(IIF(SUBSTRING(Date, 1, 4) = '2012', Consumption, 0))
+FROM yearmonth
+WHERE
+  CustomerID = (
+    SELECT
+      T1.CustomerID
+    FROM transactions_1k AS T1
+    INNER JOIN gasstations AS T2
+      ON T1.GasStationID = T2.GasStationID
+    WHERE
+      T1.Date = '2012-08-25' AND T1.Price = 1513.12
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Consumption AS consumption_2012,
+  T2.Consumption AS consumption_2013,
+  (
+    T1.Consumption - T2.Consumption
+  ) / T1.Consumption AS consumption_decrease_rate
+FROM yearmonth AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Date = '2012-08-25' AND T2.Date = '2013-08-25' AND T1.Consumption = 634.8
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (None,)
+
+### Q1528: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 12.11s*
+
+**Question:** What is the percentage of "premium" against the overall segment in Country = "SVK"?
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(Country = 'SVK' AND Segment = 'Premium', 1, 0)) AS REAL) * 100 / SUM(IIF(Country = 'SVK', 1, 0))
+FROM gasstations
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN Segment = 'Premium' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) AS Percentage_Premium
+FROM gasstations
+WHERE
+  Country = 'SVK'
+GROUP BY
+  Segment
+```
+
+- Our result: 5 row(s): (0.0,), (0.0,), (0.0,), (100.0,), (0.0,)
+- Gold result: 1 row(s): (35.68181818181818,)
+- Fix applied: logic fix in code: derived_projection: kept only the computed column; dropped components Segment
+
+### Q1529: FAIL
+
+*debit_card_specializing, moderate, confidence 0.67, 1 attempt(s), 18.41s*
+
+**Question:** What is the amount spent by customer "38508" at the gas stations? How much had the customer spent in January 2012?
+
+**Hint:** January 2012 refers to the Date value = '201201'
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(T1.Price),
+  SUM(IIF(T3.Date = '201201', T1.Price, 0))
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN yearmonth AS T3
+  ON T1.CustomerID = T3.CustomerID
+WHERE
+  T1.CustomerID = '38508'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(Amount)
+FROM transactions_1k
+WHERE
+  CustomerID = 38508 AND Date LIKE '201201%'
+```
+
+- Our result: 1 row(s): (None,)
+- Gold result: 1 row(s): (68740.2, 3437.01)
+
+### Q1531: FAIL
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 19.35s*
+
+**Question:** Who is the top spending customer and how much is the average price per single item purchased by this customer? What currency was being used?
+
+**Hint:** average price per single item = Total(price) / Total(amount)
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.CustomerID,
+  SUM(T2.Price / T2.Amount),
+  T1.Currency
+FROM customers AS T1
+INNER JOIN transactions_1k AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.CustomerID = (
+    SELECT
+      CustomerID
+    FROM yearmonth
+    ORDER BY
+      Consumption DESC
+    LIMIT 1
+  )
+GROUP BY
+  T2.CustomerID,
+  T1.Currency
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  c.CustomerID,
+  c.Currency
+FROM transactions_1k AS t
+JOIN customers AS c
+  ON t.CustomerID = c.CustomerID
+GROUP BY
+  c.CustomerID
+ORDER BY
+  AVG(t.Price) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (13665, 'CZK')
+- Gold result: 1 row(s): (12459, 203.8560787354258, 'CZK')
+- Fix applied: logic fix in code: ranking_projection: dropped ranking-only column(s) AVG(t.Price) AS AveragePricePerItem from SELECT
+
+### Q1533: FAIL
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 14.28s*
+
+**Question:** For all the people who paid more than 29.00 per unit of product id No.5. Give their consumption status in the August of 2012.
+
+**Hint:** August of 2012 refers to the Date value = '201208' ; Price per unit of product = Price / Amount;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Consumption
+FROM transactions_1k AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Price / T1.Amount > 29.00 AND T1.ProductID = 5 AND T2.Date = '201208'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CustomerID,
+  SUM(Amount) AS TotalUsage
+FROM transactions_1k
+WHERE
+  ProductID = 5 AND Price / Amount > 29.00 AND STRFTIME('%Y%m', Date) = '201208'
+GROUP BY
+  CustomerID
+```
+
+- Our result: 9 row(s): (5443, 2), (6768, 2), (7626, 1), (18831, 1), (20447, 2) … (9 rows total)
+- Gold result: 10 row(s): (1903.2,), (88265.39,), (1129.2,), (126157.7,), (126157.7,) … (10 rows total)
+
+### Q1312: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 13.34s*
+
+**Question:** What's Angela Sanders's major?
+
+**Hint:** Angela Sanders is the full name; full name refers to first_name, last_name; major refers to major_name.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.first_name = 'Angela' AND T1.last_name = 'Sanders'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.first_name = 'Angela' AND T1.last_name = 'Sanders'
+```
+
+- Our result: 1 row(s): ('Business',)
+- Gold result: 1 row(s): ('Business',)
+
+### Q1317: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 16.58s*
+
+**Question:** Among the students from the Student_Club who attended the event "Women's Soccer", how many of them want a T-shirt that's in medium size?
+
+**Hint:** Women's Soccer is an event name; T-shirt that is in medium size refers to t_shirt_size = 'Medium'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.event_id)
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN member AS T3
+  ON T2.link_to_member = T3.member_id
+WHERE
+  T1.event_name = 'Women''s Soccer' AND T3.t_shirt_size = 'Medium'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM attendance AS T1
+INNER JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T1.link_to_event = 'rec2N69DMcrqN9PJC' AND T2.t_shirt_size = 'Medium'
+```
+
+- Our result: 1 row(s): (7,)
+- Gold result: 1 row(s): (7,)
+
+### Q1322: FAIL
+
+*student_club, moderate, confidence 1.0, 2 attempt(s), 21.17s*
+
+**Question:** Among the events attended by more than 10 members of the Student_Club, how many of them are meetings?
+
+**Hint:** meetings events refers to type = 'Meeting'; attended by more than 10 members refers to COUNT(event_id) > 10
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+GROUP BY
+  T1.event_id
+HAVING
+  COUNT(T2.link_to_event) > 10
+EXCEPT
+SELECT
+  T1.event_name
+FROM event AS T1
+WHERE
+  T1.type = 'Meeting'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(event_id)
+FROM event
+WHERE
+  type = 'Meeting'
+GROUP BY
+  event_id
+HAVING
+  COUNT(event_id) > 10
+```
+
+- Our result: 0 rows
+- Gold result: 9 row(s): ('Community Theater',), ('Food Bank',), ('Football game',), ('Laugh Out Loud',), ('November Speaker',) … (9 rows total)
+
+### Q1323: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 13.65s*
+
+**Question:** List all the names of events that had an attendance of over 20 students but were not fundraisers.
+
+**Hint:** name of events refers to event_name; attendance of over 20 students COUNT(event_id) > 20.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+GROUP BY
+  T1.event_id
+HAVING
+  COUNT(T2.link_to_event) > 20
+EXCEPT
+SELECT
+  T1.event_name
+FROM event AS T1
+WHERE
+  T1.type = 'Fundraiser'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.type <> 'Fundraiser'
+GROUP BY
+  T1.event_name
+HAVING
+  COUNT(T1.event_id) > 20
+```
+
+- Our result: 9 row(s): ('Football game',), ('November Meeting',), ('November Speaker',), ('October Meeting',), ('October Speaker',) … (9 rows total)
+- Gold result: 8 row(s): ('November Meeting',), ('November Speaker',), ('October Meeting',), ('October Speaker',), ('Registration',) … (8 rows total)
+- Fix applied: no such column: T2.event_id -> repaired alias in code
+
+### Q1331: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 13.22s*
+
+**Question:** What is the amount of the funds that the Vice President received?
+
+**Hint:** 'Vice President' is a position of Student Club; funds received refers to amount.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.amount
+FROM member AS T1
+INNER JOIN income AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.position = 'Vice President'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(amount)
+FROM income AS T1
+INNER JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T2.position = 'Vice President'
+```
+
+- Our result: 1 row(s): (50,)
+- Gold result: 1 row(s): (50,)
+
+### Q1334: FAIL
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 13.52s*
+
+**Question:** List the full name of the Student_Club members that grew up in Illinois state.
+
+**Hint:** full name of member refers to first_name, last_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN zip_code AS T2
+  ON T1.zip = T2.zip_code
+WHERE
+  T2.state = 'Illinois'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN zip_code AS T2
+  ON T1.zip = T2.zip_code
+WHERE
+  T2.state = 'Illinois' AND T1.position = 'Member'
+```
+
+- Our result: 2 row(s): ('Trent', 'Smith'), ('Tyler', 'Hewitt')
+- Gold result: 3 row(s): ('Trent', 'Smith'), ('Tyler', 'Hewitt'), ('Annabella', 'Warren')
+
+### Q1338: FAIL
+
+*student_club, moderate, confidence 1.0, 2 attempt(s), 26.54s*
+
+**Question:** Was each expense in October Meeting on October 8, 2019 approved?
+
+**Hint:** event_name = 'October Meeting' where event_date = '2019-10-08'; approved = True means expenses was approved; approved = False means expenses was not approved
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.approved
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+WHERE
+  T1.event_name = 'October Meeting' AND T1.event_date LIKE '2019-10-08%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  approved
+FROM expense
+JOIN budget
+  ON expense.link_to_budget = budget.budget_id
+JOIN event
+  ON budget.link_to_event = event.event_id
+WHERE
+  event.event_name = 'October Meeting'
+  AND event.event_date = '2019-10-08'
+  AND expense.approved = 'true'
+```
+
+- Our result: 0 rows
+- Gold result: 3 row(s): ('true',), ('true',), ('true',)
+
+### Q1339: FAIL
+
+*student_club, challenging, confidence 1.0, 1 attempt(s), 21.72s*
+
+**Question:** Calculate the total average cost that Elijah Allen spent in the events on September and October.
+
+**Hint:** Elijah Allen is the full name; full name refers to first_name, last_name; The 5th and 6th string of the expense_date in the expense table can refer to month; events in September and October refers to month(expense_date) = 9 OR month(expense_date) = 10
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T2.cost)
+FROM member AS T1
+INNER JOIN expense AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.last_name = 'Allen'
+  AND T1.first_name = 'Elijah'
+  AND (
+    SUBSTRING(T2.expense_date, 6, 2) = '09'
+    OR SUBSTRING(T2.expense_date, 6, 2) = '10'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T3.cost) AS average_cost
+FROM member AS T1
+JOIN attendance AS T2
+  ON T1.member_id = T2.link_to_member
+JOIN expense AS T3
+  ON T2.link_to_event = T2.link_to_event
+WHERE
+  T1.first_name = 'Elijah'
+  AND T1.last_name = 'Allen'
+  AND STRFTIME('%m', T3.expense_date) IN ('09', '10')
+GROUP BY
+  T1.member_id
+```
+
+- Our result: 1 row(s): (68.0040909090909,)
+- Gold result: 1 row(s): (74.0775,)
+- Fix applied: no such column: T2.cost -> repaired alias in code
+- Fix applied: no such column: T3.link_to_event -> repaired alias in code
+
+### Q1340: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 16.32s*
+
+**Question:** Calculate the difference of the total amount spent in all events by the Student_Club in year 2019 and 2020.
+
+**Hint:** The first 4 strings of the event_date values in the event table can represent year; The difference of the total amount spent = SUBTRACT(spent where YEAR(event_date) = 2019, spent where YEAR(event_date) = 2020)
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN SUBSTRING(T1.event_date, 1, 4) = '2019' THEN T2.spent ELSE 0 END) - SUM(CASE WHEN SUBSTRING(T1.event_date, 1, 4) = '2020' THEN T2.spent ELSE 0 END) AS num
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(
+    CASE WHEN SUBSTRING(event.event_date, 1, 4) = '2019' THEN budget.spent ELSE 0 END
+  ) - SUM(
+    CASE WHEN SUBSTRING(event.event_date, 1, 4) = '2020' THEN budget.spent ELSE 0 END
+  ) AS total_spent_difference
+FROM budget
+INNER JOIN event
+  ON budget."link_to_event" = event."event_id"
+WHERE
+  budget.event_status = 'Closed'
+```
+
+- Our result: 1 row(s): (1857.55,)
+- Gold result: 1 row(s): (2086.05,)
+- Fix applied: no such column: event_date -> added missing JOIN in code
+
+### Q1344: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 12.02s*
+
+**Question:** What was the notes of the fundraising on 2019/9/14?
+
+**Hint:** fundraising on 2019/9/14 refers to source = 'Fundraising' where date_received = '2019-09-14'
+
+**Gold SQL**
+
+```sql
+SELECT
+  notes
+FROM income
+WHERE
+  source = 'Fundraising' AND date_received = '2019-09-14'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  notes
+FROM income
+WHERE
+  source = 'Fundraising' AND date_received = '2019-09-14'
+```
+
+- Our result: 1 row(s): ('Secured donations to help pay for speaker gifts.',)
+- Gold result: 1 row(s): ('Secured donations to help pay for speaker gifts.',)
+
+### Q1346: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 11.34s*
+
+**Question:** Tell the phone number of "Carlo Jacobs".
+
+**Hint:** Carlo Jacobs is the full name; full name refers to first_name, last_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  phone
+FROM member
+WHERE
+  first_name = 'Carlo' AND last_name = 'Jacobs'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  phone
+FROM member
+WHERE
+  first_name = 'Carlo' AND last_name = 'Jacobs'
+```
+
+- Our result: 1 row(s): ('928-555-2577',)
+- Gold result: 1 row(s): ('928-555-2577',)
+
+### Q1350: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 17.82s*
+
+**Question:** What is the status of the event which bought "Post Cards, Posters" on 2019/8/20?
+
+**Hint:** 'Post Cards, Posters' is an expense description; on 2019/8/20 refers to expense_date = '2019-8-20'; status of event refers to event_status
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.event_status
+FROM budget AS T1
+INNER JOIN expense AS T2
+  ON T1.budget_id = T2.link_to_budget
+WHERE
+  T2.expense_description = 'Post Cards, Posters' AND T2.expense_date = '2019-08-20'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.event_status
+FROM expense AS T1
+INNER JOIN budget AS T2
+  ON T1.link_to_budget = T2.budget_id
+WHERE
+  T1.expense_description = 'Post Cards, Posters' AND T1.expense_date = '2019-08-20'
+```
+
+- Our result: 1 row(s): ('Closed',)
+- Gold result: 1 row(s): ('Closed',)
+- Fix applied: no such column: T1.event_status -> repaired alias in code
+
+### Q1351: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 15.12s*
+
+**Question:** What was Brent Thomason's major?
+
+**Hint:** Brent Thomason is the full name; full name refers to first_name, last_name; major refers to major_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.first_name = 'Brent' AND T1.last_name = 'Thomason'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.first_name = 'Brent' AND T1.last_name = 'Thomason'
+```
+
+- Our result: 1 row(s): ('Business Education',)
+- Gold result: 1 row(s): ('Business Education',)
+
+### Q1352: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 14.45s*
+
+**Question:** For all the club members from "Business" major, how many of them wear medium size t-shirt?
+
+**Hint:** 'Business' is a major name; wear medium size t-shirt refers to t_shirt_size = 'Medium'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.member_id)
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T2.major_name = 'Business' AND T1.t_shirt_size = 'Medium'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T2.major_name = 'Business' AND T1.t_shirt_size = 'Medium'
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (1,)
+
+### Q1356: FAIL
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 10.31s*
+
+**Question:** Which department was the President of the club in?
+
+**Hint:** 'President' is a position of Student Club
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.department
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.position = 'President'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  position
+FROM member
+WHERE
+  position = 'President'
+```
+
+- Our result: 1 row(s): ('President',)
+- Gold result: 1 row(s): ('Liberal Arts Program',)
+
+### Q1357: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 14.33s*
+
+**Question:** State the date Connor Hilton paid his/her dues.
+
+**Hint:** Connor Hilton is the full name; full name refers to first_name, last_name; date the dues was paid refers to date_received where source = 'Dues';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.date_received
+FROM member AS T1
+INNER JOIN income AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.first_name = 'Connor' AND T1.last_name = 'Hilton' AND T2.source = 'Dues'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  date_received
+FROM income AS T1
+INNER JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T2.first_name = 'Connor' AND T2.last_name = 'Hilton' AND T1.source = 'Dues'
+```
+
+- Our result: 2 row(s): ('2019-10-02',), ('2019-09-12',)
+- Gold result: 2 row(s): ('2019-10-02',), ('2019-09-12',)
+
+### Q1359: FAIL
+
+*student_club, challenging, confidence 1.0, 1 attempt(s), 23.09s*
+
+**Question:** How many times was the budget in Advertisement for "Yearly Kickoff" meeting more than "October Meeting"?
+
+**Hint:** budget in Advertisement refer to category = 'Advertisement' in the budget table; DIVIDE(SUM(amount when event_name = 'Yearly Kickoff'), SUM(amount when event_name = 'October Meeting'))
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.event_name = 'Yearly Kickoff' THEN T1.amount ELSE 0 END) AS REAL) / SUM(CASE WHEN T2.event_name = 'October Meeting' THEN T1.amount ELSE 0 END)
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T1.category = 'Advertisement' AND T2.type = 'Meeting'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(amount) AS yearly_kickoff_amount,
+  SUM(amount) AS october_meeting_amount
+FROM budget
+JOIN event
+  ON budget.link_to_event = event.event_id
+WHERE
+  event.event_name = 'Yearly Kickoff' OR event.event_name = 'October Meeting'
+```
+
+- Our result: 1 row(s): (705, 705)
+- Gold result: 1 row(s): (2.727272727272727,)
+
+### Q1361: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 15.02s*
+
+**Question:** What is the total cost of the pizzas for all the events?
+
+**Hint:** total cost of the pizzas refers to SUM(cost) where expense_description = 'Pizza'
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(cost)
+FROM expense
+WHERE
+  expense_description = 'Pizza'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(cost)
+FROM expense
+WHERE
+  expense_description = 'Pizza'
+```
+
+- Our result: 1 row(s): (600.11,)
+- Gold result: 1 row(s): (600.11,)
+
+### Q1362: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 10.4s*
+
+**Question:** How many cities are there in Orange County, Virginia?
+
+**Hint:** Orange County is the county name, Virginia is the state name
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(city)
+FROM zip_code
+WHERE
+  county = 'Orange County' AND state = 'Virginia'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM zip_code
+WHERE
+  county = 'Orange County' AND state = 'Virginia'
+```
+
+- Our result: 1 row(s): (7,)
+- Gold result: 1 row(s): (7,)
+
+### Q1368: FAIL
+
+*student_club, simple, confidence None, 3 attempt(s), 18.14s*
+
+**Question:** What does the person with the phone number "809-555-3360" major in?
+
+**Hint:** major in refers to major_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.phone = '809-555-3360'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  major_name
+FROM major
+WHERE
+  major_id = (
+    SELECT
+      major_id
+    FROM person
+    WHERE
+      phone_number = '809-555-3360'
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Agricultural Education',)
+- Error: `no such table: person`
+
+### Q1371: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 16.24s*
+
+**Question:** How many members attended the "Women's Soccer" event?
+
+**Hint:** 'Women's Soccer' is the event name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T2.link_to_member)
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.event_name = 'Women''s Soccer'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T2.link_to_member)
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.event_name = 'Women''s Soccer'
+```
+
+- Our result: 1 row(s): (17,)
+- Gold result: 1 row(s): (17,)
+
+### Q1375: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 23.56s*
+
+**Question:** List all the members of the "School of Applied Sciences, Technology and Education" department.
+
+**Hint:** list all members means to list all the full name; full name refers to first_name, last_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T2.department = 'School of Applied Sciences, Technology and Education'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T2.department = 'School of Applied Sciences, Technology and Education'
+```
+
+- Our result: 5 row(s): ('Angela', 'Sanders'), ('Dean', "O'Reilly"), ('Edwardo', 'Ing'), ('Mccauley', 'Nash'), ('Brent', 'Thomason')
+- Gold result: 5 row(s): ('Angela', 'Sanders'), ('Dean', "O'Reilly"), ('Edwardo', 'Ing'), ('Mccauley', 'Nash'), ('Brent', 'Thomason')
+
+### Q1376: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 15.2s*
+
+**Question:** Among all the closed events, which event has the highest spend-to-budget ratio?
+
+**Hint:** closed events refers to event_name where status = 'Closed'; highest spend-to budget ratio refers to MAX(DIVIDE(spent, amount))
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.event_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T2.status = 'Closed'
+ORDER BY
+  T1.spent / T1.amount DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.event_name,
+  MAX(T1.spent / T1.amount) AS spend_to_budget_ratio
+FROM budget AS T1
+JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T2.status = 'Closed'
+GROUP BY
+  T2.event_name
+```
+
+- Our result: 10 row(s): ('November Speaker', 0.9945333333333334), ('October Meeting', 0.9863636363636363), ('October Speaker', 0.995741935483871), ('Officers meeting - November', 1.01), ('Officers meeting - October', 1.01) … (10 rows total)
+- Gold result: 1 row(s): ('September Speaker',)
+- Fix applied: no such column: T1.event_name -> repaired alias in code
+
+### Q1378: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 12.53s*
+
+**Question:** What is the highest amount of budget spend for an event?
+
+**Hint:** highest amount of budget spend refers to MAX(spent)
+
+**Gold SQL**
+
+```sql
+SELECT
+  MAX(spent)
+FROM budget
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  MAX(spent)
+FROM budget
+```
+
+- Our result: 1 row(s): (327.07,)
+- Gold result: 1 row(s): (327.07,)
+
+### Q1380: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 11.06s*
+
+**Question:** What is the total amount of money spent for food?
+
+**Hint:** total amount of money spent refers to SUM(spent); spent for food refers to category = 'Food'
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(spent)
+FROM budget
+WHERE
+  category = 'Food'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(spent)
+FROM budget
+WHERE
+  category = 'Food'
+```
+
+- Our result: 1 row(s): (1234.73,)
+- Gold result: 1 row(s): (1234.73,)
+
+### Q1381: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 15.15s*
+
+**Question:** List the name of students that have attended more than 7 events.
+
+**Hint:** name of students means the full name; full name refers to first_name, last_name; attended more than 7 events refers to COUNT(link_to_event) > 7
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN attendance AS T2
+  ON T1.member_id = T2.link_to_member
+GROUP BY
+  T2.link_to_member
+HAVING
+  COUNT(T2.link_to_event) > 7
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN attendance AS T2
+  ON T1.member_id = T2.link_to_member
+GROUP BY
+  T1.member_id
+HAVING
+  COUNT(T2.link_to_event) > 7
+```
+
+- Our result: 29 row(s): ('Grant', 'Gilmour'), ('Luisa', 'Guidi'), ('Connor', 'Hilton'), ('Sacha', 'Harrison'), ('Carlo', 'Jacobs') … (29 rows total)
+- Gold result: 29 row(s): ('Grant', 'Gilmour'), ('Luisa', 'Guidi'), ('Connor', 'Hilton'), ('Sacha', 'Harrison'), ('Carlo', 'Jacobs') … (29 rows total)
+
+### Q1387: FAIL
+
+*student_club, moderate, confidence 1.0, 3 attempt(s), 39.31s*
+
+**Question:** Which student has been entrusted to manage the budget for the Yearly Kickoff?
+
+**Hint:** name of students means the full name; full name refers to first_name, last_name;'Yearly Kickoff' is an event name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T4.first_name,
+  T4.last_name
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+INNER JOIN member AS T4
+  ON T3.link_to_member = T4.member_id
+WHERE
+  T1.event_name = 'Yearly Kickoff'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T3.first_name,
+  T3.last_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+INNER JOIN member AS T3
+  ON T1.link_to_event = T3.member_id
+WHERE
+  T2.event_name = 'Yearly Kickoff' AND T2.type = 'Budget'
+```
+
+- Our result: 0 rows
+- Gold result: 4 row(s): ('Sacha', 'Harrison'), ('Elijah', 'Allen'), ('Elijah', 'Allen'), ('Sacha', 'Harrison')
+- Fix applied: no such column: T1.event_name
+- Fix applied: no such column: T2.first_name -> repaired alias in code
+- Fix applied: no such column: T2.last_name -> repaired alias in code
+
+### Q1389: FAIL
+
+*student_club, simple, confidence None, 3 attempt(s), 25.53s*
+
+**Question:** Which event has the lowest cost?
+
+**Hint:** event refers to event_name; lowest cost means MIN(cost)
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+ORDER BY
+  T3.cost
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN expense AS T2
+  ON T1.event_id = T2.link_to_event
+ORDER BY
+  T2.cost ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('November Speaker',)
+- Error: `no such column: T2.link_to_event`
+- Fix applied: no such column: T2.link_to_event
+- Fix applied: no such column: T2.link_to_event
+- Fix applied: no such column: T2.link_to_event
+
+### Q1390: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 23.78s*
+
+**Question:** Based on the total cost for all event, what is the percentage of cost for Yearly Kickoff event?
+
+**Hint:** percentage = DIVIDE(SUM(cost where event_name = 'Yearly Kickoff'), SUM(cost)) * 100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T1.event_name = 'Yearly Kickoff' THEN T3.cost ELSE 0 END) AS REAL) * 100 / SUM(T3.cost)
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(cost)
+FROM expense
+```
+
+- Our result: 1 row(s): (2086.05,)
+- Gold result: 1 row(s): (21.530164665276477,)
+- Fix applied: no such column: event_name
+
+### Q1392: FAIL (right logic, extra columns)
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 12.57s*
+
+**Question:** Indicate the top source of funds received in September 2019 based on their amount.
+
+**Hint:** top source funds refers to MAX(source); September 2019 means date_received BETWEEN '2019-09-01' and '2019-09-30'
+
+**Gold SQL**
+
+```sql
+SELECT
+  source
+FROM income
+WHERE
+  date_received BETWEEN '2019-09-01' AND '2019-09-30'
+ORDER BY
+  source DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  source,
+  SUM(amount) AS total_amount
+FROM income
+WHERE
+  date_received BETWEEN '2019-09-01' AND '2019-09-30'
+GROUP BY
+  source
+ORDER BY
+  total_amount DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('School Appropration', 3000)
+- Gold result: 1 row(s): ('School Appropration',)
+
+### Q1394: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 11.93s*
+
+**Question:** How many members of the Student_Club have major in 'Physics Teaching'?
+
+**Hint:** 'Physics Teaching' is the major_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T2.member_id)
+FROM major AS T1
+INNER JOIN member AS T2
+  ON T1.major_id = T2.link_to_major
+WHERE
+  T1.major_name = 'Physics Teaching'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM major
+WHERE
+  major_name = 'Physics Teaching'
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (1,)
+
+### Q1398: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 14.16s*
+
+**Question:** Name the event with the highest amount spent on advertisement.
+
+**Hint:** Name of event refers to event_name; highest amount spent on advertisement refers to MAX(spent) where category = 'Advertisement'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.event_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T1.category = 'Advertisement'
+ORDER BY
+  T1.spent DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.event_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T1.category = 'Advertisement'
+GROUP BY
+  T2.event_name
+ORDER BY
+  SUM(T1.spent) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Yearly Kickoff',)
+- Gold result: 1 row(s): ('Yearly Kickoff',)
+- Fix applied: no such column: T1.event_name -> repaired alias in code
+- Fix applied: logic fix in code: fanout_ranking: ranked event by one budget row -> GROUP BY + ORDER BY SUM(T1.spent)
+
+### Q1399: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 15.78s*
+
+**Question:** Did Maya Mclean attend the 'Women's Soccer' event?
+
+**Hint:** Maya Mclean is the full name; full name refers to first_name, last_name; 'Women's Soccer' is an event_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  CASE WHEN T3.event_name = 'Women''s Soccer' THEN 'YES' END AS result
+FROM member AS T1
+INNER JOIN attendance AS T2
+  ON T1.member_id = T2.link_to_member
+INNER JOIN event AS T3
+  ON T2.link_to_event = T3.event_id
+WHERE
+  T1.first_name = 'Maya' AND T1.last_name = 'Mclean'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM attendance
+JOIN member
+  ON attendance.link_to_member = member.member_id
+JOIN event
+  ON attendance.link_to_event = event.event_id
+WHERE
+  member.first_name = 'Maya'
+  AND member.last_name = 'Mclean'
+  AND event.event_name = 'Women''s Soccer'
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 14 row(s): ('YES',), (None,), (None,), (None,), (None,) … (14 rows total)
+
+### Q1401: FAIL
+
+*student_club, moderate, confidence None, 3 attempt(s), 27.14s*
+
+**Question:** Indicate the cost of posters for 'September Speaker' event.
+
+**Hint:** 'Posters' is the expense description; 'September Speaker' is an event name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.cost
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+WHERE
+  T1.event_name = 'September Speaker' AND T3.expense_description = 'Posters'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(cost)
+FROM expense
+WHERE
+  expense_description = 'Posters'
+  AND link_to_event = (
+    SELECT
+      event_id
+    FROM event
+    WHERE
+      event_name = 'September Speaker'
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (67.81,)
+- Error: `no such column: link_to_event`
+- Fix applied: no such column: link_to_event
+- Fix applied: no such column: link_to_event
+- Fix applied: no such column: link_to_event
+
+### Q1403: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 16.38s*
+
+**Question:** Indicate the name of the closed event whose cost has exceeded the budget the most.
+
+**Hint:** closed events refers to event_name where status = 'Closed'; exceed the budget the most refers to MIN(remaining) where remaining < 0
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.event_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T2.event_id = T1.link_to_event
+WHERE
+  T1.event_status = 'Closed' AND T1.remaining < 0
+ORDER BY
+  T1.remaining
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.event_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T2.status = 'Closed' AND T1.remaining < 0
+GROUP BY
+  T2.event_name
+ORDER BY
+  SUM(T1.remaining) ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('September Speaker',)
+- Gold result: 1 row(s): ('September Speaker',)
+- Fix applied: no such column: T1.event_name -> repaired alias in code
+- Fix applied: logic fix in code: fanout_ranking: ranked event by one budget row -> GROUP BY + ORDER BY SUM(T1.remaining)
+
+### Q1404: FAIL
+
+*student_club, moderate, confidence 1.0, 2 attempt(s), 29.57s*
+
+**Question:** Identify the type of expenses and their total value approved for 'October Meeting' event.
+
+**Hint:** total value refers to SUM(cost); 'October Meeting' is an event name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.type,
+  SUM(T3.cost)
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+WHERE
+  T1.event_name = 'October Meeting'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  expense_description,
+  SUM(cost) AS total_value
+FROM expense
+JOIN budget
+  ON expense.link_to_budget = budget.budget_id
+JOIN event
+  ON budget.link_to_event = event.event_id
+WHERE
+  event.event_name = 'October Meeting'
+  AND event.type = 'Meeting'
+  AND expense.approved = 'true'
+GROUP BY
+  expense_description
+```
+
+- Our result: 3 row(s): ('Pizza', 51.81), ('Posters', 54.25), ('Water, chips, cookies', 69.33)
+- Gold result: 1 row(s): ('Meeting', 175.39)
+- Fix applied: no such column: link_to_event
+
+### Q1405: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 16.58s*
+
+**Question:** Calculate the amount budgeted for 'April Speaker' event. List all the budgeted categories for said event in an ascending order based on their amount budgeted.
+
+**Hint:** 'April Speaker' is an event name; amount budgeted refers to SUM(amount); budget categories refers to category
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.category,
+  SUM(T2.amount)
+FROM event AS T1
+JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.event_name = 'April Speaker'
+GROUP BY
+  T2.category
+ORDER BY
+  SUM(T2.amount) ASC
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  category,
+  SUM(amount) AS total_budgeted
+FROM budget
+JOIN event
+  ON budget.link_to_event = event.event_id
+WHERE
+  event.event_name = 'April Speaker'
+GROUP BY
+  category
+ORDER BY
+  total_budgeted ASC
+```
+
+- Our result: 4 row(s): ('Parking', 10), ('Speaker Gifts', 25), ('Advertisement', 75), ('Food', 150)
+- Gold result: 4 row(s): ('Parking', 10), ('Speaker Gifts', 25), ('Advertisement', 75), ('Food', 150)
+
+## Run 12
+
+- **When:** 16 Nov 2026, 14:27
+- **Results file:** `bench/results/benchmark_20261116_142735.jsonl`
+- **Command:** `python bench/run_benchmark.py --candidates 1`
+- **Code version:** `512ed3b`
+
+### Q1471: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 12.04s*
+
+**Question:** What is the ratio of customers who pay in EUR against customers who pay in CZK?
+
+**Hint:** ratio of customers who pay in EUR against customers who pay in CZK = count(Currency = 'EUR') / count(Currency = 'CZK').
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(Currency = 'EUR', 1, 0)) AS REAL) / SUM(IIF(Currency = 'CZK', 1, 0)) AS ratio
+FROM customers
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN Currency = 'EUR' THEN 1 ELSE 0 END) AS REAL) / COUNT(*)
+FROM customers
+```
+
+- Our result: 1 row(s): (0.06167400881057269,)
+- Gold result: 1 row(s): (0.06572769953051644,)
+
+### Q1472: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 13.31s*
+
+**Question:** In 2012, who had the least consumption in LAM?
+
+**Hint:** Year 2012 can be presented as Between 201201 And 201212; The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.CustomerID
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'LAM' AND SUBSTRING(T2.Date, 1, 4) = '2012'
+GROUP BY
+  T1.CustomerID
+ORDER BY
+  SUM(T2.Consumption) ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.CustomerID
+FROM yearmonth AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Date BETWEEN '201201' AND '201212' AND T2.Segment = 'LAM'
+GROUP BY
+  T1.CustomerID
+ORDER BY
+  SUM(T1.Consumption) ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (47273,)
+- Gold result: 1 row(s): (47273,)
+
+### Q1473: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 12.57s*
+
+**Question:** What was the average monthly consumption of customers in SME for the year 2013?
+
+**Hint:** Average Monthly consumption = AVG(Consumption) / 12; Year 2013 can be presented as Between 201301 And 201312; The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T2.Consumption) / 12
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  SUBSTRING(T2.Date, 1, 4) = '2013' AND T1.Segment = 'SME'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T2.Consumption) / 12 AS AverageMonthlyConsumption
+FROM customers AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'SME' AND T2.Date BETWEEN '201301' AND '201312'
+```
+
+- Our result: 1 row(s): (459.9562642870894,)
+- Gold result: 1 row(s): (459.9562642870894,)
+
+### Q1476: ASKED (best guess wrong)
+
+*debit_card_specializing, challenging, confidence 0.33, 1 attempt(s), 19.72s*
+
+**Question:** What was the difference in gas consumption between CZK-paying customers and EUR-paying customers in 2012?
+
+**Hint:** Year 2012 can be presented as Between 201201 And 201212; The first 4 strings of the Date values in the yearmonth table can represent year; Difference in Consumption = CZK customers consumption in 2012 - EUR customers consumption in 2012
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(IIF(T1.Currency = 'CZK', T2.Consumption, 0)) - SUM(IIF(T1.Currency = 'EUR', T2.Consumption, 0))
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  SUBSTRING(T2.Date, 1, 4) = '2012'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  customers.Currency,
+  SUM(yearmonth.Consumption) AS TotalConsumption
+FROM yearmonth
+INNER JOIN customers
+  ON yearmonth."CustomerID" = customers."CustomerID"
+WHERE
+  yearmonth.Date BETWEEN '201201' AND '201212'
+GROUP BY
+  customers.Currency
+```
+
+- Our result: 2 row(s): ('CZK', 404716983.98), ('EUR', 2192413.81)
+- Gold result: 1 row(s): (402524570.17,)
+- Fix applied: no such column: Currency -> added missing JOIN in code
+- Fix applied: no such column: Currency -> added missing JOIN in code
+- Fix applied: no such column: Currency -> added missing JOIN in code
+
+### Q1479: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 11.11s*
+
+**Question:** Which year recorded the most consumption of gas paid in CZK?
+
+**Hint:** The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUBSTRING(T2.Date, 1, 4)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Currency = 'CZK'
+GROUP BY
+  SUBSTRING(T2.Date, 1, 4)
+ORDER BY
+  SUM(T2.Consumption) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUBSTRING(Date, 1, 4) AS Year
+FROM yearmonth
+JOIN customers
+  ON yearmonth.CustomerID = customers.CustomerID
+WHERE
+  customers.Currency = 'CZK'
+GROUP BY
+  Year
+ORDER BY
+  SUM(Consumption) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('2013',)
+- Gold result: 1 row(s): ('2013',)
+- Fix applied: logic fix in code: ranking_projection: dropped ranking-only column(s) SUM(Consumption) AS TotalConsumption from SELECT
+
+### Q1480: FAIL
+
+*debit_card_specializing, moderate, confidence None, 3 attempt(s), 25.28s*
+
+**Question:** What was the gas consumption peak month for SME customers in 2013?
+
+**Hint:** Year 2013 can be presented as Between 201301 And 201312; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUBSTRING(T2.Date, 5, 2)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  SUBSTRING(T2.Date, 1, 4) = '2013' AND T1.Segment = 'SME'
+GROUP BY
+  SUBSTRING(T2.Date, 5, 2)
+ORDER BY
+  SUM(T2.Consumption) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Month,
+  MAX(T1.Consumption) AS PeakConsumption
+FROM yearmonth AS T1
+JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Segment = 'SME' AND T1.Date BETWEEN '201301' AND '201312'
+GROUP BY
+  T2.Month
+ORDER BY
+  PeakConsumption DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('04',)
+- Error: `no such column: T2.Month`
+- Fix applied: no such column: T2.Month
+- Fix applied: no such column: T2.Month
+- Fix applied: no such column: T2.Month
+
+### Q1481: FAIL
+
+*debit_card_specializing, challenging, confidence None, 3 attempt(s), 71.24s*
+
+**Question:** What is the difference in the annual average consumption of the customers with the least amount of consumption paid in CZK for 2013 between SME and LAM, LAM and KAM, and KAM and SME?
+
+**Hint:** annual average consumption of customer with the lowest consumption in each segment = total consumption per year / the number of customer with lowest consumption in each segment; Difference in annual average = SME's annual average - LAM's annual average; Difference in annual average = LAM's annual average - KAM's annual average; Year 2013 can be presented as Between 201301 And 201312; The first 4 strings of the Date values in the yearmonth table can represent year.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T1.Segment = 'SME', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID) - CAST(SUM(IIF(T1.Segment = 'LAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID),
+  CAST(SUM(IIF(T1.Segment = 'LAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID) - CAST(SUM(IIF(T1.Segment = 'KAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID),
+  CAST(SUM(IIF(T1.Segment = 'KAM', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID) - CAST(SUM(IIF(T1.Segment = 'SME', T2.Consumption, 0)) AS REAL) / COUNT(T1.CustomerID)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Currency = 'CZK'
+  AND T2.Consumption = (
+    SELECT
+      MIN(Consumption)
+    FROM yearmonth
+  )
+  AND T2.Date BETWEEN 201301 AND 201312
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Segment1,
+  Segment2,
+  (
+    AnnualAverageConsumption1 - AnnualAverageConsumption2
+  ) AS Difference
+FROM (
+  SELECT
+    Segment AS Segment1,
+    SUM(Consumption) / COUNT(*) AS AnnualAverageConsumption
+  FROM yearmonth
+  JOIN customers
+    ON yearmonth.CustomerID = customers.CustomerID
+  WHERE
+    STRFTIME('%Y', Date) BETWEEN '201301' AND '201312' AND Currency = 'CZK'
+  GROUP BY
+    Segment
+  ORDER BY
+    AnnualAverageConsumption ASC
+  LIMIT 1
+) AS T1
+JOIN (
+  SELECT
+    Segment AS Segment2,
+    SUM(Consumption) / COUNT(*) AS AnnualAverageConsumption
+  FROM yearmonth
+  JOIN customers
+    ON yearmonth.CustomerID = customers.CustomerID
+  WHERE
+    STRFTIME('%Y', Date) BETWEEN '201301' AND '201312' AND Currency = 'CZK'
+  GROUP BY
+    Segment
+  ORDER BY
+    AnnualAverageConsumption ASC
+  LIMIT 2
+) AS T2
+  ON T1.Segment1 = T2.Segment2
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (0.0, 582092.86, -582092.86)
+- Error: `no such column: AnnualAverageConsumption1`
+- Fix applied: no such column: Segment1
+- Fix applied: no such column: AnnualAverageConsumption1
+
+### Q1482: ASKED (best guess wrong)
+
+*debit_card_specializing, challenging, confidence 0.33, 1 attempt(s), 43.56s*
+
+**Question:** Which of the three segments—SME, LAM and KAM—has the biggest and lowest percentage increases in consumption paid in EUR between 2012 and 2013?
+
+**Hint:** Increase or Decrease = consumption for 2013 - consumption for 2012; Percentage of Increase = (Increase or Decrease / consumption for 2013) * 100%; The first 4 strings of the Date values in the yearmonth table can represent year
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST((
+    SUM(IIF(T1.Segment = 'SME' AND T2.Date LIKE '2013%', T2.Consumption, 0)) - SUM(IIF(T1.Segment = 'SME' AND T2.Date LIKE '2012%', T2.Consumption, 0))
+  ) AS REAL) * 100 / SUM(IIF(T1.Segment = 'SME' AND T2.Date LIKE '2012%', T2.Consumption, 0)),
+  CAST(SUM(IIF(T1.Segment = 'LAM' AND T2.Date LIKE '2013%', T2.Consumption, 0)) - SUM(IIF(T1.Segment = 'LAM' AND T2.Date LIKE '2012%', T2.Consumption, 0)) AS REAL) * 100 / SUM(IIF(T1.Segment = 'LAM' AND T2.Date LIKE '2012%', T2.Consumption, 0)),
+  CAST(SUM(IIF(T1.Segment = 'KAM' AND T2.Date LIKE '2013%', T2.Consumption, 0)) - SUM(IIF(T1.Segment = 'KAM' AND T2.Date LIKE '2012%', T2.Consumption, 0)) AS REAL) * 100 / SUM(IIF(T1.Segment = 'KAM' AND T2.Date LIKE '2012%', T2.Consumption, 0))
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  c.Segment,
+  SUM(CASE WHEN ym.Date LIKE '2012%' THEN ym.Consumption ELSE 0 END) AS consumption_2012,
+  SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) AS consumption_2013,
+  1.0 * (
+    SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) - SUM(CASE WHEN ym.Date LIKE '2012%' THEN ym.Consumption ELSE 0 END)
+  ) / SUM(CASE WHEN ym.Date LIKE '2013%' THEN ym.Consumption ELSE 0 END) * 100 AS percentage_increase
+FROM yearmonth AS ym
+JOIN customers AS c
+  ON ym.CustomerID = c.CustomerID
+WHERE
+  c.Segment IN ('SME', 'LAM', 'KAM')
+GROUP BY
+  c.Segment
+ORDER BY
+  percentage_increase DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('KAM', 135424912.74, 1094385521.07, 87.62548387814994)
+- Gold result: 1 row(s): (545.4018999790969, 681.5824574939339, 708.1124062978664)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q1483: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 12.05s*
+
+**Question:** How much did customer 6 consume in total between August and November 2013?
+
+**Hint:** Between August And November 2013 refers to Between 201308 And 201311; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(Consumption)
+FROM yearmonth
+WHERE
+  CustomerID = 6 AND Date BETWEEN '201308' AND '201311'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(Consumption)
+FROM yearmonth
+WHERE
+  CustomerID = 6 AND Date BETWEEN '201308' AND '201311'
+```
+
+- Our result: 1 row(s): (1224.96,)
+- Gold result: 1 row(s): (1224.96,)
+
+### Q1484: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 11.77s*
+
+**Question:** How many more "discount" gas stations does the Czech Republic have compared to Slovakia?
+
+**Hint:** Czech Republic can be represented as the Country value in gasstations table is 'CZE'; Slovakia can be represented as the Country value in the gasstations table is 'SVK';  Computation of more "discount" gas stations= Total no. of discount gas stations in Czech Republic - Total no. of discount gas stations in Slovakia
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(IIF(Country = 'CZE', 1, 0)) - SUM(IIF(Country = 'SVK', 1, 0))
+FROM gasstations
+WHERE
+  Segment = 'Discount'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN Country = 'CZE' THEN 1 ELSE 0 END) AS CzechDiscountCount,
+  SUM(CASE WHEN Country = 'SVK' THEN 1 ELSE 0 END) AS SlovakDiscountCount
+FROM gasstations
+```
+
+- Our result: 1 row(s): (4836, 880)
+- Gold result: 1 row(s): (176,)
+
+### Q1486: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 20.05s*
+
+**Question:** Is it true that more SMEs pay in Czech koruna than in euros? If so, how many more?
+
+**Hint:** Amount of more SMEs = Total of SMEs pay using Currency CZK - Total of SMEs pay using Currency EUR
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(Currency = 'CZK') - SUM(Currency = 'EUR')
+FROM customers
+WHERE
+  Segment = 'SME'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN Currency = 'CZK' THEN Amount ELSE 0 END) - SUM(CASE WHEN Currency = 'EUR' THEN Amount ELSE 0 END) AS AmountDifference
+FROM customers
+JOIN transactions_1k
+  ON customers.CustomerID = transactions_1k.CustomerID
+WHERE
+  Segment = 'SME'
+```
+
+- Our result: 1 row(s): (3843,)
+- Gold result: 1 row(s): (23505,)
+
+### Q1490: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 2 attempt(s), 19.81s*
+
+**Question:** How many percent of LAM customer consumed more than 46.73?
+
+**Hint:** Percentage of LAM customer consumed more than 46.73 = (Total no. of LAM customers who consumed more than 46.73 / Total no. of LAM customers) * 100.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T2.Consumption > 46.73, 1, 0)) AS REAL) * 100 / COUNT(T1.CustomerID)
+FROM customers AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'LAM'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.Consumption > 46.73 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.CustomerID) AS percentage
+FROM customers AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Segment = 'LAM'
+```
+
+- Our result: 1 row(s): (98.5267932135058,)
+- Gold result: 1 row(s): (98.5267932135058,)
+- Fix applied: no such column: usage
+
+### Q1493: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 13.83s*
+
+**Question:** In February 2012, what percentage of customers consumed more than 528.3?
+
+**Hint:** February 2012 refers to '201202' in yearmonth.date; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(Consumption > 528.3, 1, 0)) AS REAL) * 100 / COUNT(CustomerID)
+FROM yearmonth
+WHERE
+  Date = '201202'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM yearmonth
+WHERE
+  STRFTIME('%Y', Date) = '2012'
+  AND STRFTIME('%m', Date) = '02'
+  AND Consumption > 528.3
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (66.62300807683911,)
+
+### Q1498: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 11.55s*
+
+**Question:** What is the highest monthly consumption in the year 2012?
+
+**Hint:** The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(Consumption)
+FROM yearmonth
+WHERE
+  SUBSTRING(Date, 1, 4) = '2012'
+GROUP BY
+  SUBSTRING(Date, 5, 2)
+ORDER BY
+  SUM(Consumption) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  MAX(Consumption)
+FROM yearmonth
+WHERE
+  Date LIKE '2012%'
+```
+
+- Our result: 1 row(s): (445279.69,)
+- Gold result: 1 row(s): (51787161.74,)
+
+### Q1500: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 12.07s*
+
+**Question:** Please list the product description of the products consumed in September, 2013.
+
+**Hint:** September 2013 refers to 201309; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.Description
+FROM transactions_1k AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+INNER JOIN products AS T3
+  ON T1.ProductID = T3.ProductID
+WHERE
+  T2.Date = '201309'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Description
+FROM products AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.ProductID = T1.ProductID
+WHERE
+  T2.Date LIKE '201309%'
+```
+
+- Our result: 100000 row(s): ('Rucní zadání',), ('Rucní zadání',), ('Rucní zadání',), ('Rucní zadání',), ('Rucní zadání',) … (100000 rows total)
+- Gold result: 976 row(s): ('Nafta',), ('Nafta',), ('Provoz.nápl.',), ('Natural',), ('Nafta',) … (976 rows total)
+- Fix applied: no such column: T2.ProductID -> repaired alias in code
+
+### Q1501: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 15.25s*
+
+**Question:** Please list the countries of the gas stations with transactions taken place in June, 2013.
+
+**Hint:** June 2013 refers to '201306'; The first 4 strings of the Date values in the yearmonth table can represent year; The 5th and 6th string of the date can refer to month;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.Country
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN yearmonth AS T3
+  ON T1.CustomerID = T3.CustomerID
+WHERE
+  T3.Date = '201306'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Country
+FROM gasstations AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.GasStationID = T2.CustomerID
+WHERE
+  T2.Date LIKE '201306%'
+```
+
+- Our result: 2344 row(s): ('CZE',), ('CZE',), ('CZE',), ('CZE',), ('CZE',) … (2344 rows total)
+- Gold result: 2 row(s): ('CZE',), ('SVK',)
+
+### Q1505: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 14.56s*
+
+**Question:** Among the customers who paid in euro, how many of them have a monthly consumption of over 1000?
+
+**Hint:** Pays in euro = Currency = 'EUR'.
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM yearmonth AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Currency = 'EUR' AND T1.Consumption > 1000.00
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM customers
+JOIN yearmonth
+  ON customers.CustomerID = yearmonth.CustomerID
+WHERE
+  customers.Currency = 'EUR' AND yearmonth.Consumption > 1000
+```
+
+- Our result: 1 row(s): (2730,)
+- Gold result: 1 row(s): (2730,)
+
+### Q1506: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 2 attempt(s), 18.47s*
+
+**Question:** Please list the product descriptions of the transactions taken place in the gas stations in the Czech Republic.
+
+**Hint:** Czech Republic can be represented as the Country value in the gasstations table is 'CZE'; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T3.Description
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN products AS T3
+  ON T1.ProductID = T3.ProductID
+WHERE
+  T2.Country = 'CZE'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Description
+FROM transactions_1k AS T1
+INNER JOIN products AS T2
+  ON T1.ProductID = T2.ProductID
+INNER JOIN gasstations AS T3
+  ON T1.GasStationID = T3.GasStationID
+WHERE
+  T3.Country = 'CZE'
+```
+
+- Our result: 933 row(s): ('Nafta',), ('Nafta',), ('Provoz.nápl.',), ('Natural',), ('Nafta',) … (933 rows total)
+- Gold result: 21 row(s): ('Nafta',), ('Provoz.nápl.',), ('Natural',), ('Nemrz.kapal.',), ('Oleje,tuky',) … (21 rows total)
+- Fix applied: no such column: T1.Country
+
+### Q1507: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 2 attempt(s), 15.76s*
+
+**Question:** Please list the disparate time of the transactions taken place in the gas stations from chain no. 11.
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.Time
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T2.ChainID = 11
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  Time
+FROM transactions_1k
+WHERE
+  GasStationID = 11
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('14:29:00',), ('11:55:00',)
+
+### Q1509: PASS
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 12.97s*
+
+**Question:** Among the transactions made in the gas stations in the Czech Republic, how many of them are taken place after 2012/1/1?
+
+**Hint:** Czech Republic can be represented as the Country value in the gasstations table is 'CZE'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.TransactionID)
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T2.Country = 'CZE' AND STRFTIME('%Y', T1.Date) >= '2012'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM transactions_1k
+INNER JOIN gasstations
+  ON transactions_1k."GasStationID" = gasstations."GasStationID"
+WHERE
+  transactions_1k.Date > '2012-01-01' AND gasstations.Country = 'CZE'
+```
+
+- Our result: 1 row(s): (933,)
+- Gold result: 1 row(s): (933,)
+- Fix applied: no such column: Country -> added missing JOIN in code
+
+### Q1514: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 11.92s*
+
+**Question:** What kind of currency did the customer paid at 16:25:00 in 2012/8/24?
+
+**Hint:** '2012/8/24' can be represented by '2012-08-24'; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T3.Currency
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN customers AS T3
+  ON T1.CustomerID = T3.CustomerID
+WHERE
+  T1.Date = '2012-08-24' AND T1.Time = '16:25:00'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  customers.Currency
+FROM transactions_1k
+INNER JOIN customers
+  ON transactions_1k."CustomerID" = customers."CustomerID"
+WHERE
+  transactions_1k.Date = '2012-08-24' AND transactions_1k.Time = '16:25:00'
+```
+
+- Our result: 3 row(s): ('CZK',), ('CZK',), ('CZK',)
+- Gold result: 1 row(s): ('CZK',)
+- Fix applied: no such column: Currency -> added missing JOIN in code
+
+### Q1515: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 12.83s*
+
+**Question:** What segment did the customer have at 2012/8/23 21:20:00?
+
+**Hint:** '2012/8/23' can be represented by '2012-08-23'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Segment
+FROM transactions_1k AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.date = '2012-08-23' AND T1.time = '21:20:00'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Segment
+FROM customers AS T1
+INNER JOIN transactions_1k AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Date = '2012-08-23' AND T2.Time = '21:20:00'
+```
+
+- Our result: 1 row(s): ('KAM',)
+- Gold result: 1 row(s): ('KAM',)
+
+### Q1521: FAIL (right logic, extra columns)
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 14.05s*
+
+**Question:** For all the transactions happened during 8:00-9:00 in 2012/8/26, how many happened in CZE?
+
+**Hint:** Czech Republic can be represented as the Country value in the gasstations table is 'CZE'; '2012/8/26' can be represented by '2012-08-26'; during 8:00-9:00 can be represented as Time BETWEEN '08:00:00' AND '09:00:00'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.TransactionID)
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T1.Date = '2012-08-26'
+  AND T1.Time BETWEEN '08:00:00' AND '09:00:00'
+  AND T2.Country = 'CZE'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  gasstations.Country,
+  COUNT(*)
+FROM transactions_1k
+INNER JOIN gasstations
+  ON transactions_1k."GasStationID" = gasstations."GasStationID"
+WHERE
+  transactions_1k.Time BETWEEN '08:00:00' AND '09:00:00'
+  AND transactions_1k.Date = '2012-08-26'
+  AND gasstations.Country = 'CZE'
+GROUP BY
+  gasstations.Country
+```
+
+- Our result: 1 row(s): ('CZE', 14)
+- Gold result: 1 row(s): (14,)
+- Fix applied: no such column: Country -> added missing JOIN in code
+
+### Q1524: FAIL
+
+*debit_card_specializing, simple, confidence 1.0, 3 attempt(s), 22.48s*
+
+**Question:** What's the nationality of the customer who spent 548.4 in 2012/8/24?
+
+**Hint:** '2012/8/24' can be represented by '2012-08-24'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Country
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+WHERE
+  T1.Date = '2012-08-24' AND T1.Price = 548.4
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Currency
+FROM customers AS T1
+INNER JOIN transactions_1k AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.Date = '2012-08-24' AND T2.Amount = 548.4
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('CZE',)
+
+### Q1525: ASKED (best guess wrong)
+
+*debit_card_specializing, simple, confidence 0.33, 1 attempt(s), 14.55s*
+
+**Question:** What is the percentage of the customers who used EUR in 2012/8/25?
+
+**Hint:** '2012/8/25' can be represented by '2012-08-25'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T2.Currency = 'EUR', 1, 0)) AS REAL) * 100 / COUNT(T1.CustomerID)
+FROM transactions_1k AS T1
+INNER JOIN customers AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Date = '2012-08-25'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM customers
+```
+
+- Our result: 1 row(s): (32461,)
+- Gold result: 1 row(s): (1.6470588235294117,)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q1526: FAIL
+
+*debit_card_specializing, challenging, confidence 1.0, 2 attempt(s), 25.97s*
+
+**Question:** For the customer who paid 634.8 in 2012/8/25, what was the consumption decrease rate from Year 2012 to 2013?
+
+**Hint:** '2012/8/24' can be represented by '2012-08-24'; Consumption decrease rate = (consumption_2012 - consumption_2013) / consumption_2012
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(SUBSTRING(Date, 1, 4) = '2012', Consumption, 0)) - SUM(IIF(SUBSTRING(Date, 1, 4) = '2013', Consumption, 0)) AS REAL) / SUM(IIF(SUBSTRING(Date, 1, 4) = '2012', Consumption, 0))
+FROM yearmonth
+WHERE
+  CustomerID = (
+    SELECT
+      T1.CustomerID
+    FROM transactions_1k AS T1
+    INNER JOIN gasstations AS T2
+      ON T1.GasStationID = T2.GasStationID
+    WHERE
+      T1.Date = '2012-08-25' AND T1.Price = 1513.12
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.Consumption AS consumption_2012,
+  T2.Consumption AS consumption_2013,
+  (
+    T1.Consumption - T2.Consumption
+  ) / T1.Consumption AS consumption_decrease_rate
+FROM yearmonth AS T1
+JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Date = '2012-08-25' AND T2.Date = '2013-08-25' AND T1.Consumption = 634.8
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (None,)
+
+### Q1528: PASS
+
+*debit_card_specializing, simple, confidence 1.0, 1 attempt(s), 11.9s*
+
+**Question:** What is the percentage of "premium" against the overall segment in Country = "SVK"?
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(Country = 'SVK' AND Segment = 'Premium', 1, 0)) AS REAL) * 100 / SUM(IIF(Country = 'SVK', 1, 0))
+FROM gasstations
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN Segment = 'Premium' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) AS Percentage_Premium
+FROM gasstations
+WHERE
+  Country = 'SVK'
+```
+
+- Our result: 1 row(s): (35.68181818181818,)
+- Gold result: 1 row(s): (35.68181818181818,)
+- Fix applied: logic fix in code: derived_projection: kept only the computed column; dropped components Segment; conditional_groupby: removed GROUP BY segment (already split by CASE, not in output)
+
+### Q1529: FAIL
+
+*debit_card_specializing, moderate, confidence 0.67, 1 attempt(s), 19.35s*
+
+**Question:** What is the amount spent by customer "38508" at the gas stations? How much had the customer spent in January 2012?
+
+**Hint:** January 2012 refers to the Date value = '201201'
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(T1.Price),
+  SUM(IIF(T3.Date = '201201', T1.Price, 0))
+FROM transactions_1k AS T1
+INNER JOIN gasstations AS T2
+  ON T1.GasStationID = T2.GasStationID
+INNER JOIN yearmonth AS T3
+  ON T1.CustomerID = T3.CustomerID
+WHERE
+  T1.CustomerID = '38508'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(Amount)
+FROM transactions_1k
+WHERE
+  CustomerID = 38508 AND Date LIKE '201201%'
+```
+
+- Our result: 1 row(s): (None,)
+- Gold result: 1 row(s): (68740.2, 3437.01)
+
+### Q1531: FAIL
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 20.06s*
+
+**Question:** Who is the top spending customer and how much is the average price per single item purchased by this customer? What currency was being used?
+
+**Hint:** average price per single item = Total(price) / Total(amount)
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.CustomerID,
+  SUM(T2.Price / T2.Amount),
+  T1.Currency
+FROM customers AS T1
+INNER JOIN transactions_1k AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T2.CustomerID = (
+    SELECT
+      CustomerID
+    FROM yearmonth
+    ORDER BY
+      Consumption DESC
+    LIMIT 1
+  )
+GROUP BY
+  T2.CustomerID,
+  T1.Currency
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  c.CustomerID,
+  AVG(t.Price) AS AveragePricePerItem,
+  c.Currency
+FROM transactions_1k AS t
+JOIN customers AS c
+  ON t.CustomerID = c.CustomerID
+GROUP BY
+  c.CustomerID
+ORDER BY
+  AveragePricePerItem DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (13665, 5762.49, 'CZK')
+- Gold result: 1 row(s): (12459, 203.8560787354258, 'CZK')
+
+### Q1533: FAIL
+
+*debit_card_specializing, moderate, confidence 1.0, 1 attempt(s), 14.62s*
+
+**Question:** For all the people who paid more than 29.00 per unit of product id No.5. Give their consumption status in the August of 2012.
+
+**Hint:** August of 2012 refers to the Date value = '201208' ; Price per unit of product = Price / Amount;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Consumption
+FROM transactions_1k AS T1
+INNER JOIN yearmonth AS T2
+  ON T1.CustomerID = T2.CustomerID
+WHERE
+  T1.Price / T1.Amount > 29.00 AND T1.ProductID = 5 AND T2.Date = '201208'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CustomerID,
+  SUM(Amount) AS TotalUsage
+FROM transactions_1k
+WHERE
+  ProductID = 5 AND Price / Amount > 29.00 AND STRFTIME('%Y%m', Date) = '201208'
+GROUP BY
+  CustomerID
+```
+
+- Our result: 9 row(s): (5443, 2), (6768, 2), (7626, 1), (18831, 1), (20447, 2) … (9 rows total)
+- Gold result: 10 row(s): (1903.2,), (88265.39,), (1129.2,), (126157.7,), (126157.7,) … (10 rows total)
+
+### Q1312: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 13.39s*
+
+**Question:** What's Angela Sanders's major?
+
+**Hint:** Angela Sanders is the full name; full name refers to first_name, last_name; major refers to major_name.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.first_name = 'Angela' AND T1.last_name = 'Sanders'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.first_name = 'Angela' AND T1.last_name = 'Sanders'
+```
+
+- Our result: 1 row(s): ('Business',)
+- Gold result: 1 row(s): ('Business',)
+
+### Q1317: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 17.76s*
+
+**Question:** Among the students from the Student_Club who attended the event "Women's Soccer", how many of them want a T-shirt that's in medium size?
+
+**Hint:** Women's Soccer is an event name; T-shirt that is in medium size refers to t_shirt_size = 'Medium'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.event_id)
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN member AS T3
+  ON T2.link_to_member = T3.member_id
+WHERE
+  T1.event_name = 'Women''s Soccer' AND T3.t_shirt_size = 'Medium'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM attendance AS T1
+INNER JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T1.link_to_event = 'rec2N69DMcrqN9PJC' AND T2.t_shirt_size = 'Medium'
+```
+
+- Our result: 1 row(s): (7,)
+- Gold result: 1 row(s): (7,)
+
+### Q1322: FAIL
+
+*student_club, moderate, confidence 1.0, 2 attempt(s), 23.69s*
+
+**Question:** Among the events attended by more than 10 members of the Student_Club, how many of them are meetings?
+
+**Hint:** meetings events refers to type = 'Meeting'; attended by more than 10 members refers to COUNT(event_id) > 10
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+GROUP BY
+  T1.event_id
+HAVING
+  COUNT(T2.link_to_event) > 10
+EXCEPT
+SELECT
+  T1.event_name
+FROM event AS T1
+WHERE
+  T1.type = 'Meeting'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(event_id)
+FROM event
+WHERE
+  type = 'Meeting'
+GROUP BY
+  event_id
+HAVING
+  COUNT(event_id) > 10
+```
+
+- Our result: 0 rows
+- Gold result: 9 row(s): ('Community Theater',), ('Food Bank',), ('Football game',), ('Laugh Out Loud',), ('November Speaker',) … (9 rows total)
+
+### Q1323: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 13.91s*
+
+**Question:** List all the names of events that had an attendance of over 20 students but were not fundraisers.
+
+**Hint:** name of events refers to event_name; attendance of over 20 students COUNT(event_id) > 20.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+GROUP BY
+  T1.event_id
+HAVING
+  COUNT(T2.link_to_event) > 20
+EXCEPT
+SELECT
+  T1.event_name
+FROM event AS T1
+WHERE
+  T1.type = 'Fundraiser'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.type <> 'Fundraiser'
+GROUP BY
+  T1.event_name
+HAVING
+  COUNT(T1.event_id) > 20
+```
+
+- Our result: 9 row(s): ('Football game',), ('November Meeting',), ('November Speaker',), ('October Meeting',), ('October Speaker',) … (9 rows total)
+- Gold result: 8 row(s): ('November Meeting',), ('November Speaker',), ('October Meeting',), ('October Speaker',), ('Registration',) … (8 rows total)
+- Fix applied: no such column: T2.event_id -> repaired alias in code
+
+### Q1331: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 13.83s*
+
+**Question:** What is the amount of the funds that the Vice President received?
+
+**Hint:** 'Vice President' is a position of Student Club; funds received refers to amount.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.amount
+FROM member AS T1
+INNER JOIN income AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.position = 'Vice President'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(amount)
+FROM income AS T1
+INNER JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T2.position = 'Vice President'
+```
+
+- Our result: 1 row(s): (50,)
+- Gold result: 1 row(s): (50,)
+
+### Q1334: FAIL
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 14.08s*
+
+**Question:** List the full name of the Student_Club members that grew up in Illinois state.
+
+**Hint:** full name of member refers to first_name, last_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN zip_code AS T2
+  ON T1.zip = T2.zip_code
+WHERE
+  T2.state = 'Illinois'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN zip_code AS T2
+  ON T1.zip = T2.zip_code
+WHERE
+  T2.state = 'Illinois' AND T1.position = 'Member'
+```
+
+- Our result: 2 row(s): ('Trent', 'Smith'), ('Tyler', 'Hewitt')
+- Gold result: 3 row(s): ('Trent', 'Smith'), ('Tyler', 'Hewitt'), ('Annabella', 'Warren')
+
+### Q1338: FAIL
+
+*student_club, moderate, confidence 1.0, 2 attempt(s), 30.53s*
+
+**Question:** Was each expense in October Meeting on October 8, 2019 approved?
+
+**Hint:** event_name = 'October Meeting' where event_date = '2019-10-08'; approved = True means expenses was approved; approved = False means expenses was not approved
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.approved
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+WHERE
+  T1.event_name = 'October Meeting' AND T1.event_date LIKE '2019-10-08%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  approved
+FROM expense
+JOIN budget
+  ON expense.link_to_budget = budget.budget_id
+JOIN event
+  ON budget.link_to_event = event.event_id
+WHERE
+  event.event_name = 'October Meeting'
+  AND event.event_date = '2019-10-08'
+  AND expense.approved = 'true'
+```
+
+- Our result: 0 rows
+- Gold result: 3 row(s): ('true',), ('true',), ('true',)
+
+### Q1339: FAIL
+
+*student_club, challenging, confidence 1.0, 1 attempt(s), 26.45s*
+
+**Question:** Calculate the total average cost that Elijah Allen spent in the events on September and October.
+
+**Hint:** Elijah Allen is the full name; full name refers to first_name, last_name; The 5th and 6th string of the expense_date in the expense table can refer to month; events in September and October refers to month(expense_date) = 9 OR month(expense_date) = 10
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T2.cost)
+FROM member AS T1
+INNER JOIN expense AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.last_name = 'Allen'
+  AND T1.first_name = 'Elijah'
+  AND (
+    SUBSTRING(T2.expense_date, 6, 2) = '09'
+    OR SUBSTRING(T2.expense_date, 6, 2) = '10'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T3.cost) AS average_cost
+FROM member AS T1
+JOIN attendance AS T2
+  ON T1.member_id = T2.link_to_member
+JOIN expense AS T3
+  ON T2.link_to_event = T2.link_to_event
+WHERE
+  T1.first_name = 'Elijah'
+  AND T1.last_name = 'Allen'
+  AND STRFTIME('%m', T3.expense_date) IN ('09', '10')
+GROUP BY
+  T1.member_id
+```
+
+- Our result: 1 row(s): (68.0040909090909,)
+- Gold result: 1 row(s): (74.0775,)
+- Fix applied: no such column: T2.cost -> repaired alias in code
+- Fix applied: no such column: T3.link_to_event -> repaired alias in code
+
+### Q1340: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 19.79s*
+
+**Question:** Calculate the difference of the total amount spent in all events by the Student_Club in year 2019 and 2020.
+
+**Hint:** The first 4 strings of the event_date values in the event table can represent year; The difference of the total amount spent = SUBTRACT(spent where YEAR(event_date) = 2019, spent where YEAR(event_date) = 2020)
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN SUBSTRING(T1.event_date, 1, 4) = '2019' THEN T2.spent ELSE 0 END) - SUM(CASE WHEN SUBSTRING(T1.event_date, 1, 4) = '2020' THEN T2.spent ELSE 0 END) AS num
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(
+    CASE WHEN SUBSTRING(event.event_date, 1, 4) = '2019' THEN budget.spent ELSE 0 END
+  ) - SUM(
+    CASE WHEN SUBSTRING(event.event_date, 1, 4) = '2020' THEN budget.spent ELSE 0 END
+  ) AS total_spent_difference
+FROM budget
+INNER JOIN event
+  ON budget."link_to_event" = event."event_id"
+WHERE
+  budget.event_status = 'Closed'
+```
+
+- Our result: 1 row(s): (1857.55,)
+- Gold result: 1 row(s): (2086.05,)
+- Fix applied: no such column: event_date -> added missing JOIN in code
+
+### Q1344: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 12.93s*
+
+**Question:** What was the notes of the fundraising on 2019/9/14?
+
+**Hint:** fundraising on 2019/9/14 refers to source = 'Fundraising' where date_received = '2019-09-14'
+
+**Gold SQL**
+
+```sql
+SELECT
+  notes
+FROM income
+WHERE
+  source = 'Fundraising' AND date_received = '2019-09-14'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  notes
+FROM income
+WHERE
+  source = 'Fundraising' AND date_received = '2019-09-14'
+```
+
+- Our result: 1 row(s): ('Secured donations to help pay for speaker gifts.',)
+- Gold result: 1 row(s): ('Secured donations to help pay for speaker gifts.',)
+
+### Q1346: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 12.31s*
+
+**Question:** Tell the phone number of "Carlo Jacobs".
+
+**Hint:** Carlo Jacobs is the full name; full name refers to first_name, last_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  phone
+FROM member
+WHERE
+  first_name = 'Carlo' AND last_name = 'Jacobs'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  phone
+FROM member
+WHERE
+  first_name = 'Carlo' AND last_name = 'Jacobs'
+```
+
+- Our result: 1 row(s): ('928-555-2577',)
+- Gold result: 1 row(s): ('928-555-2577',)
+
+### Q1350: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 20.66s*
+
+**Question:** What is the status of the event which bought "Post Cards, Posters" on 2019/8/20?
+
+**Hint:** 'Post Cards, Posters' is an expense description; on 2019/8/20 refers to expense_date = '2019-8-20'; status of event refers to event_status
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.event_status
+FROM budget AS T1
+INNER JOIN expense AS T2
+  ON T1.budget_id = T2.link_to_budget
+WHERE
+  T2.expense_description = 'Post Cards, Posters' AND T2.expense_date = '2019-08-20'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.event_status
+FROM expense AS T1
+INNER JOIN budget AS T2
+  ON T1.link_to_budget = T2.budget_id
+WHERE
+  T1.expense_description = 'Post Cards, Posters' AND T1.expense_date = '2019-08-20'
+```
+
+- Our result: 1 row(s): ('Closed',)
+- Gold result: 1 row(s): ('Closed',)
+- Fix applied: no such column: T1.event_status -> repaired alias in code
+
+### Q1351: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 16.11s*
+
+**Question:** What was Brent Thomason's major?
+
+**Hint:** Brent Thomason is the full name; full name refers to first_name, last_name; major refers to major_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.first_name = 'Brent' AND T1.last_name = 'Thomason'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.first_name = 'Brent' AND T1.last_name = 'Thomason'
+```
+
+- Our result: 1 row(s): ('Business Education',)
+- Gold result: 1 row(s): ('Business Education',)
+
+### Q1352: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 15.26s*
+
+**Question:** For all the club members from "Business" major, how many of them wear medium size t-shirt?
+
+**Hint:** 'Business' is a major name; wear medium size t-shirt refers to t_shirt_size = 'Medium'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.member_id)
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T2.major_name = 'Business' AND T1.t_shirt_size = 'Medium'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T2.major_name = 'Business' AND T1.t_shirt_size = 'Medium'
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (1,)
+
+### Q1356: FAIL
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 11.82s*
+
+**Question:** Which department was the President of the club in?
+
+**Hint:** 'President' is a position of Student Club
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.department
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.position = 'President'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  position
+FROM member
+WHERE
+  position = 'President'
+```
+
+- Our result: 1 row(s): ('President',)
+- Gold result: 1 row(s): ('Liberal Arts Program',)
+
+### Q1357: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 15.51s*
+
+**Question:** State the date Connor Hilton paid his/her dues.
+
+**Hint:** Connor Hilton is the full name; full name refers to first_name, last_name; date the dues was paid refers to date_received where source = 'Dues';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.date_received
+FROM member AS T1
+INNER JOIN income AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.first_name = 'Connor' AND T1.last_name = 'Hilton' AND T2.source = 'Dues'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  date_received
+FROM income AS T1
+INNER JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T2.first_name = 'Connor' AND T2.last_name = 'Hilton' AND T1.source = 'Dues'
+```
+
+- Our result: 2 row(s): ('2019-10-02',), ('2019-09-12',)
+- Gold result: 2 row(s): ('2019-10-02',), ('2019-09-12',)
+
+### Q1359: FAIL
+
+*student_club, challenging, confidence 1.0, 1 attempt(s), 26.24s*
+
+**Question:** How many times was the budget in Advertisement for "Yearly Kickoff" meeting more than "October Meeting"?
+
+**Hint:** budget in Advertisement refer to category = 'Advertisement' in the budget table; DIVIDE(SUM(amount when event_name = 'Yearly Kickoff'), SUM(amount when event_name = 'October Meeting'))
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.event_name = 'Yearly Kickoff' THEN T1.amount ELSE 0 END) AS REAL) / SUM(CASE WHEN T2.event_name = 'October Meeting' THEN T1.amount ELSE 0 END)
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T1.category = 'Advertisement' AND T2.type = 'Meeting'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(amount) AS yearly_kickoff_amount,
+  SUM(amount) AS october_meeting_amount
+FROM budget
+JOIN event
+  ON budget.link_to_event = event.event_id
+WHERE
+  event.event_name = 'Yearly Kickoff' OR event.event_name = 'October Meeting'
+```
+
+- Our result: 1 row(s): (705, 705)
+- Gold result: 1 row(s): (2.727272727272727,)
+
+### Q1361: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 16.23s*
+
+**Question:** What is the total cost of the pizzas for all the events?
+
+**Hint:** total cost of the pizzas refers to SUM(cost) where expense_description = 'Pizza'
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(cost)
+FROM expense
+WHERE
+  expense_description = 'Pizza'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(cost)
+FROM expense
+WHERE
+  expense_description = 'Pizza'
+```
+
+- Our result: 1 row(s): (600.11,)
+- Gold result: 1 row(s): (600.11,)
+
+### Q1362: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 10.89s*
+
+**Question:** How many cities are there in Orange County, Virginia?
+
+**Hint:** Orange County is the county name, Virginia is the state name
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(city)
+FROM zip_code
+WHERE
+  county = 'Orange County' AND state = 'Virginia'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM zip_code
+WHERE
+  county = 'Orange County' AND state = 'Virginia'
+```
+
+- Our result: 1 row(s): (7,)
+- Gold result: 1 row(s): (7,)
+
+### Q1368: FAIL
+
+*student_club, simple, confidence None, 3 attempt(s), 19.96s*
+
+**Question:** What does the person with the phone number "809-555-3360" major in?
+
+**Hint:** major in refers to major_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.major_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T1.phone = '809-555-3360'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  major_name
+FROM major
+WHERE
+  major_id = (
+    SELECT
+      major_id
+    FROM person
+    WHERE
+      phone_number = '809-555-3360'
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Agricultural Education',)
+- Error: `no such table: person`
+
+### Q1371: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 17.18s*
+
+**Question:** How many members attended the "Women's Soccer" event?
+
+**Hint:** 'Women's Soccer' is the event name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T2.link_to_member)
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.event_name = 'Women''s Soccer'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T2.link_to_member)
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.event_name = 'Women''s Soccer'
+```
+
+- Our result: 1 row(s): (17,)
+- Gold result: 1 row(s): (17,)
+
+### Q1375: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 26.91s*
+
+**Question:** List all the members of the "School of Applied Sciences, Technology and Education" department.
+
+**Hint:** list all members means to list all the full name; full name refers to first_name, last_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T2.department = 'School of Applied Sciences, Technology and Education'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN major AS T2
+  ON T1.link_to_major = T2.major_id
+WHERE
+  T2.department = 'School of Applied Sciences, Technology and Education'
+```
+
+- Our result: 5 row(s): ('Angela', 'Sanders'), ('Dean', "O'Reilly"), ('Edwardo', 'Ing'), ('Mccauley', 'Nash'), ('Brent', 'Thomason')
+- Gold result: 5 row(s): ('Angela', 'Sanders'), ('Dean', "O'Reilly"), ('Edwardo', 'Ing'), ('Mccauley', 'Nash'), ('Brent', 'Thomason')
+
+### Q1376: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 17.56s*
+
+**Question:** Among all the closed events, which event has the highest spend-to-budget ratio?
+
+**Hint:** closed events refers to event_name where status = 'Closed'; highest spend-to budget ratio refers to MAX(DIVIDE(spent, amount))
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.event_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T2.status = 'Closed'
+ORDER BY
+  T1.spent / T1.amount DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.event_name,
+  MAX(T1.spent / T1.amount) AS spend_to_budget_ratio
+FROM budget AS T1
+JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T2.status = 'Closed'
+GROUP BY
+  T2.event_name
+```
+
+- Our result: 10 row(s): ('November Speaker', 0.9945333333333334), ('October Meeting', 0.9863636363636363), ('October Speaker', 0.995741935483871), ('Officers meeting - November', 1.01), ('Officers meeting - October', 1.01) … (10 rows total)
+- Gold result: 1 row(s): ('September Speaker',)
+- Fix applied: no such column: T1.event_name -> repaired alias in code
+
+### Q1378: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 14.22s*
+
+**Question:** What is the highest amount of budget spend for an event?
+
+**Hint:** highest amount of budget spend refers to MAX(spent)
+
+**Gold SQL**
+
+```sql
+SELECT
+  MAX(spent)
+FROM budget
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  MAX(spent)
+FROM budget
+```
+
+- Our result: 1 row(s): (327.07,)
+- Gold result: 1 row(s): (327.07,)
+
+### Q1380: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 11.49s*
+
+**Question:** What is the total amount of money spent for food?
+
+**Hint:** total amount of money spent refers to SUM(spent); spent for food refers to category = 'Food'
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(spent)
+FROM budget
+WHERE
+  category = 'Food'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(spent)
+FROM budget
+WHERE
+  category = 'Food'
+```
+
+- Our result: 1 row(s): (1234.73,)
+- Gold result: 1 row(s): (1234.73,)
+
+### Q1381: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 16.47s*
+
+**Question:** List the name of students that have attended more than 7 events.
+
+**Hint:** name of students means the full name; full name refers to first_name, last_name; attended more than 7 events refers to COUNT(link_to_event) > 7
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN attendance AS T2
+  ON T1.member_id = T2.link_to_member
+GROUP BY
+  T2.link_to_member
+HAVING
+  COUNT(T2.link_to_event) > 7
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name
+FROM member AS T1
+INNER JOIN attendance AS T2
+  ON T1.member_id = T2.link_to_member
+GROUP BY
+  T1.member_id
+HAVING
+  COUNT(T2.link_to_event) > 7
+```
+
+- Our result: 29 row(s): ('Grant', 'Gilmour'), ('Luisa', 'Guidi'), ('Connor', 'Hilton'), ('Sacha', 'Harrison'), ('Carlo', 'Jacobs') … (29 rows total)
+- Gold result: 29 row(s): ('Grant', 'Gilmour'), ('Luisa', 'Guidi'), ('Connor', 'Hilton'), ('Sacha', 'Harrison'), ('Carlo', 'Jacobs') … (29 rows total)
+
+### Q1387: FAIL
+
+*student_club, moderate, confidence 1.0, 3 attempt(s), 45.04s*
+
+**Question:** Which student has been entrusted to manage the budget for the Yearly Kickoff?
+
+**Hint:** name of students means the full name; full name refers to first_name, last_name;'Yearly Kickoff' is an event name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T4.first_name,
+  T4.last_name
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+INNER JOIN member AS T4
+  ON T3.link_to_member = T4.member_id
+WHERE
+  T1.event_name = 'Yearly Kickoff'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T3.first_name,
+  T3.last_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+INNER JOIN member AS T3
+  ON T1.link_to_event = T3.member_id
+WHERE
+  T2.event_name = 'Yearly Kickoff' AND T2.type = 'Budget'
+```
+
+- Our result: 0 rows
+- Gold result: 4 row(s): ('Sacha', 'Harrison'), ('Elijah', 'Allen'), ('Elijah', 'Allen'), ('Sacha', 'Harrison')
+- Fix applied: no such column: T1.event_name
+- Fix applied: no such column: T2.first_name -> repaired alias in code
+- Fix applied: no such column: T2.last_name -> repaired alias in code
+
+### Q1389: FAIL
+
+*student_club, simple, confidence None, 3 attempt(s), 28.74s*
+
+**Question:** Which event has the lowest cost?
+
+**Hint:** event refers to event_name; lowest cost means MIN(cost)
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+ORDER BY
+  T3.cost
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.event_name
+FROM event AS T1
+INNER JOIN expense AS T2
+  ON T1.event_id = T2.link_to_event
+ORDER BY
+  T2.cost ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('November Speaker',)
+- Error: `no such column: T2.link_to_event`
+- Fix applied: no such column: T2.link_to_event
+- Fix applied: no such column: T2.link_to_event
+- Fix applied: no such column: T2.link_to_event
+
+### Q1390: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 27.02s*
+
+**Question:** Based on the total cost for all event, what is the percentage of cost for Yearly Kickoff event?
+
+**Hint:** percentage = DIVIDE(SUM(cost where event_name = 'Yearly Kickoff'), SUM(cost)) * 100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T1.event_name = 'Yearly Kickoff' THEN T3.cost ELSE 0 END) AS REAL) * 100 / SUM(T3.cost)
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(cost)
+FROM expense
+```
+
+- Our result: 1 row(s): (2086.05,)
+- Gold result: 1 row(s): (21.530164665276477,)
+- Fix applied: no such column: event_name
+
+### Q1392: FAIL (right logic, extra columns)
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 13.38s*
+
+**Question:** Indicate the top source of funds received in September 2019 based on their amount.
+
+**Hint:** top source funds refers to MAX(source); September 2019 means date_received BETWEEN '2019-09-01' and '2019-09-30'
+
+**Gold SQL**
+
+```sql
+SELECT
+  source
+FROM income
+WHERE
+  date_received BETWEEN '2019-09-01' AND '2019-09-30'
+ORDER BY
+  source DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  source,
+  SUM(amount) AS total_amount
+FROM income
+WHERE
+  date_received BETWEEN '2019-09-01' AND '2019-09-30'
+GROUP BY
+  source
+ORDER BY
+  total_amount DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('School Appropration', 3000)
+- Gold result: 1 row(s): ('School Appropration',)
+
+### Q1394: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 12.99s*
+
+**Question:** How many members of the Student_Club have major in 'Physics Teaching'?
+
+**Hint:** 'Physics Teaching' is the major_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T2.member_id)
+FROM major AS T1
+INNER JOIN member AS T2
+  ON T1.major_id = T2.link_to_major
+WHERE
+  T1.major_name = 'Physics Teaching'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM major
+WHERE
+  major_name = 'Physics Teaching'
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (1,)
+
+### Q1398: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 15.34s*
+
+**Question:** Name the event with the highest amount spent on advertisement.
+
+**Hint:** Name of event refers to event_name; highest amount spent on advertisement refers to MAX(spent) where category = 'Advertisement'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.event_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T1.category = 'Advertisement'
+ORDER BY
+  T1.spent DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.event_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T1.category = 'Advertisement'
+GROUP BY
+  T2.event_name
+ORDER BY
+  SUM(T1.spent) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Yearly Kickoff',)
+- Gold result: 1 row(s): ('Yearly Kickoff',)
+- Fix applied: no such column: T1.event_name -> repaired alias in code
+- Fix applied: logic fix in code: fanout_ranking: ranked event by one budget row -> GROUP BY + ORDER BY SUM(T1.spent)
+
+### Q1399: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 17.45s*
+
+**Question:** Did Maya Mclean attend the 'Women's Soccer' event?
+
+**Hint:** Maya Mclean is the full name; full name refers to first_name, last_name; 'Women's Soccer' is an event_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  CASE WHEN T3.event_name = 'Women''s Soccer' THEN 'YES' END AS result
+FROM member AS T1
+INNER JOIN attendance AS T2
+  ON T1.member_id = T2.link_to_member
+INNER JOIN event AS T3
+  ON T2.link_to_event = T3.event_id
+WHERE
+  T1.first_name = 'Maya' AND T1.last_name = 'Mclean'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM attendance
+JOIN member
+  ON attendance.link_to_member = member.member_id
+JOIN event
+  ON attendance.link_to_event = event.event_id
+WHERE
+  member.first_name = 'Maya'
+  AND member.last_name = 'Mclean'
+  AND event.event_name = 'Women''s Soccer'
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 14 row(s): ('YES',), (None,), (None,), (None,), (None,) … (14 rows total)
+
+### Q1401: FAIL
+
+*student_club, moderate, confidence None, 3 attempt(s), 30.56s*
+
+**Question:** Indicate the cost of posters for 'September Speaker' event.
+
+**Hint:** 'Posters' is the expense description; 'September Speaker' is an event name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.cost
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+WHERE
+  T1.event_name = 'September Speaker' AND T3.expense_description = 'Posters'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(cost)
+FROM expense
+WHERE
+  expense_description = 'Posters'
+  AND link_to_event = (
+    SELECT
+      event_id
+    FROM event
+    WHERE
+      event_name = 'September Speaker'
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (67.81,)
+- Error: `no such column: link_to_event`
+- Fix applied: no such column: link_to_event
+- Fix applied: no such column: link_to_event
+- Fix applied: no such column: link_to_event
+
+### Q1403: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 16.54s*
+
+**Question:** Indicate the name of the closed event whose cost has exceeded the budget the most.
+
+**Hint:** closed events refers to event_name where status = 'Closed'; exceed the budget the most refers to MIN(remaining) where remaining < 0
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.event_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T2.event_id = T1.link_to_event
+WHERE
+  T1.event_status = 'Closed' AND T1.remaining < 0
+ORDER BY
+  T1.remaining
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.event_name
+FROM budget AS T1
+INNER JOIN event AS T2
+  ON T1.link_to_event = T2.event_id
+WHERE
+  T2.status = 'Closed' AND T1.remaining < 0
+GROUP BY
+  T2.event_name
+ORDER BY
+  SUM(T1.remaining) ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('September Speaker',)
+- Gold result: 1 row(s): ('September Speaker',)
+- Fix applied: no such column: T1.event_name -> repaired alias in code
+- Fix applied: logic fix in code: fanout_ranking: ranked event by one budget row -> GROUP BY + ORDER BY SUM(T1.remaining)
+
+### Q1404: FAIL
+
+*student_club, moderate, confidence 1.0, 2 attempt(s), 30.35s*
+
+**Question:** Identify the type of expenses and their total value approved for 'October Meeting' event.
+
+**Hint:** total value refers to SUM(cost); 'October Meeting' is an event name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.type,
+  SUM(T3.cost)
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN expense AS T3
+  ON T2.budget_id = T3.link_to_budget
+WHERE
+  T1.event_name = 'October Meeting'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  expense_description,
+  SUM(cost) AS total_value
+FROM expense
+JOIN budget
+  ON expense.link_to_budget = budget.budget_id
+JOIN event
+  ON budget.link_to_event = event.event_id
+WHERE
+  event.event_name = 'October Meeting'
+  AND event.type = 'Meeting'
+  AND expense.approved = 'true'
+GROUP BY
+  expense_description
+```
+
+- Our result: 3 row(s): ('Pizza', 51.81), ('Posters', 54.25), ('Water, chips, cookies', 69.33)
+- Gold result: 1 row(s): ('Meeting', 175.39)
+- Fix applied: no such column: link_to_event
+
+### Q1405: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 17.1s*
+
+**Question:** Calculate the amount budgeted for 'April Speaker' event. List all the budgeted categories for said event in an ascending order based on their amount budgeted.
+
+**Hint:** 'April Speaker' is an event name; amount budgeted refers to SUM(amount); budget categories refers to category
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.category,
+  SUM(T2.amount)
+FROM event AS T1
+JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.event_name = 'April Speaker'
+GROUP BY
+  T2.category
+ORDER BY
+  SUM(T2.amount) ASC
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  category,
+  SUM(amount) AS total_budgeted
+FROM budget
+JOIN event
+  ON budget.link_to_event = event.event_id
+WHERE
+  event.event_name = 'April Speaker'
+GROUP BY
+  category
+ORDER BY
+  total_budgeted ASC
+```
+
+- Our result: 4 row(s): ('Parking', 10), ('Speaker Gifts', 25), ('Advertisement', 75), ('Food', 150)
+- Gold result: 4 row(s): ('Parking', 10), ('Speaker Gifts', 25), ('Advertisement', 75), ('Food', 150)
+
+### Q1409: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 12.84s*
+
+**Question:** Mention the total expense used on 8/20/2019.
+
+**Hint:** total expense refers SUM(cost) where expense_date = '2019-08-20'
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(cost)
+FROM expense
+WHERE
+  expense_date = '2019-08-20'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(cost)
+FROM expense
+WHERE
+  expense_date = '2019-08-20'
+```
+
+- Our result: 1 row(s): (122.06,)
+- Gold result: 1 row(s): (122.06,)
+
+### Q1410: PASS
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 21.58s*
+
+**Question:** List out the full name and total cost that member id "rec4BLdZHS2Blfp4v" incurred?
+
+**Hint:** full name refers to first_name, last name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name,
+  SUM(T2.cost)
+FROM member AS T1
+INNER JOIN expense AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.member_id = 'rec4BLdZHS2Blfp4v'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.first_name,
+  T2.last_name,
+  SUM(T1.cost) AS total_cost
+FROM expense AS T1
+JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T2.member_id = 'rec4BLdZHS2Blfp4v'
+```
+
+- Our result: 1 row(s): ('Sacha', 'Harrison', 866.25)
+- Gold result: 1 row(s): ('Sacha', 'Harrison', 866.25)
+
+### Q1411: PASS
+
+*student_club, simple, confidence 1.0, 2 attempt(s), 28.27s*
+
+**Question:** State what kind of expenses that Sacha Harrison incurred?
+
+**Hint:** kind of expenses refers to expense_description; Sacha Harrison is the full name; full name refers to first_name, last_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.expense_description
+FROM member AS T1
+INNER JOIN expense AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.first_name = 'Sacha' AND T1.last_name = 'Harrison'
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  T2.expense_description
+FROM member AS T1
+INNER JOIN expense AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.first_name = 'Sacha' AND T1.last_name = 'Harrison'
+```
+
+- Our result: 7 row(s): ('Post Cards, Posters',), ('Posters',), ('Water, chips, cookies',), ('Pizza',), ('Travel Mug',) … (7 rows total)
+- Gold result: 12 row(s): ('Post Cards, Posters',), ('Posters',), ('Water, chips, cookies',), ('Posters',), ('Water, chips, cookies',) … (12 rows total)
+
+### Q1422: FAIL
+
+*student_club, simple, confidence 1.0, 1 attempt(s), 13.54s*
+
+**Question:** State the category of events were held at MU 215.
+
+**Hint:** 'MU 215' is the location of event; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.category
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.location = 'MU 215'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  type,
+  COUNT(event_id)
+FROM event
+WHERE
+  location = 'MU 215'
+GROUP BY
+  type
+```
+
+- Our result: 3 row(s): ('Election', 2), ('Guest Speaker', 7), ('Meeting', 10)
+- Gold result: 4 row(s): ('Advertisement',), ('Food',), ('Speaker Gifts',), ('Parking',)
+
+### Q1426: PASS
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 17.33s*
+
+**Question:** List the last name of members with a major in environmental engineering and include its department and college name.
+
+**Hint:** 'Environmental Engineering' is the major_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.last_name,
+  T1.department,
+  T1.college
+FROM major AS T1
+INNER JOIN member AS T2
+  ON T1.major_id = T2.link_to_major
+WHERE
+  T2.position = 'Member' AND T1.major_name = 'Environmental Engineering'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.last_name,
+  T1.department,
+  T1.college
+FROM major AS T1
+INNER JOIN member AS T2
+  ON T1.major_id = T2.link_to_major
+WHERE
+  T1.major_name = 'Environmental Engineering'
+```
+
+- Our result: 2 row(s): ('Hewitt', 'Civil and Environmental Engineering Department', 'College of Engineering'), ('Mclean', 'Civil and Environmental Engineering Department', 'College of Engineering')
+- Gold result: 2 row(s): ('Hewitt', 'Civil and Environmental Engineering Department', 'College of Engineering'), ('Mclean', 'Civil and Environmental Engineering Department', 'College of Engineering')
+- Fix applied: no such column: T2.department -> repaired alias in code
+- Fix applied: no such column: T2.college -> repaired alias in code
+
+### Q1427: FAIL
+
+*student_club, moderate, confidence 1.0, 1 attempt(s), 16.78s*
+
+**Question:** What are the budget category of the events located at MU 215 and a guest speaker type with a 0 budget spent?
+
+**Hint:** budget category refers to category; events located at refers to location; type = 'Guest Speaker'; 0 budget spent refers to spent = 0; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.category,
+  T1.type
+FROM event AS T1
+INNER JOIN budget AS T2
+  ON T1.event_id = T2.link_to_event
+WHERE
+  T1.location = 'MU 215' AND T2.spent = 0 AND T1.type = 'Guest Speaker'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  category
+FROM budget
+WHERE
+  link_to_event IN (
+    SELECT
+      event_id
+    FROM event
+    WHERE
+      location = 'MU 215' AND type = 'Guest Speaker'
+  )
+  AND spent = 0
+```
+
+- Our result: 16 row(s): ('Speaker Gifts',), ('Food',), ('Parking',), ('Advertisement',), ('Speaker Gifts',) … (16 rows total)
+- Gold result: 4 row(s): ('Speaker Gifts', 'Guest Speaker'), ('Food', 'Guest Speaker'), ('Parking', 'Guest Speaker'), ('Advertisement', 'Guest Speaker')
+
+### Q1432: FAIL
+
+*student_club, moderate, confidence None, 3 attempt(s), 32.51s*
+
+**Question:** Among the members with t-shirt size of medium, what is the percentage of the amount 50 received by the Student_Club?
+
+**Hint:** t_shirt_size = 'Medium' where position = 'Member'; percentage = DIVIDE(COUNT(amount = 50), COUNT(member_id)) * 100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.amount = 50 THEN 1.0 ELSE 0 END) AS REAL) * 100 / COUNT(T2.income_id)
+FROM member AS T1
+INNER JOIN income AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T1.position = 'Member' AND T1.t_shirt_size = 'Medium'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(COUNT(
+    CASE
+      WHEN t_shirt_size = 'Medium' AND position = 'Member' AND amount = 50
+      THEN 1
+      ELSE NULL
+    END
+  ) AS REAL) * 100 / COUNT(member_id) AS percentage
+FROM member
+WHERE
+  t_shirt_size = 'Medium' AND position = 'Member'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (100.0,)
+- Error: `no such column: amount`
+- Fix applied: no such column: amount
+- Fix applied: no such column: amount
+
+### Q1435: FAIL
+
+*student_club, moderate, confidence 1.0, 2 attempt(s), 29.54s*
+
+**Question:** List the names of closed event as "game" that was closed from 3/15/2019 to 3/20/2020.
+
+**Hint:** name of events refers event_name; game event that was closed refers to type = 'Game' where status = 'Closed'; event_date BETWEEN '2019-03-15' and '2020-03-20'; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  event_name
+FROM event
+WHERE
+  type = 'Game'
+  AND DATE(SUBSTRING(event_date, 1, 10)) BETWEEN '2019-03-15' AND '2020-03-20'
+  AND status = 'Closed'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  event_name
+FROM event
+JOIN budget
+  ON event.event_id = budget.link_to_event
+WHERE
+  event.type = 'Game'
+  AND event.status = 'Closed'
+  AND event_date BETWEEN '2019-03-15' AND '2020-03-20'
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ("Women's Soccer",), ('Football game',)
+
+### Q1457: PASS
+
+*student_club, challenging, confidence 1.0, 1 attempt(s), 17.75s*
+
+**Question:** Give the full name and contact number of members who had to spend more than average on each expense.
+
+**Hint:** full name refers to first_name, last_name; contact number refers to phone; had spent more than average on each expense refers to cost > AVG(cost)
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T3.first_name,
+  T3.last_name,
+  T3.phone
+FROM expense AS T1
+INNER JOIN budget AS T2
+  ON T1.link_to_budget = T2.budget_id
+INNER JOIN member AS T3
+  ON T3.member_id = T1.link_to_member
+WHERE
+  T1.cost > (
+    SELECT
+      AVG(T1.cost)
+    FROM expense AS T1
+    INNER JOIN budget AS T2
+      ON T1.link_to_budget = T2.budget_id
+    INNER JOIN member AS T3
+      ON T3.member_id = T1.link_to_member
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.first_name,
+  T2.last_name,
+  T2.phone
+FROM expense AS T1
+INNER JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T1.cost > (
+    SELECT
+      AVG(cost)
+    FROM expense
+  )
+```
+
+- Our result: 11 row(s): ('Sacha', 'Harrison', '840-555-4781'), ('Sacha', 'Harrison', '840-555-4781'), ('Phillip', 'Cullen', '905-555-5035'), ('Elijah', 'Allen', '724-555-5721'), ('Sacha', 'Harrison', '840-555-4781') … (11 rows total)
+- Gold result: 3 row(s): ('Sacha', 'Harrison', '840-555-4781'), ('Phillip', 'Cullen', '905-555-5035'), ('Elijah', 'Allen', '724-555-5721')
+
+### Q1460: PASS
+
+*student_club, challenging, confidence 1.0, 1 attempt(s), 20.09s*
+
+**Question:** Write the full name of the member who spent money for water, veggie tray and supplies and include the cost of it.
+
+**Hint:** full name refers to first_name, last name; spent money for refers expense description; expense_description = 'Water, Veggie tray, supplies'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.first_name,
+  T2.last_name,
+  T1.cost
+FROM expense AS T1
+INNER JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T1.expense_description = 'Water, Veggie tray, supplies'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.first_name,
+  T2.last_name,
+  SUM(T1.cost) AS total_cost
+FROM expense AS T1
+JOIN member AS T2
+  ON T1.link_to_member = T2.member_id
+WHERE
+  T1.expense_description = 'Water, Veggie tray, supplies'
+GROUP BY
+  T2.first_name,
+  T2.last_name
+ORDER BY
+  total_cost DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Elijah', 'Allen', 28.15)
+- Gold result: 1 row(s): ('Elijah', 'Allen', 28.15)
+
+### Q1464: PASS
+
+*student_club, challenging, confidence 1.0, 1 attempt(s), 35.29s*
+
+**Question:** Write the full names of students who received funds on the date of 9/9/2019 and include the amount received.
+
+**Hint:** full name refers to first_name, last_name, amount of funds received refers to amount, received funds on date refers to date_received
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T3.first_name,
+  T3.last_name,
+  T4.amount
+FROM event AS T1
+INNER JOIN attendance AS T2
+  ON T1.event_id = T2.link_to_event
+INNER JOIN member AS T3
+  ON T3.member_id = T2.link_to_member
+INNER JOIN income AS T4
+  ON T4.link_to_member = T3.member_id
+WHERE
+  T4.date_received = '2019-09-09'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.first_name,
+  T1.last_name,
+  SUM(T2.amount) AS total_amount
+FROM member AS T1
+JOIN income AS T2
+  ON T1.member_id = T2.link_to_member
+WHERE
+  T2.date_received = '2019-09-09'
+GROUP BY
+  T1.member_id
+```
+
+- Our result: 2 row(s): ('Sacha', 'Harrison', 50), ('Carlo', 'Jacobs', 50)
+- Gold result: 2 row(s): ('Sacha', 'Harrison', 50), ('Carlo', 'Jacobs', 50)
+
+### Q1149: FAIL
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 14.38s*
+
+**Question:** Are there more in-patient or outpatient who were male? What is the deviation in percentage?
+
+**Hint:** male refers to SEX = 'M'; in-patient refers to Admission = '+'; outpatient refers to Admission = '-'; percentage = DIVIDE(COUNT(ID) where SEX = 'M' and Admission = '+', COUNT(ID) where SEX  = 'M' and Admission = '-')
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN Admission = '+' THEN 1 ELSE 0 END) AS REAL) * 100 / SUM(CASE WHEN Admission = '-' THEN 1 ELSE 0 END)
+FROM Patient
+WHERE
+  SEX = 'M'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(ID) AS in_patient,
+  COUNT(ID) AS out_patient
+FROM Patient
+WHERE
+  SEX = 'M'
+```
+
+- Our result: 1 row(s): (202, 202)
+- Gold result: 1 row(s): (83.17757009345794,)
+
+### Q1150: FAIL
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 13.36s*
+
+**Question:** What is the percentage of female patient were born after 1930?
+
+**Hint:** female refers to Sex = 'F'; patient who were born after 1930 refers to year(Birthday) > '1930'; calculation = DIVIDE(COUNT(ID) where year(Birthday) > '1930' and SEX = 'F'), (COUNT(ID) where SEX = 'F')
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN STRFTIME('%Y', Birthday) > '1930' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*)
+FROM Patient
+WHERE
+  SEX = 'F'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN STRFTIME('%Y', Birthday) > '1930' AND SEX = 'F' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(ID)
+FROM Patient
+```
+
+- Our result: 1 row(s): (77.7059773828756,)
+- Gold result: 1 row(s): (94.03714565004887,)
+
+### Q1152: FAIL
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 17.76s*
+
+**Question:** What is the ratio of outpatient to inpatient followed up treatment among all the 'SLE' diagnosed patient?
+
+**Hint:** 'SLE' diagnosed patient means Diagnosis = 'SLE'; inpatient refers to Admission = '+'; outpatient refers to Admission = '-'; calculation =  DIVIDE(COUNT(ID) where Diagnosis = 'SLE' and Admission = '+', COUNT(ID) where Diagnosis = 'SLE' and Admission = '-')
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN Admission = '+' THEN 1.0 ELSE 0 END) / SUM(CASE WHEN Admission = '-' THEN 1 ELSE 0 END)
+FROM Patient
+WHERE
+  Diagnosis = 'SLE'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.Admission = '+' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN T2.Admission = '-' THEN 1 ELSE 0 END)
+FROM Examination AS T1
+INNER JOIN Patient AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.Diagnosis = 'SLE'
+```
+
+- Our result: 1 row(s): (1.75,)
+- Gold result: 1 row(s): (1.3095238095238095,)
+
+### Q1153: ASKED (best guess wrong)
+
+*thrombosis_prediction, simple, confidence 0.5, 1 attempt(s), 23.12s*
+
+**Question:** What is the disease patient '30609' diagnosed with. List all the date of laboratory tests done for this patient.
+
+**Hint:** '30609' is the Patient ID; disease means Diagnosis
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.Diagnosis,
+  T2.Date
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.ID = 30609
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Diagnosis
+FROM Patient
+WHERE
+  ID = 30609
+```
+
+- Our result: 1 row(s): ('SLE, MCTD',)
+- Gold result: 60 row(s): ('SLE, MCTD', '1984-07-12'), ('SLE, MCTD', '1984-08-02'), ('SLE, MCTD', '1984-09-03'), ('SLE, MCTD', '1984-10-01'), ('SLE, MCTD', '1984-10-22') … (60 rows total)
+
+### Q1155: PASS
+
+*thrombosis_prediction, simple, confidence 1.0, 1 attempt(s), 11.15s*
+
+**Question:** List the patient ID, sex and birthday of patient with LDH beyond normal range.
+
+**Hint:** LDH beyond normal range refers to LDH > '500';
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.ID,
+  T1.SEX,
+  T1.Birthday
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.LDH > 500
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Patient.ID,
+  Patient.SEX,
+  Patient.Birthday
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  Laboratory.LDH > 500
+```
+
+- Our result: 1281 row(s): (27654, 'F', '1936-03-25'), (27654, 'F', '1936-03-25'), (27654, 'F', '1936-03-25'), (27654, 'F', '1936-03-25'), (27654, 'F', '1936-03-25') … (1281 rows total)
+- Gold result: 103 row(s): (27654, 'F', '1936-03-25'), (57266, 'M', '1923-07-25'), (81043, 'M', '1967-03-25'), (540520, 'F', '1941-11-21'), (912147, 'F', '1975-02-17') … (103 rows total)
+- Fix applied: no such column: LDH -> added missing JOIN in code
+
+### Q1156: FAIL
+
+*thrombosis_prediction, moderate, confidence None, 3 attempt(s), 22.39s*
+
+**Question:** State the ID and age of patient with positive degree of coagulation.
+
+**Hint:** age refers to SUBTRACT(year(current_timestamp), year(Birthday)); positive degree of coagulation refers to RVVT = '+';
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.ID,
+  STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T1.Birthday)
+FROM Patient AS T1
+INNER JOIN Examination AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.RVVT = '+'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  ID,
+  STRFTIME('%Y', 'now') - YEAR(Birthday) AS Age
+FROM Patient
+WHERE
+  RVVT = '+'
+```
+
+- Our result: 0 rows
+- Gold result: 7 row(s): (163109, 76), (174116, 53), (355009, 42), (1567380, 67), (2803470, 41) … (7 rows total)
+- Error: `no such function: YEAR`
+
+### Q1157: PASS
+
+*thrombosis_prediction, simple, confidence 1.0, 1 attempt(s), 11.33s*
+
+**Question:** For patients with severe degree of thrombosis, list their ID, sex and disease the patient is diagnosed with.
+
+**Hint:** severe degree of thrombosis refers to thrombosis = 2; disease refers to diagnosis;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.ID,
+  T1.SEX,
+  T1.Diagnosis
+FROM Patient AS T1
+INNER JOIN Examination AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.Thrombosis = 2
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Patient.ID,
+  Patient.SEX,
+  Patient.Diagnosis
+FROM Patient
+INNER JOIN Examination
+  ON Patient."ID" = Examination."ID"
+WHERE
+  Examination.thrombosis = 2
+```
+
+- Our result: 3 row(s): (163109, 'F', 'SLE'), (2803470, 'F', 'SLE'), (4395720, 'F', 'SLE')
+- Gold result: 3 row(s): (163109, 'F', 'SLE'), (2803470, 'F', 'SLE'), (4395720, 'F', 'SLE')
+- Fix applied: no such column: thrombosis -> added missing JOIN in code
+
+### Q1162: PASS
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 12.1s*
+
+**Question:** How many female patients who came at the hospital in 1997 was immediately followed at the outpatient clinic?
+
+**Hint:** female refers to sex = 'F'; came at the hospital in 1997 refers to year(Description) = '1997'; immediately followed at the outpatient clinic refers to Admission = '-'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Patient
+WHERE
+  STRFTIME('%Y', Description) = '1997' AND SEX = 'F' AND Admission = '-'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Patient
+WHERE
+  Sex = 'F' AND STRFTIME('%Y', Description) = '1997' AND Admission = '-'
+```
+
+- Our result: 1 row(s): (161,)
+- Gold result: 1 row(s): (161,)
+
+### Q1164: FAIL
+
+*thrombosis_prediction, moderate, confidence None, 3 attempt(s), 27.84s*
+
+**Question:** How many of the patients with the most serious thrombosis cases examined in 1997 are women?
+
+**Hint:** the most serious thrombosis refers to Thrombosis = '1' (the most severe one); women refers to sex = 'F'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Patient AS T1
+INNER JOIN Examination AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.SEX = 'F'
+  AND STRFTIME('%Y', T2."Examination Date") = '1997'
+  AND T2.Thrombosis = 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Patient AS T1
+INNER JOIN Examination AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.Thrombosis = 1
+  AND T1.SEX = 'F'
+  AND STRFTIME('%Y', T2.Examination_Date) = '1997'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1,)
+- Error: `no such column: T2.Examination_Date`
+- Fix applied: no such column: T2.Examination_Date
+- Fix applied: no such column: T2.Examination_Date
+- Fix applied: no such column: T2.Examination_Date
+
+### Q1166: FAIL
+
+*thrombosis_prediction, simple, confidence 1.0, 1 attempt(s), 19.42s*
+
+**Question:** What are the symptoms observed by the youngest patient to ever did a medical examination? Identify their diagnosis.
+
+**Hint:** The larger the birthday value, the younger the person is, and vice versa; symptoms observed refers to the symptoms is not NULL
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Symptoms,
+  T1.Diagnosis
+FROM Patient AS T1
+INNER JOIN Examination AS T2
+  ON T1.ID = T2.ID
+WHERE
+  NOT T2.Symptoms IS NULL
+ORDER BY
+  T1.Birthday DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Symptoms,
+  T2.Diagnosis
+FROM Patient AS T1
+INNER JOIN Examination AS T2
+  ON T1.ID = T2.ID
+GROUP BY
+  T2.Symptoms,
+  T2.Diagnosis
+ORDER BY
+  SUM(T1.Birthday) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (None, 'SjS')
+- Gold result: 1 row(s): ('CNS susp', 'SLE')
+- Fix applied: logic fix in code: fanout_ranking: ranked Examination by one Patient row -> GROUP BY + ORDER BY SUM(T1.Birthday)
+
+### Q1168: FAIL
+
+*thrombosis_prediction, challenging, confidence None, 3 attempt(s), 51.96s*
+
+**Question:** The oldest SJS patient's medical laboratory work was completed on what date, and what age was the patient when they initially arrived at the hospital?
+
+**Hint:** The larger the birthday value, the younger the person is, and vice versa; 'SJS' refers to diagnosis; (SUBTRACT(year(`First Date`)), year(Birthday)); age of the patients when they initially arrived at the hospital refers to year(Birthday)
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.Date,
+  STRFTIME('%Y', T2."First Date") - STRFTIME('%Y', T2.Birthday),
+  T2.Birthday
+FROM Laboratory AS T1
+INNER JOIN Patient AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.Diagnosis = 'SJS' AND NOT T2.Birthday IS NULL
+ORDER BY
+  T2.Birthday ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.First_Date,
+  (
+    STRFTIME('%Y', T2.Birthday) - STRFTIME('%Y', T2.First_Date)
+  ) AS Age
+FROM Examination AS T1
+INNER JOIN Patient AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.Diagnosis = 'SJS'
+ORDER BY
+  T2.First_Date DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('1981-07-31', 69, '1917-04-18')
+- Error: `no such column: T2.First_Date`
+- Fix applied: no such column: T2.First_Date
+- Fix applied: no such column: T2.First_Date
+- Fix applied: no such column: T2.First_Date
+
+### Q1169: PASS
+
+*thrombosis_prediction, challenging, confidence 1.0, 1 attempt(s), 18.55s*
+
+**Question:** What is the ratio of male to female patients among all those with abnormal uric acid counts?
+
+**Hint:** male refers to SEX = 'M'; female refers to SEX = 'F'; abnormal uric acid refers to UA < = '8.0' where SEX = 'M', UA < = '6.5' where SEX = 'F'; calculation = DIVIDE(SUM(UA <= '8.0' and SEX = 'M'), SUM(UA <= '6.5 and SEX = 'F'))
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.UA <= 8.0 AND T1.SEX = 'M' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN T2.UA <= 6.5 AND T1.SEX = 'F' THEN 1 ELSE 0 END)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN Laboratory.UA <= '8.0' AND Patient.SEX = 'M' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN Laboratory.UA <= '6.5' AND Patient.SEX = 'F' THEN 1 ELSE 0 END) AS ratio
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  Laboratory.UA <= '8.0' OR Laboratory.UA <= '6.5'
+```
+
+- Our result: 1 row(s): (0.20566810835419985,)
+- Gold result: 1 row(s): (0.20566810835419985,)
+- Fix applied: no such column: UA -> added missing JOIN in code
+- Fix applied: logic fix in code: derived_projection: kept only the computed column; dropped components male_count, female_count
+
+### Q1171: FAIL
+
+*thrombosis_prediction, challenging, confidence 1.0, 1 attempt(s), 16.62s*
+
+**Question:** How many underage patients were examined during the course of the three-year period from 1990 to 1993?
+
+**Hint:** underage patients refers to year(Birthday) < 18; three-year period from 1990 to 1993 refers to year(`Examination Date`) between '1990' and '1993'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.ID)
+FROM Patient AS T1
+INNER JOIN Examination AS T2
+  ON T1.ID = T2.ID
+WHERE
+  STRFTIME('%Y', T2."Examination Date") BETWEEN '1990' AND '1993'
+  AND STRFTIME('%Y', T2."Examination Date") - STRFTIME('%Y', T1.Birthday) < 18
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Examination AS T1
+INNER JOIN Patient AS T2
+  ON T1.ID = T2.ID
+WHERE
+  STRFTIME('%Y', T1."Examination Date") BETWEEN '1990' AND '1993'
+  AND STRFTIME('%Y', T2.Birthday) < 18
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (1,)
+
+### Q1175: FAIL
+
+*thrombosis_prediction, moderate, confidence None, 3 attempt(s), 34.65s*
+
+**Question:** How old was the patient who had the highest hemoglobin count at the time of the examination, and what is the doctor's diagnosis?
+
+**Hint:** How old the patient refers to SUBTRACT(year(`Examination Date`), year(Birthday)); the highest hemoglobin count refers to MAX(HGB)
+
+**Gold SQL**
+
+```sql
+SELECT
+  STRFTIME('%Y', T2.Date) - STRFTIME('%Y', T1.Birthday),
+  T1.Diagnosis
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+ORDER BY
+  T2.HGB DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.SEX,
+  T2.Birthday,
+  T2.Admission,
+  T2.Diagnosis,
+  SUBSTRING(T1."Examination Date", 1, 4) - STRFTIME('%Y', T2.Birthday) AS Age,
+  MAX(T1.HGB) AS Highest_HGB
+FROM Examination AS T1
+JOIN Patient AS T2
+  ON T1.ID = T2.ID
+ORDER BY
+  Highest_HGB DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (28, 'SLE')
+- Error: `no such column: T1.HGB`
+- Fix applied: no such column: T1.HGB
+- Fix applied: no such column: T1.HGB
+- Fix applied: no such column: T1.HGB
+
+### Q1179: FAIL
+
+*thrombosis_prediction, moderate, confidence None, 3 attempt(s), 34.01s*
+
+**Question:** For the patient who was diagnosed with SLE on 1994/2/19, what was his/her anti-Cardiolipin antibody concentration status on 1993/11/12?
+
+**Hint:** diagnosed with SLE refers to Diagnosis = 'SLE'; 1994/2/19 refers to Description = '1994-02-19'; anti-Cardiolipin refers to aCL IgM; 1993/11/12 refers to Examination Date = '1993/11/12'
+
+**Gold SQL**
+
+```sql
+SELECT
+  "aCL IgA",
+  "aCL IgG",
+  "aCL IgM"
+FROM Examination
+WHERE
+  ID IN (
+    SELECT
+      ID
+    FROM Patient
+    WHERE
+      Diagnosis = 'SLE' AND Description = '1994-02-19'
+  )
+  AND "Examination Date" = '1993-11-12'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.aCL_IgM
+FROM Patient AS T1
+INNER JOIN Examination AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.Description = '1994-02-19'
+  AND T2.Diagnosis = 'SLE'
+  AND T2.Examination_Date = '1993-11-12'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (3, 5.1, 4.1)
+- Error: `no such column: T2.aCL_IgM`
+- Fix applied: no such column: T2.aCL_IgM
+- Fix applied: no such column: T2.aCL_IgM
+- Fix applied: no such column: T2.aCL_IgM
+
+### Q1185: FAIL
+
+*thrombosis_prediction, challenging, confidence None, 3 attempt(s), 62.12s*
+
+**Question:** For the patient who was born on 1959/2/18, what is the decrease rate for his/her total cholesterol from November to December in 1981?
+
+**Hint:** born on 1959/2/18 refers to Birthday = '1959-02-18'; calculation = DIVISION(SUBTRACT(SUM(Birthday = '1959-02-18' and Date like '1981-11-%' THEN `T-CHO`), SUM(Birthday = '1959-02-18' and Date like '1981-12-%' THEN `T-CHO`)), SUM(Birthday = '1959-02-18' and Date like '1981-12-%' THEN `T-CHO`))
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST((
+    SUM(CASE WHEN T2.Date LIKE '1981-11-%' THEN T2."T-CHO" ELSE 0 END) - SUM(CASE WHEN T2.Date LIKE '1981-12-%' THEN T2."T-CHO" ELSE 0 END)
+  ) AS REAL) / SUM(CASE WHEN T2.Date LIKE '1981-12-%' THEN T2."T-CHO" ELSE 0 END)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.Birthday = '1959-02-18'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    T1.T - CHO - T2.T - CHO
+  ) / T2.T - CHO AS decrease_rate
+FROM Laboratory AS T1
+JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.Date LIKE '1981-11-%'
+  AND T2.Date LIKE '1981-12-%'
+  AND T1.Birthday = '1959-02-18'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (0.06030150753768844,)
+- Error: `no such column: T1.T`
+- Fix applied: no such column: T1.T
+- Fix applied: no such column: T1.T
+- Fix applied: no such column: T1.T
+
+### Q1187: PASS
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 15.07s*
+
+**Question:** How many patients who were examined between 1987/7/6 and 1996/1/31 had a GPT level greater than 30 and an ALB level less than 4? List them by their ID.
+
+**Hint:** examined between 1987/7/6 and 1996/1/31 refers to Date BETWEEN '1987-07-06' AND '1996-01-31'; GPT level greater than 30 refers to GPT > 30; ALB level less than 4 ALB < 4
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  ID
+FROM Laboratory
+WHERE
+  Date BETWEEN '1987-07-06' AND '1996-01-31' AND GPT > 30 AND ALB < 4
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Patient.ID
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  Laboratory.Date BETWEEN '1987-07-06' AND '1996-01-31' AND GPT > 30 AND ALB < 4
+```
+
+- Our result: 465 row(s): (27654,), (27654,), (27654,), (27654,), (27654,) … (465 rows total)
+- Gold result: 63 row(s): (27654,), (71417,), (912147,), (944797,), (1078741,) … (63 rows total)
+- Fix applied: no such column: Date -> added missing JOIN in code
+
+### Q1189: FAIL
+
+*thrombosis_prediction, challenging, confidence None, 3 attempt(s), 38.84s*
+
+**Question:** What number of patients with a degree of thrombosis level 2 and ANA pattern of only S, have a level of anti-Cardiolip in antibody (IgM) 20% higher than average?
+
+**Hint:** thrombosis level 2 refers to Thrombosis = 2; ANA pattern of only S refers to ANA = 'S'; average anti-Cardiolip in antibody (IgM) refers to AVG(`aCL IgM`); calculation = MULTIPLY(AVG + AVG, 0.2)
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Examination
+WHERE
+  Thrombosis = 2
+  AND "ANA Pattern" = 'S'
+  AND "aCL IgM" > (
+    SELECT
+      AVG("aCL IgM") * 1.2
+    FROM Examination
+    WHERE
+      Thrombosis = 2 AND "ANA Pattern" = 'S'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.ID)
+FROM Patient AS T1
+JOIN Examination AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.Thrombosis = 2
+  AND T2.ANA = 'S'
+  AND T2."aCL IgM" > (
+    AVG(T2."aCL IgM") * 1.2
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1,)
+- Error: `misuse of aggregate: AVG()`
+
+### Q1192: FAIL
+
+*thrombosis_prediction, challenging, confidence None, 3 attempt(s), 45.18s*
+
+**Question:** List all patients who were followed up at the outpatient clinic who underwent a laboratory test in October 1991 and had a total blood bilirubin level within the normal range.
+
+**Hint:** followed up at the outpatient clinic refers to Admission = '-'; laboratory test in April 1981 refers to Date like '1991-10%'; blood bilirubin level within the normal range refers to T-BIL < 2.0; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.ID
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.Admission = '-' AND T2."T-BIL" < 2.0 AND T2.Date LIKE '1991-10-%'
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  T1.ID,
+  T1.SEX,
+  T1.Birthday,
+  T1.Description,
+  T1.First_Date,
+  T1.Admission,
+  T1.Diagnosis
+FROM Patient AS T1
+JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.Admission = '-' AND T2.Date LIKE '1991-10%' AND T2.T_BIL < 2.0
+```
+
+- Our result: 0 rows
+- Gold result: 6 row(s): (304157,), (4466840,), (4471732,), (4630092,), (4632519,) … (6 rows total)
+- Error: `no such column: T1.First_Date`
+- Fix applied: no such column: T1.First_Date
+- Fix applied: no such column: T1.First_Date
+- Fix applied: no such column: T1.First_Date
+
+### Q1195: PASS
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 25.35s*
+
+**Question:** What is the average blood albumin level for female patients with a PLT greater than 400 who have been diagnosed with SLE?
+
+**Hint:** average blood albumin level refers to AVG(ALB); female refers to SEX = 'F'; PLT greater than 400 refers to PLT > 400; diagnosed with SLE refers to Diagnosis= 'SLE'
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T2.ALB)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.PLT > 400 AND T1.Diagnosis = 'SLE' AND T1.SEX = 'F'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T2.ALB)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.SEX = 'F' AND T2.PLT > 400 AND T1.Diagnosis = 'SLE'
+```
+
+- Our result: 1 row(s): (3.9123076923076923,)
+- Gold result: 1 row(s): (3.9123076923076923,)
+
+### Q1198: FAIL
+
+*thrombosis_prediction, simple, confidence 1.0, 1 attempt(s), 13.92s*
+
+**Question:** How many female patients were given an APS diagnosis?
+
+**Hint:** female refers to SEX = 'F'; APS diagnosis refers to Diagnosis='APS'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(ID)
+FROM Patient
+WHERE
+  SEX = 'F' AND Diagnosis = 'APS'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Patient AS T1
+INNER JOIN Examination AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.SEX = 'F' AND T2.Diagnosis = 'APS'
+```
+
+- Our result: 1 row(s): (2,)
+- Gold result: 1 row(s): (16,)
+
+### Q1201: PASS
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 15.08s*
+
+**Question:** What percentage of patients who were born in 1980 and were diagnosed with RA are women?
+
+**Hint:** born in 1980 refers to YEAR(BIRTHDAY) = '1980'; 'RA' refers to Diagnosis='RA' ; women refers to SEX = 'F'; calculation = DIVIDE(SUM(SEX = 'F'), COUNT(SEX)) * 100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN SEX = 'F' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(ID)
+FROM Patient
+WHERE
+  Diagnosis = 'RA' AND STRFTIME('%Y', Birthday) = '1980'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN SEX = 'F' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(SEX) AS percentage_women_ra
+FROM Patient
+WHERE
+  STRFTIME('%Y', Birthday) = '1980' AND Diagnosis = 'RA'
+```
+
+- Our result: 1 row(s): (100.0,)
+- Gold result: 1 row(s): (100.0,)
+
+### Q1205: FAIL
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 22.25s*
+
+**Question:** Was the patient with the number 57266's uric acid within a normal range?
+
+**Hint:** uric acid within a normal range refers to UA > 8.0 and SEX = 'M'OR UA > 6.5 and SEX = 'F'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CASE
+    WHEN (
+      T1.SEX = 'F' AND T2.UA > 6.5
+    ) OR (
+      T1.SEX = 'M' AND T2.UA > 8.0
+    )
+    THEN TRUE
+    ELSE FALSE
+  END
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.ID = 57266
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Laboratory.UA > 8.0 OR (
+    Laboratory.UA > 6.5 AND Patient.SEX = 'F'
+  ) AS is_within_normal_range
+FROM Laboratory
+INNER JOIN Patient
+  ON Laboratory."ID" = Patient."ID"
+WHERE
+  Laboratory.ID = 57266
+```
+
+- Our result: 67 row(s): (0,), (0,), (None,), (None,), (None,) … (67 rows total)
+- Gold result: 67 row(s): (0,), (0,), (0,), (0,), (0,) … (67 rows total)
+- Fix applied: no such column: SEX -> added missing JOIN in code
+
+### Q1208: PASS
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 11.74s*
+
+**Question:** Provide IDs for male patients with ALT glutamic pylvic transaminase (GPT) that have history of ALT glutamic pylvic transaminase (GPT) exceed the normal range.
+
+**Hint:** male refers to SEX = 'M'; ALT glutamic pylvic transaminase (GPT) exceed the normal range refers to GPT > = 60
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.ID
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.SEX = 'M' AND T2.GPT >= 60
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Patient.ID
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  Patient.SEX = 'M' AND Laboratory.GPT >= 60
+```
+
+- Our result: 198 row(s): (81043,), (81043,), (81043,), (81043,), (81043,) … (198 rows total)
+- Gold result: 24 row(s): (81043,), (444499,), (915768,), (1137040,), (1513136,) … (24 rows total)
+- Fix applied: no such column: GPT -> added missing JOIN in code
+
+### Q1209: FAIL
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 22.88s*
+
+**Question:** Please provide the diagnosis of patients with ALT glutamic pylvic transaminase beyond the normal range by ascending order of their date of birth.
+
+**Hint:** ALT glutamic pylvic transaminase beyond the normal range refers to GPT > 60; The larger the birthday value, the younger the person is, and vice versa; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.Diagnosis
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.GPT > 60
+ORDER BY
+  T1.Birthday ASC
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Diagnosis,
+  T2.Birthday
+FROM Laboratory AS T1
+JOIN Patient AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.GPT > 60
+ORDER BY
+  T2.Birthday ASC
+```
+
+- Our result: 871 row(s): ('MRA', '1922-12-01'), ('MRA', '1922-12-01'), ('MRA', '1922-12-01'), ('MRA', '1922-12-01'), ('MRA', '1922-12-01') … (871 rows total)
+- Gold result: 38 row(s): ('Adult STILL',), ('PSS, RA susp',), ('PNc',), ('MRA, SJS',), ('RA, UC',) … (38 rows total)
+- Fix applied: no such column: T1.Diagnosis -> repaired alias in code
+
+### Q1220: PASS
+
+*thrombosis_prediction, simple, confidence 1.0, 1 attempt(s), 14.55s*
+
+**Question:** Provide all ID, sex and birthday of patients whose urea nitrogen (UN) just within the borderline of passing?
+
+**Hint:** urea nitrogen (UN) just within the borderline of passing refers to UN = 29; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.ID,
+  T1.SEX,
+  T1.Birthday
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.UN = 29
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Patient.ID,
+  Patient.SEX,
+  Patient.Birthday
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  Laboratory.UN = 29
+```
+
+- Our result: 44 row(s): (27654, 'F', '1936-03-25'), (27654, 'F', '1936-03-25'), (444499, 'M', '1954-01-24'), (444499, 'M', '1954-01-24'), (444499, 'M', '1954-01-24') … (44 rows total)
+- Gold result: 20 row(s): (27654, 'F', '1936-03-25'), (444499, 'M', '1954-01-24'), (912147, 'F', '1975-02-17'), (1138737, 'F', '1965-11-18'), (1185720, 'F', '1953-10-12') … (20 rows total)
+- Fix applied: no such column: UN -> added missing JOIN in code
+
+### Q1225: FAIL
+
+*thrombosis_prediction, moderate, confidence None, 3 attempt(s), 62.35s*
+
+**Question:** List and group all patients by sex for total bilirubin (T-BIL) level not within the normal range.
+
+**Hint:** List refers to GROUP_CONCAT(DISTINCT ID); total bilirubin (T-BIL) not within normal range refers to T-BIL > = 2.0
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.ID,
+  T1.SEX
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2."T-BIL" >= 2.0
+GROUP BY
+  T1.SEX,
+  T1.ID
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  GROUP_CONCAT(DISTINCT T2.ID) AS IDs,
+  T2.SEX
+FROM Laboratory AS T1
+INNER JOIN Patient AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.T_BIL >= 2.0
+GROUP BY
+  T2.SEX
+```
+
+- Our result: 0 rows
+- Gold result: 10 row(s): (43003, 'M'), (250391, 'F'), (444499, 'M'), (1137040, 'M'), (1180510, 'F') … (10 rows total)
+- Error: `no such column: T1.T_BIL`
+- Fix applied: no such column: T1.T_BIL
+- Fix applied: no such column: T1.T_BIL
+- Fix applied: no such column: T1.T_BIL
+
+### Q1227: FAIL
+
+*thrombosis_prediction, moderate, confidence None, 3 attempt(s), 22.16s*
+
+**Question:** What is the average age of the male patient with high cholesterol?
+
+**Hint:** average age = DIVIDE(SUM(SUBTRACT(YEAR(NOW()), YEAR(birthday))), COUNT(ID)); male patient refers to sex = 'M'; high cholesterol refers to `T-CHO` > = 250;
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(STRFTIME('%Y', DATE('NOW')) - STRFTIME('%Y', T1.Birthday))
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2."T-CHO" >= 250 AND T1.SEX = 'M'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(YEAR(CURDATE()) - YEAR(birthday)) AS average_age
+FROM Patient
+WHERE
+  SEX = 'M' AND "T-CHO" >= 250
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (74.68535825545172,)
+- Error: `no such function: YEAR`
+
+### Q1229: FAIL
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 24.06s*
+
+**Question:** For all patients with triglyceride (TG) level beyond the normal range, how many are age more than 50 years?
+
+**Hint:** triglyceride (TG) level beyond the normal range refers to TG > = 200; more than 50 years of age = SUBTRACT(year(current_timestamp), year(Birthday)) > 50; Should consider DISTINCT in the final result;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.TG >= 200
+  AND STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T1.Birthday) > 50
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.TG >= 200
+  AND SUBSTRING(T1.Birthday, 1, 4) < SUBSTRING(STRFTIME('%Y', '2026-11-16'), 1, 4) - 50
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (106,)
+
+### Q1231: PASS
+
+*thrombosis_prediction, challenging, confidence 1.0, 2 attempt(s), 18.8s*
+
+**Question:** For patient born between 1936-1956, how many male patients have creatinine phosphokinase beyond the normal range?
+
+**Hint:** born between 1936-1956 refers to year(Birthday) BETWEEN '1936' AND '1956'; male patients refers to sex = 'M'; creatinine phosphokinase beyond the normal range refers to CPK > = 250; Should consider DISTINCT in the final result;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  STRFTIME('%Y', T1.Birthday) BETWEEN '1936' AND '1956'
+  AND T1.SEX = 'M'
+  AND T2.CPK >= 250
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT Patient.ID)
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  STRFTIME('%Y', Patient.Birthday) BETWEEN '1936' AND '1956'
+  AND Patient.SEX = 'M'
+  AND Laboratory.CPK >= 250
+```
+
+- Our result: 1 row(s): (2,)
+- Gold result: 1 row(s): (2,)
+- Fix applied: no such column: CPK -> added missing JOIN in code
+
+### Q1232: FAIL
+
+*thrombosis_prediction, challenging, confidence None, 3 attempt(s), 26.78s*
+
+**Question:** Provide ID, sex and age of patient who has blood glucose (GLU) not within normal range but with total cholesterol(T-CHO) within normal range.
+
+**Hint:** age = SUBTRACT(year(current_timestamp), year(Birthday)); blood glucose (GLU) not within normal range refers to GLU > = 180; total cholesterol(T-CHO) within normal range refers to `T-CHO` < 250; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.ID,
+  T1.SEX,
+  STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T1.Birthday)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.GLU >= 180 AND T2."T-CHO" < 250
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Patient.ID,
+  Patient.SEX,
+  STRFTIME('%Y', 'now') - STRFTIME('%Y', Patient.Birthday) AS age
+FROM Patient
+WHERE
+  Laboratory.GLU >= 180 AND Laboratory.T - CHO < 250
+```
+
+- Our result: 0 rows
+- Gold result: 13 row(s): (57266, 'M', 103), (2371753, 'F', 94), (3354706, 'F', 90), (4432946, 'M', 66), (4466420, 'F', 96) … (13 rows total)
+- Error: `no such column: Laboratory.GLU`
+- Fix applied: no such column: GLU -> added missing JOIN in code
+- Fix applied: no such column: T
+- Fix applied: no such column: Laboratory.GLU
+- Fix applied: no such column: Laboratory.GLU
+
+### Q1235: FAIL
+
+*thrombosis_prediction, moderate, confidence None, 3 attempt(s), 26.06s*
+
+**Question:** What are the patient's diagnosis for those who has lower red blood blood cell? State their ID and age.
+
+**Hint:** patient's diagnosis refers to Diagnosis; lower red blood cell refers to RBC < 3.5; age = SUBTRACT(year(current_timestamp), year(Birthday)); 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.Diagnosis,
+  T1.ID,
+  STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T1.Birthday)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.RBC < 3.5
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  ID,
+  STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', Birthday) AS Age
+FROM Patient
+WHERE
+  RBC < 3.5
+```
+
+- Our result: 0 rows
+- Gold result: 73 row(s): ('RA, SLE susp', 27654, 90), ('SLE, MCTD', 30609, 82), ('SJS', 58139, 54), ('RA', 71417, 97), ('RA', 130370, 74) … (73 rows total)
+- Error: `not authorized to use function: current_timestamp`
+
+### Q1238: PASS
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 20.88s*
+
+**Question:** Among the patients who were diagnosed with SLE, who is the oldest with normal hemoglobin level. Provide the ID and sex.
+
+**Hint:** diagnosed with SLE refers to Diagnosis = 'SLE'; The larger the birthday value, the younger the person is, and vice versa; normal hemoglobin level refers to 10 < HGB < 17;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.ID,
+  T1.SEX
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.Diagnosis = 'SLE' AND T2.HGB > 10 AND T2.HGB < 17
+ORDER BY
+  T1.Birthday ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Patient.ID,
+  Patient.SEX
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  Patient.Diagnosis = 'SLE' AND Laboratory.HGB BETWEEN 10 AND 17
+ORDER BY
+  Patient.Birthday ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (4792723, 'F')
+- Gold result: 1 row(s): (4792723, 'F')
+- Fix applied: no such column: HGB -> added missing JOIN in code
+
+### Q1239: FAIL
+
+*thrombosis_prediction, challenging, confidence 1.0, 1 attempt(s), 29.76s*
+
+**Question:** Name the ID and age of patient with two or more laboratory examinations which show their hematoclit level exceeded the normal range.
+
+**Hint:** age = SUBTRACT(year(current_timestamp), year(Birthday)); patient with two or more laboratory examinations refers to COUNT(ID) > 2; hematoclit level exceeded the normal range refers to HCT > = 52;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.ID,
+  STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T1.Birthday)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.ID IN (
+    SELECT
+      ID
+    FROM Laboratory
+    WHERE
+      HCT >= 52
+    GROUP BY
+      ID
+    HAVING
+      COUNT(ID) >= 2
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.ID,
+  SUBSTRING(T1.Birthday, 1, 4) - STRFTIME('%Y', 'now') AS age
+FROM Patient AS T1
+JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+GROUP BY
+  T1.ID
+HAVING
+  COUNT(T2.ID) > 2 AND T2.HCT >= 52
+```
+
+- Our result: 2 row(s): (57266, -103), (4007151, -58)
+- Gold result: 3 row(s): (2307640, 73), (3182521, 74), (4007151, 58)
+- Fix applied: no such column: T2.Birthday -> repaired alias in code
+
+### Q1241: FAIL
+
+*thrombosis_prediction, challenging, confidence 1.0, 1 attempt(s), 27.34s*
+
+**Question:** For patients with abnormal platelet level, state the number of patients with lower than normal range. How is it compare to the number of patients with higher than normal range?
+
+**Hint:** abnormal platelet level refers to PLT <= 100 or PLT >= 400; platelet level lower than normal range refers to PLT < 100; calculation = SUBTRACT(SUM(PLT < 100), SUM(PLT > 400)); platelet level higher than normal range refers to PLT > 400;
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN T2.PLT <= 100 THEN 1 ELSE 0 END) - SUM(CASE WHEN T2.PLT >= 400 THEN 1 ELSE 0 END)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(CASE WHEN PLT < 100 THEN 1 ELSE NULL END) - COUNT(CASE WHEN PLT > 400 THEN 1 ELSE NULL END) AS abnormal_platelet_difference
+FROM Laboratory
+WHERE
+  PLT <= 100 OR PLT >= 400
+```
+
+- Our result: 1 row(s): (-555,)
+- Gold result: 1 row(s): (-562,)
+
+### Q1242: FAIL
+
+*thrombosis_prediction, challenging, confidence 1.0, 2 attempt(s), 50.8s*
+
+**Question:** For laboratory examinations take in 1984, list all patients below 50 years old with normal platelet level.
+
+**Hint:** laboratory examinations take in 1984 refers to YEAR(Date) = '1984'; below 50 years old = SUBTRACT(year(current_timestamp), year(Birthday)) < 50; normal platelet level refers to PLT between 100 and 400; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.ID
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.PLT BETWEEN 100 AND 400
+  AND STRFTIME('%Y', T2.Date) - STRFTIME('%Y', T1.Birthday) < 50
+  AND STRFTIME('%Y', T2.Date) = '1984'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.ID,
+  T2.SEX,
+  T2.Birthday,
+  T2.Admission,
+  T2.Diagnosis,
+  T1.PLT
+FROM Laboratory AS T1
+JOIN Patient AS T2
+  ON T1.ID = T2.ID
+WHERE
+  STRFTIME('%Y', T1.Date) = '1984'
+  AND T1.PLT BETWEEN 100 AND 400
+  AND T2.SEX = 'F'
+  AND T2.SEX = 'M'
+  AND T2.Birthday < DATE('now', '-50 years')
+```
+
+- Our result: 0 rows
+- Gold result: 76 row(s): (30609,), (48473,), (52199,), (58139,), (81043,) … (76 rows total)
+- Fix applied: no such column: T2.PLT -> repaired alias in code
+
+### Q1243: FAIL
+
+*thrombosis_prediction, challenging, confidence 1.0, 2 attempt(s), 43.83s*
+
+**Question:** For all patients who are older than 55 years old, what is the percentage of female who has abnormal prothrombin time (PT)?
+
+**Hint:** older than 55 years old = SUBTRACT(year(current_timestamp), year(Birthday)) > 55; abnormal prothrombin time (PT) refers to PT > = 14; percentage = DIVIDE(SUM(PT > = 14 AND SEX = 'F'), SUM(PT > = 14)) * 100; female refers to sex = 'F'; 
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.PT >= 14 AND T1.SEX = 'F' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(CASE WHEN T2.PT >= 14 THEN 1 ELSE 0 END)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T1.Birthday) > 55
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  1.0 * SUM(CASE WHEN Laboratory.PT >= 14 AND Patient.SEX = 'F' THEN 1 ELSE 0 END) * 100 / COUNT(*) AS percentage_female_abnormal_pt
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient.ID = Laboratory.ID
+WHERE
+  STRFTIME('%Y', Laboratory.Date) - STRFTIME('%Y', Patient.Birthday) > 55
+```
+
+- Our result: 1 row(s): (0.0,)
+- Gold result: 1 row(s): (1.2030885257676422,)
+- Fix applied: no such column: PT -> added missing JOIN in code
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q1247: FAIL
+
+*thrombosis_prediction, challenging, confidence 1.0, 1 attempt(s), 27.9s*
+
+**Question:** Among the male patients who have a normal level of white blood cells, how many of them have an abnormal fibrinogen level?
+
+**Hint:** male patients refers to Sex = 'M'; normal level of white blood cells refers to WBC > 3.5 and WBC <9.0; abnormal fibrinogen level refers to FG < = 150 or FG > = 450; Don't compute repetitive ones.
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.FG <= 150 OR T2.FG >= 450 AND T2.WBC > 3.5 AND T2.WBC < 9.0 AND T1.SEX = 'M'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Patient
+JOIN Laboratory
+  ON Patient.ID = Laboratory.ID
+WHERE
+  Patient.SEX = 'M'
+  AND Laboratory.WBC > 3.5
+  AND Laboratory.WBC < 9.0
+  AND (
+    Laboratory.FG <= 150 OR Laboratory.FG >= 450
+  )
+```
+
+- Our result: 1 row(s): (16,)
+- Gold result: 1 row(s): (75,)
+
+### Q1251: FAIL
+
+*thrombosis_prediction, simple, confidence 1.0, 1 attempt(s), 12.69s*
+
+**Question:** How many patients with an Ig G higher than normal?
+
+**Hint:** Ig G higher than normal refers to IGG >= 2000; Should consider DISTINCT in the final result;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+INNER JOIN Examination AS T3
+  ON T3.ID = T2.ID
+WHERE
+  T2.IGG >= 2000
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT Patient.ID)
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  Laboratory.IGG >= 2000
+```
+
+- Our result: 1 row(s): (136,)
+- Gold result: 1 row(s): (9,)
+- Fix applied: no such column: IGG -> added missing JOIN in code
+
+### Q1252: PASS
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 14.12s*
+
+**Question:** Among the patients with a normal Ig G level, how many of them have symptoms?
+
+**Hint:** normal Ig G level refers to IGG > 900 and IGG < 2000; have symptoms refers to Symptoms IS NOT NULL;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+INNER JOIN Examination AS T3
+  ON T3.ID = T2.ID
+WHERE
+  T2.IGG BETWEEN 900 AND 2000 AND NOT T3.Symptoms IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+INNER JOIN Examination
+  ON Patient."ID" = Examination."ID"
+WHERE
+  Laboratory.IGG > 900
+  AND Laboratory.IGG < 2000
+  AND NOT Examination.Symptoms IS NULL
+```
+
+- Our result: 1 row(s): (4,)
+- Gold result: 1 row(s): (4,)
+- Fix applied: no such column: IGG -> added missing JOIN in code
+- Fix applied: no such column: Symptoms -> added missing JOIN in code
+
+### Q1254: FAIL
+
+*thrombosis_prediction, moderate, confidence None, 3 attempt(s), 25.68s*
+
+**Question:** How many patients with a normal Ig A level came to the hospital after 1990/1/1?
+
+**Hint:** normal Ig A level refers to IGA > 80 AND IGA < 500; came to the hospital after 1990/1/1 refers to YEAR(`First Date`) > = 1990;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.IGA BETWEEN 80 AND 500 AND STRFTIME('%Y', T1."First Date") > '1990'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(Patient.ID)
+FROM Patient
+WHERE
+  STRFTIME('%Y', Patient.FirstDate) >= '1990'
+  AND Laboratory.IGA > 80
+  AND Laboratory.IGA < 500
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1590,)
+- Error: `no such column: Patient.FirstDate`
+- Fix applied: no such column: IGA -> added missing JOIN in code
+- Fix applied: no such column: Patient.FirstDate
+- Fix applied: no such column: Patient.FirstDate
+
+### Q1255: FAIL
+
+*thrombosis_prediction, moderate, confidence None, 3 attempt(s), 25.99s*
+
+**Question:** For the patients with an abnormal Ig M level, what is the most common disease they are diagnosed with?
+
+**Hint:** abnormal Ig M level refers to IGM <=40 OR IGM >= 400; most common disease refers to MAX(COUNT(Diagnosis));
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.Diagnosis
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  NOT T2.IGM BETWEEN 40 AND 400
+GROUP BY
+  T1.Diagnosis
+ORDER BY
+  COUNT(T1.Diagnosis) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Diagnosis,
+  COUNT(Diagnosis) AS DiagnosisCount
+FROM Examination
+WHERE
+  aCL_IgM <= 40 OR aCL_IgM >= 400
+GROUP BY
+  Diagnosis
+ORDER BY
+  DiagnosisCount DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('RA',)
+- Error: `no such column: aCL_IgM`
+- Fix applied: no such column: aCL_IgM
+- Fix applied: no such column: aCL_IgM
+- Fix applied: no such column: aCL_IgM
+
+### Q1256: PASS
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 13.46s*
+
+**Question:** How many patients with a abnormal C-reactive protein don't have their data recorded?
+
+**Hint:** abnormal C-reactive protein refers to CRP ='+'; don't have data recorded refers to Description IS NULL;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  (
+    T2.CRP = '+'
+  ) AND T1.Description IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(Patient.ID)
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  Laboratory.CRP = '+' AND Patient.Description IS NULL
+```
+
+- Our result: 1 row(s): (208,)
+- Gold result: 1 row(s): (208,)
+- Fix applied: no such column: CRP -> added missing JOIN in code
+
+### Q1257: FAIL
+
+*thrombosis_prediction, challenging, confidence None, 3 attempt(s), 23.45s*
+
+**Question:** Among the patients whose creatinine level is abnormal, how many of them aren't 70 yet?
+
+**Hint:** creatinine level is abnormal refers to CRE >= 1.5; aren't 70 yet refers to SUBTRACT((YEAR(CURDATE()), YEAR(Birthday))) < 70; 
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.CRE >= 1.5 AND STRFTIME('%Y', DATE('now')) - STRFTIME('%Y', T1.Birthday) < 70
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Patient
+WHERE
+  Laboratory.CRE >= 1.5
+  AND STRFTIME('%Y', CURDATE()) - STRFTIME('%Y', Patient.Birthday) < 70
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (4,)
+- Error: `no such column: Laboratory.CRE`
+- Fix applied: no such column: CRE -> added missing JOIN in code
+- Fix applied: no such column: Laboratory.CRE
+
+### Q1265: FAIL
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 22.85s*
+
+**Question:** How many patients have a normal level of anti-ribonuclear protein and have been admitted to the hospital?
+
+**Hint:** normal level of anti-ribonuclear protein refers to RNP = '-', '+-'; And'-' means 'negative'; '+-' refers to '0'; admitted to the hospital refers to Admission = '+'; Should consider DISTINCT in the final result;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.RNP = 'negative' OR T2.RNP = '0' AND T1.Admission = '+'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.RNP = '-' AND T1.Admission = '+'
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (47,)
+
+### Q1267: FAIL
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 23.97s*
+
+**Question:** Among the patients with normal anti-SM, how many of them does not have thrombosis?
+
+**Hint:** normal anti-SM refers to SM IN('-', '+-'); SM = 'negative' means '-'; SM = '0' means '+-'; SM = '1' means '+'; does not have thrombosis refers to Thrombosis = 0;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.ID)
+FROM Examination AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.SM IN ('negative', '0') AND T1.Thrombosis = 0
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+INNER JOIN Examination
+  ON Patient."ID" = Examination."ID"
+WHERE
+  Laboratory.SM = '-' AND Examination.Thrombosis = 0
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (7,)
+- Fix applied: no such column: SM -> added missing JOIN in code
+- Fix applied: no such column: Thrombosis -> added missing JOIN in code
+
+### Q1270: FAIL
+
+*thrombosis_prediction, challenging, confidence None, 3 attempt(s), 41.51s*
+
+**Question:** Among the patients who has a normal anti-scl70, how many of them are female and does not have any symptom?
+
+**Hint:** normal anti-scl70 refers to SC170 IN('negative', '0'); female refers to Sex = 'F'; does not have any symptom refers to symptoms IS NULL; Should consider DISTINCT in the final result;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+INNER JOIN Examination AS T3
+  ON T3.ID = T2.ID
+WHERE
+  (
+    T2.SC170 = 'negative' OR T2.SC170 = '0'
+  )
+  AND T1.SEX = 'F'
+  AND T3.Symptoms IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T1.SEX = 'F' AND T2.SC170 IN ('negative', '0') AND T1.symptoms IS NULL
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (2,)
+- Error: `no such column: T1.symptoms`
+- Fix applied: no such column: T1.symptoms
+- Fix applied: no such column: T1.symptoms
+- Fix applied: no such column: T1.symptoms
+
+### Q1275: FAIL
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 12.4s*
+
+**Question:** Among the patients who has a normal level of anti-centromere and a normal level of anti-SSB, how many of them are male?
+
+**Hint:** normal level of anti-centromere refers to CENTROMEA IN('-', '+-'); normal level of anti-SSB refers to SSB IN('-', '+-'); male refers to Sex = 'M'; Should consider DISTINCT in the final result;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.CENTROMEA IN ('negative', '0') AND T2.SSB IN ('negative', '0') AND T1.SEX = 'M'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT Patient.ID)
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  Patient.Sex = 'M' AND Laboratory.CENTROMEA IN ('-', '+-') AND SSB IN ('-', '+-')
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (1,)
+- Fix applied: no such column: CENTROMEA -> added missing JOIN in code
+
+### Q1281: FAIL
+
+*thrombosis_prediction, moderate, confidence 1.0, 1 attempt(s), 11.76s*
+
+**Question:** Among the patients who have an abnormal level of glutamic oxaloacetic transaminase, when was the youngest of them born?
+
+**Hint:** abnormal level of glutamic oxaloacetic transaminase refers to GOT > = 60; The larger the birthday value, the younger the person is, and vice versa;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.Birthday
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+WHERE
+  T2.GOT >= 60
+ORDER BY
+  T1.Birthday DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Patient.Birthday
+FROM Patient
+INNER JOIN Laboratory
+  ON Patient."ID" = Laboratory."ID"
+WHERE
+  Laboratory.GOT >= 60
+ORDER BY
+  Patient.Birthday ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('1922-12-01',)
+- Gold result: 1 row(s): ('1987-12-05',)
+- Fix applied: no such column: GOT -> added missing JOIN in code
+
+### Q1302: PASS
+
+*thrombosis_prediction, challenging, confidence 1.0, 1 attempt(s), 14.63s*
+
+**Question:** For the patients with a normal range of creatinine phosphokinase, how many of them have a positive measure of degree of coagulation?
+
+**Hint:** normal range of creatinine phosphokinase refers to CPK < 250; positive measure of degree of coagulation refers to KCT = '+' or RVVT = '+' or LAC = '+' ;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.ID)
+FROM Patient AS T1
+INNER JOIN Laboratory AS T2
+  ON T1.ID = T2.ID
+INNER JOIN Examination AS T3
+  ON T1.ID = T3.ID
+WHERE
+  T2.CPK < 250 AND (
+    T3.KCT = '+' OR T3.RVVT = '+' OR T3.LAC = '+'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Examination
+INNER JOIN Laboratory
+  ON Examination."ID" = Laboratory."ID"
+WHERE
+  Laboratory.CPK < 250
+  AND (
+    Examination.KCT = '+' OR Examination.RVVT = '+' OR Examination.LAC = '+'
+  )
+```
+
+- Our result: 1 row(s): (7,)
+- Gold result: 1 row(s): (7,)
+- Fix applied: no such column: CPK -> added missing JOIN in code
+
+### Q1025: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 24.72s*
+
+**Question:** Give the name of the league had the most goals in the 2016 season?
+
+**Hint:** league that had the most goals refers to MAX(SUM(home_team_goal, away_team_goal)); 2016 season refers to season = '2015/2016';
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.name
+FROM Match AS t1
+INNER JOIN League AS t2
+  ON t1.league_id = t2.id
+WHERE
+  t1.season = '2015/2016'
+GROUP BY
+  t2.name
+ORDER BY
+  SUM(t1.home_team_goal + t1.away_team_goal) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.name
+FROM Match AS T1
+INNER JOIN League AS T2
+  ON T1.league_id = T2.id
+WHERE
+  T1.season = '2015/2016'
+GROUP BY
+  T2.name
+ORDER BY
+  SUM(T1.home_team_goal + T1.away_team_goal) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Spain LIGA BBVA',)
+- Gold result: 1 row(s): ('Spain LIGA BBVA',)
+
+### Q1028: FAIL
+
+*european_football_2, challenging, confidence 1.0, 1 attempt(s), 22.68s*
+
+**Question:** In Scotland Premier League, which away team won the most during the 2010 season?
+
+**Hint:** Final result should return the Team.team_long_name; Scotland Premier League refers to League.name = 'Scotland Premier League'; away team refers to away_team_api_id; away team that won the most refers to MAX(SUBTRACT(away_team_goal, home_team_goal) > 0); 2010 season refers to season = '2009/2010'; won the most refers to MAX(COUNT(*));
+
+**Gold SQL**
+
+```sql
+SELECT
+  teamInfo.team_long_name
+FROM League AS leagueData
+INNER JOIN Match AS matchData
+  ON leagueData.id = matchData.league_id
+INNER JOIN Team AS teamInfo
+  ON matchData.away_team_api_id = teamInfo.team_api_id
+WHERE
+  leagueData.name = 'Scotland Premier League'
+  AND matchData.season = '2009/2010'
+  AND matchData.away_team_goal - matchData.home_team_goal > 0
+GROUP BY
+  matchData.away_team_api_id
+ORDER BY
+  COUNT(*) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.team_long_name
+FROM Team AS T1
+INNER JOIN Match AS T2
+  ON T1.team_api_id = T2.away_team_api_id
+INNER JOIN League AS T3
+  ON T2.league_id = T3.id
+INNER JOIN Country AS T4
+  ON T2.country_id = T4.id
+WHERE
+  T3.name = 'Scotland Premier League' AND T2.season = '2009/2010'
+GROUP BY
+  T1.team_long_name
+ORDER BY
+  COUNT(*) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Motherwell',)
+- Gold result: 1 row(s): ('Celtic',)
+
+### Q1029: FAIL
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 23.44s*
+
+**Question:** What are the speed in which attacks are put together of the top 4 teams with the highest build Up Play Speed?
+
+**Hint:** speed in which attacks are put together refers to buildUpPlaySpeed;highest build up play speed refers to MAX(buildUpPlaySpeed)
+
+**Gold SQL**
+
+```sql
+SELECT
+  t1.buildUpPlaySpeed
+FROM Team_Attributes AS t1
+INNER JOIN Team AS t2
+  ON t1.team_api_id = t2.team_api_id
+ORDER BY
+  t1.buildUpPlaySpeed ASC
+LIMIT 4
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.buildUpPlaySpeed,
+  T1.team_api_id,
+  T1.team_fifa_api_id
+FROM Team_Attributes AS T1
+JOIN Team AS T2
+  ON T1.team_api_id = T2.team_api_id
+ORDER BY
+  T1.buildUpPlaySpeed DESC
+LIMIT 4
+```
+
+- Our result: 4 row(s): (80, 208931, 112409), (78, 9904, 485), (78, 8600, 55), (77, 8654, 19)
+- Gold result: 4 row(s): (20,), (20,), (20,), (23,)
+
+### Q1030: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 22.12s*
+
+**Question:** Give the name of the league had the most matches end as draw in the 2016 season?
+
+**Hint:** most matches end as draw refers to MAX(SUM(home_team_goal = away_team_goal)); 2016 season refers to season = '2015/2016';
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.name
+FROM Match AS t1
+INNER JOIN League AS t2
+  ON t1.league_id = t2.id
+WHERE
+  t1.season = '2015/2016' AND t1.home_team_goal = t1.away_team_goal
+GROUP BY
+  t2.name
+ORDER BY
+  COUNT(t1.id) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.name
+FROM Match AS T1
+INNER JOIN League AS T2
+  ON T1.league_id = T2.id
+WHERE
+  T1.season = '2015/2016'
+GROUP BY
+  T2.name
+ORDER BY
+  SUM(CASE WHEN T1.home_team_goal = T1.away_team_goal THEN 1 ELSE 0 END) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('France Ligue 1',)
+- Gold result: 1 row(s): ('France Ligue 1',)
+
+### Q1031: FAIL
+
+*european_football_2, challenging, confidence 1.0, 1 attempt(s), 30.7s*
+
+**Question:** At present, calculate for the player's age who have a sprint speed of no less than 97 between 2013 to 2015.
+
+**Hint:** players age at present = SUBTRACT((DATETIME(), birthday)); sprint speed of no less than 97 refers to sprint_speed > = 97; between 2013 to 2015 refers to YEAR(date) > = '2013' AND YEAR(date) < = '2015'; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  DATETIME() - T2.birthday AS age
+FROM Player_Attributes AS t1
+INNER JOIN Player AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  STRFTIME('%Y', t1."date") >= '2013'
+  AND STRFTIME('%Y', t1."date") <= '2015'
+  AND t1.sprint_speed >= 97
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.player_name,
+  T1.sprint_speed,
+  SUBSTRING(T1.date, 1, 4) AS year
+FROM Player_Attributes AS T1
+JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T1.sprint_speed >= 97 AND SUBSTRING(T1.date, 1, 4) BETWEEN '2013' AND '2015'
+```
+
+- Our result: 23 row(s): ('Mathis Bolly', 97, '2015'), ('Mathis Bolly', 97, '2014'), ('Mathis Bolly', 97, '2014'), ('Mathis Bolly', 97, '2014'), ('Mathis Bolly', 97, '2014') … (23 rows total)
+- Gold result: 1 row(s): (36,)
+- Fix applied: no such column: T1.player_name -> repaired alias in code
+
+### Q1032: FAIL
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 21.5s*
+
+**Question:** Give the name of the league with the highest matches of all time and how many matches were played in the said league.
+
+**Hint:**  league with highest matches of all time refers to MAX(COUNT(league_id));
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.name,
+  t1.max_count
+FROM League AS t2
+JOIN (
+  SELECT
+    league_id,
+    MAX(cnt) AS max_count
+  FROM (
+    SELECT
+      league_id,
+      COUNT(id) AS cnt
+    FROM Match
+    GROUP BY
+      league_id
+  ) AS subquery
+) AS t1
+  ON t1.league_id = t2.id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.name
+FROM Match AS T1
+INNER JOIN League AS T2
+  ON T1.league_id = T2.id
+GROUP BY
+  T1.league_id
+ORDER BY
+  COUNT(T1.league_id) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Spain LIGA BBVA',)
+- Gold result: 1 row(s): ('England Premier League', 3040)
+
+### Q1035: PASS
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 24.24s*
+
+**Question:** Give the team_fifa_api_id of teams with more than 50 but less than 60 build-up play speed.
+
+**Hint:** teams with more than 50 but less than 60 build-up play speed refers to buildUpPlaySpeed >50 AND buildUpPlaySpeed <60; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  team_fifa_api_id
+FROM Team_Attributes
+WHERE
+  buildUpPlaySpeed > 50 AND buildUpPlaySpeed < 60
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  team_fifa_api_id
+FROM Team_Attributes
+WHERE
+  buildUpPlaySpeed > 50 AND buildUpPlaySpeed < 60
+```
+
+- Our result: 356 row(s): (434,), (77,), (77,), (77,), (614,) … (356 rows total)
+- Gold result: 161 row(s): (434,), (77,), (614,), (1901,), (650,) … (161 rows total)
+
+### Q1036: PASS
+
+*european_football_2, challenging, confidence 1.0, 1 attempt(s), 27.46s*
+
+**Question:** List the long name of teams with above-average build-up play passing in 2012.
+
+**Hint:** long name of teams refers to team_long_name; build-up play passing refers to buildUpPlayPassing; above-average build-up play passing = buildUpPlayPassing > DIVIDE(SUM(buildUpPlayPassing), COUNT(team_long_name) WHERE buildUpPlayPassing IS NOT NULL); in 2012 refers to strftime('%Y', date) = '2012'; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  t4.team_long_name
+FROM Team_Attributes AS t3
+INNER JOIN Team AS t4
+  ON t3.team_api_id = t4.team_api_id
+WHERE
+  SUBSTRING(t3."date", 1, 4) = '2012'
+  AND t3.buildUpPlayPassing > (
+    SELECT
+      CAST(SUM(t2.buildUpPlayPassing) AS REAL) / COUNT(t1.id)
+    FROM Team AS t1
+    INNER JOIN Team_Attributes AS t2
+      ON t1.team_api_id = t2.team_api_id
+    WHERE
+      STRFTIME('%Y', t2."date") = '2012'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.team_long_name
+FROM Team_Attributes AS T1
+JOIN Team AS T2
+  ON T1.team_api_id = T2.team_api_id
+WHERE
+  STRFTIME('%Y', T1.date) = '2012'
+GROUP BY
+  T2.team_long_name
+HAVING
+  AVG(T1.buildUpPlayPassing) > (
+    SELECT
+      AVG(buildUpPlayPassing)
+    FROM Team_Attributes
+    WHERE
+      STRFTIME('%Y', date) = '2012' AND NOT buildUpPlayPassing IS NULL
+  )
+```
+
+- Our result: 128 row(s): ('1. FC Kaiserslautern',), ('1. FC Köln',), ('1. FSV Mainz 05',), ('AC Ajaccio',), ('AS Saint-Étienne',) … (128 rows total)
+- Gold result: 128 row(s): ('Aberdeen',), ('AC Ajaccio',), ('Milan',), ('UD Almería',), ('Angers SCO',) … (128 rows total)
+- Fix applied: no such column: T1.team_long_name -> repaired alias in code
+
+### Q1037: PASS
+
+*european_football_2, challenging, confidence 1.0, 1 attempt(s), 30.27s*
+
+**Question:** Calculate the percentage of players who prefer left foot, who were born between 1987 and 1992.
+
+**Hint:** players who prefer left foot refers to preferred_foot = 'left'; percentage of players who prefer left foot = DIVIDE(MULTIPLY((SUM(preferred_foot = 'left'), 100)), COUNT(player_fifa_api_id)); born between 1987 and 1992 refers to YEAR(birthday) BETWEEN '1987' AND '1992';
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN t2.preferred_foot = 'left' THEN t1.id ELSE NULL END) AS REAL) * 100 / COUNT(t1.id) AS percent
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  SUBSTRING(t1.birthday, 1, 4) BETWEEN '1987' AND '1992'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN Player_Attributes.preferred_foot = 'left' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(Player_Attributes.player_fifa_api_id) AS percentage_left_foot
+FROM Player_Attributes
+INNER JOIN Player
+  ON Player_Attributes."player_api_id" = Player."player_api_id"
+WHERE
+  STRFTIME('%Y', Player.birthday) BETWEEN '1987' AND '1992'
+```
+
+- Our result: 1 row(s): (24.56690504416995,)
+- Gold result: 1 row(s): (24.56690504416995,)
+- Fix applied: no such column: birthday -> added missing JOIN in code
+
+### Q1039: FAIL
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 21.06s*
+
+**Question:** Find the average number of long-shot done by Ahmed Samir Farag.
+
+**Hint:** average number of long shot = DIVIDE(SUM(long_shots), COUNT(player_fifa_api_id));
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(t2.long_shots) AS REAL) / COUNT(t2."date")
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  t1.player_name = 'Ahmed Samir Farag'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(long_shots)
+FROM Player_Attributes AS T1
+INNER JOIN Match AS T2
+  ON T1.player_api_id = T2.away_player_11
+WHERE
+  T1.player_fifa_api_id = '106013'
+```
+
+- Our result: 1 row(s): (None,)
+- Gold result: 1 row(s): (61.57142857142857,)
+
+### Q1040: FAIL
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 32.28s*
+
+**Question:** List the top 10 players' names whose heights are above 180 in descending order of average heading accuracy.
+
+**Hint:** heights are above 180 refers to Player.height > 180; average heading accuracy = DIVIDE(SUM(heading_accuracy), COUNT(player_fifa_api_id));
+
+**Gold SQL**
+
+```sql
+SELECT
+  t1.player_name
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  t1.height > 180
+GROUP BY
+  t1.id
+ORDER BY
+  CAST(SUM(t2.heading_accuracy) AS REAL) / COUNT(t2."player_fifa_api_id") DESC
+LIMIT 10
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.player_name,
+  AVG(T1.heading_accuracy) AS avg_heading_accuracy
+FROM Player_Attributes AS T1
+JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T2.height > 180
+GROUP BY
+  T2.player_name
+ORDER BY
+  avg_heading_accuracy DESC
+LIMIT 10
+```
+
+- Our result: 10 row(s): ('Michael Ballack', 91.8), ('Fernando Llorente', 91.52380952380952), ('John Terry', 91.33333333333333), ('Per Mertesacker', 90.26470588235294), ('Luca Toni', 90.26470588235294) … (10 rows total)
+- Gold result: 10 row(s): ('Michael Ballack',), ('Fernando Llorente',), ('John Terry',), ('Naldo',), ('Per Mertesacker',) … (10 rows total)
+- Fix applied: no such column: T1.height -> repaired alias in code
+
+### Q1042: PASS
+
+*european_football_2, challenging, confidence 1.0, 1 attempt(s), 26.65s*
+
+**Question:** List the name of leagues in which the average goals by the home team is higher than the away team in the 2009/2010 season.
+
+**Hint:** name of league refers to League.name; average goals by the home team is higher than the away team = AVG(home_team_goal) > AVG(away_team_goal); AVG(xx_goal) = SUM(xx_goal) / COUNT(DISTINCT Match.id); 2009/2010 season refers to season = '2009/2010'
+
+**Gold SQL**
+
+```sql
+SELECT
+  t1.name
+FROM League AS t1
+INNER JOIN Match AS t2
+  ON t1.id = t2.league_id
+WHERE
+  t2.season = '2009/2010'
+GROUP BY
+  t1.name
+HAVING
+  (
+    CAST(SUM(t2.home_team_goal) AS REAL) / COUNT(DISTINCT t2.id)
+  ) - (
+    CAST(SUM(t2.away_team_goal) AS REAL) / COUNT(DISTINCT t2.id)
+  ) > 0
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.name
+FROM League AS T1
+INNER JOIN Match AS T2
+  ON T1.id = T2.league_id
+WHERE
+  T2.season = '2009/2010'
+GROUP BY
+  T1.name
+HAVING
+  AVG(T2.home_team_goal) > AVG(T2.away_team_goal)
+```
+
+- Our result: 11 row(s): ('Belgium Jupiler League',), ('England Premier League',), ('France Ligue 1',), ('Germany 1. Bundesliga',), ('Italy Serie A',) … (11 rows total)
+- Gold result: 11 row(s): ('Belgium Jupiler League',), ('England Premier League',), ('France Ligue 1',), ('Germany 1. Bundesliga',), ('Italy Serie A',) … (11 rows total)
+
+### Q1044: PASS
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 26.56s*
+
+**Question:** List the football players with a birthyear of 1970 and a birthmonth of October.
+
+**Hint:** players with a birthyear of 1970 and a birthmonth of October refers to substr(birthday,1,7) AS 'year-month',WHERE year = '1970' AND month = '10';
+
+**Gold SQL**
+
+```sql
+SELECT
+  player_name
+FROM Player
+WHERE
+  SUBSTRING(birthday, 1, 7) = '1970-10'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  player_name
+FROM Player
+WHERE
+  SUBSTRING(birthday, 1, 7) = '1970-10'
+```
+
+- Our result: 4 row(s): ('Chris Swailes',), ('Dean Kiely',), ('Edwin van der Sar',), ('Sander Boschker',)
+- Gold result: 4 row(s): ('Chris Swailes',), ('Dean Kiely',), ('Edwin van der Sar',), ('Sander Boschker',)
+
+### Q1048: PASS
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 28.24s*
+
+**Question:** What is the overall rating of the football player Gabriel Tamas in year 2011?
+
+**Hint:** in year 2011 refers to strftime('%Y', date) = '2011';
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.overall_rating
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  t1.player_name = 'Gabriel Tamas' AND STRFTIME('%Y', t2.date) = '2011'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Player_Attributes.overall_rating
+FROM Player_Attributes
+INNER JOIN Player
+  ON Player_Attributes."player_api_id" = Player."player_api_id"
+WHERE
+  STRFTIME('%Y', Player_Attributes.date) = '2011'
+  AND Player.player_name = 'Gabriel Tamas'
+```
+
+- Our result: 1 row(s): (75,)
+- Gold result: 1 row(s): (75,)
+- Fix applied: no such column: player_name -> added missing JOIN in code
+
+### Q1057: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 22.4s*
+
+**Question:** Calculate the average home team goal in the 2010/2011 season in the country of Poland.
+
+**Hint:** average home team goal = AVG(home_team_goal)= SUM(home_team_goal) / COUNT(DISTINCT Match.id) WHERE name = 'Poland' and season = '2010/2011';
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(t2.home_team_goal) AS REAL) / COUNT(t2.id)
+FROM Country AS t1
+INNER JOIN Match AS t2
+  ON t1.id = t2.country_id
+WHERE
+  t1.name = 'Poland' AND t2.season = '2010/2011'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(home_team_goal)
+FROM Match
+WHERE
+  season = '2010/2011'
+  AND country_id = (
+    SELECT
+      id
+    FROM Country
+    WHERE
+      name = 'Poland'
+  )
+```
+
+- Our result: 1 row(s): (1.5041666666666667,)
+- Gold result: 1 row(s): (1.5041666666666667,)
+
+### Q1058: FAIL
+
+*european_football_2, challenging, confidence 1.0, 1 attempt(s), 25.98s*
+
+**Question:** Who has the highest average finishing rate between the highest and shortest football player?
+
+**Hint:** finishing rate refers to finishing; highest average finishing rate = MAX(AVG(finishing)); highest football player refers to MAX(height); shortest football player refers to MIN(height);
+
+**Gold SQL**
+
+```sql
+SELECT
+  A
+FROM (
+  SELECT
+    AVG(finishing) AS result,
+    'Max' AS A
+  FROM Player AS T1
+  INNER JOIN Player_Attributes AS T2
+    ON T1.player_api_id = T2.player_api_id
+  WHERE
+    T1.height = (
+      SELECT
+        MAX(height)
+      FROM Player
+    )
+  UNION
+  SELECT
+    AVG(finishing) AS result,
+    'Min' AS A
+  FROM Player AS T1
+  INNER JOIN Player_Attributes AS T2
+    ON T1.player_api_id = T2.player_api_id
+  WHERE
+    T1.height = (
+      SELECT
+        MIN(height)
+      FROM Player
+    )
+)
+ORDER BY
+  result DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.player_api_id
+FROM Player_Attributes AS T1
+INNER JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T2.height = (
+    SELECT
+      MIN(height)
+    FROM Player
+  )
+ORDER BY
+  T1.finishing DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (97226,)
+- Gold result: 1 row(s): ('Min',)
+
+### Q1068: FAIL
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 30.46s*
+
+**Question:** From 2010 to 2015, what was the average overall rating of players who are higher than 170?
+
+**Hint:** from 2010 to 2015 refers to strftime('%Y', date) >= '2010' AND <= '2015'; average overall rating = SUM(t2.overall_rating)/ COUNT(t2.id); higher than 170 refers to Player.height > 170;
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(t2.overall_rating) AS REAL) / COUNT(t2.id)
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  t1.height > 170
+  AND STRFTIME('%Y', t2."date") >= '2010'
+  AND STRFTIME('%Y', t2."date") <= '2015'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(t1.overall_rating)
+FROM Player_Attributes AS t1
+INNER JOIN Player AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  STRFTIME('%Y', t1.date) >= '2010'
+  AND STRFTIME('%Y', t1.date) <= '2015'
+  AND t2.height > 170
+```
+
+- Our result: 1 row(s): (68.90135724487692,)
+- Gold result: 1 row(s): (68.85402657670379,)
+- Fix applied: no such column: t2.overall_rating -> repaired alias in code
+
+### Q1076: FAIL
+
+*european_football_2, challenging, confidence 1.0, 1 attempt(s), 28.97s*
+
+**Question:** What is the difference of the average ball control score between Abdou Diallo and Aaron Appindangoye
+?
+
+**Hint:** difference of the average ball control = SUBTRACT(AVG(ball_control WHERE player_name = 'Abdou Diallo'), AVG(ball_control WHERE player_name = 'Aaron Appindangoye')); AVG(ball_control WHERE player_name = 'XX XX') = SUM(CASE WHEN player_name = 'XX XX' THEN ball_control ELSE 0 END) / COUNT(CASE WHEN player_name = 'XX XX' THEN id ELSE NULL END)
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN t1.player_name = 'Abdou Diallo' THEN t2.ball_control ELSE 0 END) AS REAL) / COUNT(CASE WHEN t1.player_name = 'Abdou Diallo' THEN t2.id ELSE NULL END) - CAST(SUM(CASE WHEN t1.player_name = 'Aaron Appindangoye' THEN t2.ball_control ELSE 0 END) AS REAL) / COUNT(CASE WHEN t1.player_name = 'Aaron Appindangoye' THEN t2.id ELSE NULL END)
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(ball_control)
+FROM Player_Attributes AS T1
+INNER JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T2.player_name IN ('Abdou Diallo', 'Aaron Appindangoye')
+```
+
+- Our result: 1 row(s): (49.13333333333333,)
+- Gold result: 1 row(s): (0.7999999999999972,)
+
+### Q1078: PASS
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 29.77s*
+
+**Question:** Which player is older, Aaron Lennon or Abdelaziz Barrada?
+
+**Hint:** The larger the birthday value, the younger the person is, and vice versa;
+
+**Gold SQL**
+
+```sql
+SELECT
+  player_name
+FROM Player
+WHERE
+  player_name IN ('Aaron Lennon', 'Abdelaziz Barrada')
+ORDER BY
+  birthday ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  player_name
+FROM Player
+WHERE
+  player_name IN ('Aaron Lennon', 'Abdelaziz Barrada')
+ORDER BY
+  birthday ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Aaron Lennon',)
+- Gold result: 1 row(s): ('Aaron Lennon',)
+
+### Q1079: PASS
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 28.83s*
+
+**Question:** Which player is the tallest?
+
+**Hint:** tallest player refers to MAX(height);
+
+**Gold SQL**
+
+```sql
+SELECT
+  player_name
+FROM Player
+ORDER BY
+  height DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  player_name
+FROM Player
+ORDER BY
+  height DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Kristof van Hout',)
+- Gold result: 1 row(s): ('Kristof van Hout',)
+
+### Q1080: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 23.8s*
+
+**Question:** Among the players whose preferred foot was the left foot when attacking, how many of them would remain in his position when the team attacked?
+
+**Hint:** preferred foot when attacking was the left refers to preferred_foot = 'left'; players who would remain in his position when the team attacked refers to attacking_work_rate = 'low';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(player_api_id)
+FROM Player_Attributes
+WHERE
+  preferred_foot = 'left' AND attacking_work_rate = 'low'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.player_api_id)
+FROM Player_Attributes AS T1
+INNER JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T1.preferred_foot = 'left' AND T1.attacking_work_rate = 'low'
+```
+
+- Our result: 1 row(s): (1569,)
+- Gold result: 1 row(s): (1569,)
+
+### Q1084: FAIL
+
+*european_football_2, challenging, confidence None, 3 attempt(s), 43.69s*
+
+**Question:** Among the players born before the year 1986, how many of them would remain in his position and defense while the team attacked?
+
+**Hint:** players born before the year 1986 refers to strftime('%Y', birthday)<'1986'; players who would remain in his position and defense while the team attacked refers to defensive_work_rate = 'high'; Should consider DISTINCT in the final result;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT t1.player_name)
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  STRFTIME('%Y', t1.birthday) < '1986' AND t2.defensive_work_rate = 'high'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.player_api_id)
+FROM Player_Attributes AS T1
+INNER JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  STRFTIME('%Y', T2.date_of_birth) < '1986' AND T1.defensive_work_rate = 'high'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (892,)
+- Error: `no such column: T2.date_of_birth`
+- Fix applied: no such column: T2.date_of_birth
+- Fix applied: no such column: T2.date_of_birth
+- Fix applied: no such column: T2.date_of_birth
+
+### Q1088: FAIL
+
+*european_football_2, moderate, confidence None, 3 attempt(s), 53.22s*
+
+**Question:** Please list the names of the players whose volley score and dribbling score are over 70.
+
+**Hint:** volley score are over 70 refers to volleys > 70; dribbling score refers to dribbling are over 70 refers to dribbling > 70;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  t1.player_name
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  t2.volleys > 70 AND t2.dribbling > 70
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.player_name
+FROM Player_Attributes AS T1
+INNER JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T1.volley > 70 AND T1.dribbling > 70
+```
+
+- Our result: 0 rows
+- Gold result: 1105 row(s): ('Aaron Hunt',), ('Aaron Ramsey',), ('Aatif Chahechouhe',), ('Abdelkader Ghezzal',), ('Abdoulaye Diallo Sadio,22',) … (1105 rows total)
+- Error: `no such column: T1.volley`
+- Fix applied: no such column: T1.volley
+- Fix applied: no such column: T1.volley
+- Fix applied: no such column: T1.volley
+
+### Q1091: FAIL
+
+*european_football_2, moderate, confidence None, 3 attempt(s), 38.97s*
+
+**Question:** How many matches were held in the Belgium Jupiler League in April, 2009?
+
+**Hint:** Belgium Jupiler League refers to League.name = 'Belgium Jupiler League'; in April, 2009 refers to SUBSTR(`date`, 1, 7);
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(t2.id)
+FROM League AS t1
+INNER JOIN Match AS t2
+  ON t1.id = t2.league_id
+WHERE
+  t1.name = 'Belgium Jupiler League' AND SUBSTRING(t2."date", 1, 7) = '2009-04'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Match
+WHERE
+  League.name = 'Belgium Jupiler League' AND SUBSTRING("date", 1, 7) = '2009-04'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (36,)
+- Error: `no such column: League.name`
+- Fix applied: no such column: League.name
+- Fix applied: no such column: League.name
+- Fix applied: no such column: League.name
+
+### Q1092: FAIL
+
+*european_football_2, simple, confidence 1.0, 2 attempt(s), 50.3s*
+
+**Question:** Give the name of the league had the most matches in the 2008/2009 season?
+
+**Hint:** league that had the most matches in the 2008/2009 season refers to MAX(league_name WHERE season = '2008/2009');
+
+**Gold SQL**
+
+```sql
+SELECT
+  t1.name
+FROM League AS t1
+JOIN Match AS t2
+  ON t1.id = t2.league_id
+WHERE
+  t2.season = '2008/2009'
+GROUP BY
+  t1.name
+HAVING
+  COUNT(t2.id) = (
+    SELECT
+      MAX(match_count)
+    FROM (
+      SELECT
+        COUNT(t2.id) AS match_count
+      FROM Match AS t2
+      WHERE
+        t2.season = '2008/2009'
+      GROUP BY
+        t2.league_id
+    )
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.name
+FROM Match AS T1
+INNER JOIN League AS T2
+  ON T1.league_id = T2.id
+WHERE
+  T1.season = '2008/2009'
+GROUP BY
+  T2.name
+ORDER BY
+  COUNT(*) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Spain LIGA BBVA',)
+- Gold result: 4 row(s): ('England Premier League',), ('France Ligue 1',), ('Italy Serie A',), ('Spain LIGA BBVA',)
+- Fix applied: no such column: league_name
+
+### Q1094: FAIL
+
+*european_football_2, challenging, confidence None, 3 attempt(s), 68.88s*
+
+**Question:** How much higher in percentage is Ariel Borysiuk's overall rating than that of Paulin Puel?
+
+**Hint:** how much higher in percentage = MULTIPLY(DIVIDE(SUBTRACT(overall_rating WHERE player_name = 'Ariel Borysiuk', overall_rating WHERE player_name = 'Paulin Puel'), overall_rating WHERE player_name = 'Paulin Puel'), 100);
+
+**Gold SQL**
+
+```sql
+SELECT
+  (
+    SUM(CASE WHEN t1.player_name = 'Ariel Borysiuk' THEN t2.overall_rating ELSE 0 END) * 1.0 - SUM(CASE WHEN t1.player_name = 'Paulin Puel' THEN t2.overall_rating ELSE 0 END)
+  ) * 100 / SUM(CASE WHEN t1.player_name = 'Paulin Puel' THEN t2.overall_rating ELSE 0 END)
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    CAST(SUBTRACT(T1.overall_rating, T2.overall_rating) AS REAL) / T2.overall_rating
+  ) * 100 AS percentage_difference
+FROM Player_Attributes AS T1
+JOIN Player_Attributes AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T1.player_name = 'Ariel Borysiuk' AND T2.player_name = 'Paulin Puel'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (133.7260677466863,)
+- Error: `no such function: SUBTRACT`
+
+### Q1096: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 30.22s*
+
+**Question:** Calculate the average overall rating of Pietro Marino.
+
+**Hint:** Pietro Marino refers to player_name = 'Pietro Marino'; average overall rating AVG(T1.overall_rating)
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(t2.overall_rating) AS REAL) / COUNT(t2.id)
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  t1.player_name = 'Pietro Marino'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T1.overall_rating)
+FROM Player_Attributes AS T1
+INNER JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T2.player_name = 'Pietro Marino'
+```
+
+- Our result: 1 row(s): (61.666666666666664,)
+- Gold result: 1 row(s): (61.666666666666664,)
+
+### Q1098: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 27.1s*
+
+**Question:** What is Ajax's highest chance creation passing score and what is it classified as?
+
+**Hint:** Ajax's refers to team_long_name = 'Ajax'; chance creation passing score refers to MAX(chanceCreationPassing); classified refer to chanceCreationPassingClass
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.chanceCreationPassing,
+  t2.chanceCreationPassingClass
+FROM Team AS t1
+INNER JOIN Team_Attributes AS t2
+  ON t1.team_api_id = t2.team_api_id
+WHERE
+  t1.team_long_name = 'Ajax'
+ORDER BY
+  t2.chanceCreationPassing DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  MAX(T2.chanceCreationPassing),
+  T2.chanceCreationPassingClass
+FROM Team AS T1
+INNER JOIN Team_Attributes AS T2
+  ON T1.team_api_id = T2.team_api_id
+WHERE
+  T1.team_long_name = 'Ajax'
+```
+
+- Our result: 1 row(s): (67, 'Risky')
+- Gold result: 1 row(s): (67, 'Risky')
+
+### Q1102: FAIL
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 30.28s*
+
+**Question:** For the players who had a 77 points overall rating on 2016/6/23, who was the oldest? Give the name of the player.
+
+**Hint:** 77 points overall rating refers to overall_rating = 77; on 2016/6/23 refers to date LIKE '2016-06-23%'; The larger the birthday value, the younger the person is, and vice versa;
+
+**Gold SQL**
+
+```sql
+SELECT
+  t1.player_name
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  SUBSTRING(t2."date", 1, 10) = '2016-06-23' AND t2.overall_rating = 77
+ORDER BY
+  t1.birthday ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.player_name
+FROM Player_Attributes AS T1
+INNER JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T1.overall_rating = 77 AND T1.date LIKE '2016-06-23%'
+ORDER BY
+  T2.birthday DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Nampalys Mendy',)
+- Gold result: 1 row(s): ('Laurent Ciman',)
+
+### Q1103: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 27.44s*
+
+**Question:** What was the overall rating for Aaron Mooy on 2016/2/4?
+
+**Hint:** Aaron Mooy refers to player_name = 'Aaron Mooy'; on 2016/2/4 refers to date LIKE '2016-02-04%';
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.overall_rating
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  SUBSTRING(t2."date", 1, 10) = '2016-02-04' AND t1.player_name = 'Aaron Mooy'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Player_Attributes.overall_rating
+FROM Player_Attributes
+INNER JOIN Player
+  ON Player_Attributes."player_api_id" = Player."player_api_id"
+WHERE
+  Player.player_name = 'Aaron Mooy' AND Player_Attributes.date LIKE '2016-02-04%'
+```
+
+- Our result: 1 row(s): (75,)
+- Gold result: 1 row(s): (75,)
+- Fix applied: no such column: player_name -> added missing JOIN in code
+
+### Q1105: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 27.07s*
+
+**Question:** How was Francesco Migliore's attacking work rate on 2015/5/1?
+
+**Hint:** Francesco Migliore refers to player_name = 'Francesco Migliore'; on 2015/5/1 refers to date LIKE '2015-05-01%';
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.attacking_work_rate
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  t2."date" LIKE '2015-05-01%' AND t1.player_name = 'Francesco Migliore'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Player_Attributes.attacking_work_rate
+FROM Player_Attributes
+INNER JOIN Player
+  ON Player_Attributes."player_api_id" = Player."player_api_id"
+WHERE
+  Player.player_name = 'Francesco Migliore'
+  AND Player_Attributes.date LIKE '2015-05-01%'
+```
+
+- Our result: 1 row(s): ('medium',)
+- Gold result: 1 row(s): ('medium',)
+- Fix applied: no such column: player_name -> added missing JOIN in code
+
+### Q1107: FAIL
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 27.62s*
+
+**Question:** When was the first time did Kevin Constant have his highest crossing score? Give the date.
+
+**Hint:** Kevin Constant refers to player_name = 'Kevin Constant'; highest crossing score refers to MAX(crossing)
+
+**Gold SQL**
+
+```sql
+SELECT
+  "date"
+FROM (
+  SELECT
+    t2.crossing,
+    t2."date"
+  FROM Player AS t1
+  INNER JOIN Player_Attributes AS t2
+    ON t1.player_fifa_api_id = t2.player_fifa_api_id
+  WHERE
+    t1.player_name = 'Kevin Constant'
+  ORDER BY
+    t2.crossing DESC
+)
+ORDER BY
+  date DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.date
+FROM Player_Attributes AS T1
+INNER JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T2.player_name = 'Kevin Constant'
+ORDER BY
+  T1.crossing DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('2013-03-28 00:00:00',)
+- Gold result: 1 row(s): ('2016-04-21 00:00:00',)
+
+### Q1110: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 24.63s*
+
+**Question:** Tell the build Up play passing class for "FC Lorient" on 2010/2/22.
+
+**Hint:** "FC Lorient" refers to team_long_name = 'FC Lorient'; on 2010/2/22 refers to date LIKE '2010-02-22%';
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.buildUpPlayPassingClass
+FROM Team AS t1
+INNER JOIN Team_Attributes AS t2
+  ON t1.team_api_id = t2.team_api_id
+WHERE
+  t1.team_long_name = 'FC Lorient' AND t2."date" LIKE '2010-02-22%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.buildUpPlayPassingClass
+FROM Team AS T1
+JOIN Team_Attributes AS T2
+  ON T1.team_api_id = T2.team_api_id
+WHERE
+  T1.team_long_name = 'FC Lorient' AND T2.date LIKE '2010-02-22%'
+```
+
+- Our result: 1 row(s): ('Long',)
+- Gold result: 1 row(s): ('Long',)
+
+### Q1113: FAIL
+
+*european_football_2, moderate, confidence None, 3 attempt(s), 43.04s*
+
+**Question:** For the team "Hannover 96", what was its defence aggression class on 2015/9/10?
+
+**Hint:** "Hannover 96" refers to team_long_name = 'Hannover 96'; on 2015/9/10 refers to date LIKE '2015-09-10%';
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.defenceAggressionClass
+FROM Team AS t1
+INNER JOIN Team_Attributes AS t2
+  ON t1.team_api_id = t2.team_api_id
+WHERE
+  t1.team_long_name = 'Hannover 96' AND t2."date" LIKE '2015-09-10%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.defence_aggression_class
+FROM Team AS T1
+JOIN Team_Attributes AS T2
+  ON T1.team_api_id = T2.team_api_id
+WHERE
+  T1.team_long_name = 'Hannover 96' AND T2.date LIKE '2015-09-10%'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Press',)
+- Error: `no such column: T2.defence_aggression_class`
+- Fix applied: no such column: T2.defence_aggression_class
+- Fix applied: no such column: T2.defence_aggression_class
+- Fix applied: no such column: T2.defence_aggression_class
+
+### Q1114: PASS
+
+*european_football_2, challenging, confidence 1.0, 1 attempt(s), 30.86s*
+
+**Question:** What was the average overall rating for Marko Arnautovic from 2007/2/22 to 2016/4/21?
+
+**Hint:** average overall rating refers to avg(overall_rating); Marko Arnautovic refers to player_name = 'Marko Arnautovic'; from 2007/2/22 to 2016/4/21 refers to the first 10 characters of date BETWEEN '2007-02-22' and '2016-04-21'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(t2.overall_rating) AS REAL) / COUNT(t2.id)
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_fifa_api_id = t2.player_fifa_api_id
+WHERE
+  t1.player_name = 'Marko Arnautovic'
+  AND SUBSTRING(t2."date", 1, 10) BETWEEN '2007-02-22' AND '2016-04-21'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(overall_rating)
+FROM Player_Attributes AS T1
+INNER JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T2.player_name = 'Marko Arnautovic'
+  AND SUBSTRING(T1.date, 1, 10) BETWEEN '2007-02-22' AND '2016-04-21'
+```
+
+- Our result: 1 row(s): (75.39393939393939,)
+- Gold result: 1 row(s): (75.39393939393939,)
+
+### Q1115: FAIL
+
+*european_football_2, challenging, confidence 1.0, 1 attempt(s), 33.78s*
+
+**Question:** What percentage is Landon Donovan's overall rating higher than Jordan Bowery on 2013/7/12?
+
+**Hint:** Landon Donovan's refers to player_name = 'Landon Donovan'; Jordan Bowery refers to player_name = 'Jordan Bowery'; percentage refers to DIVIDE(SUBTRACT(player_name = 'Landon Donovan' overall_rating; player_name = 'Jordan Bowery' overall_rating), player_name = 'Landon Donovan' overall_rating)*100
+
+**Gold SQL**
+
+```sql
+SELECT
+  (
+    SUM(CASE WHEN t1.player_name = 'Landon Donovan' THEN t2.overall_rating ELSE 0 END) * 1.0 - SUM(CASE WHEN t1.player_name = 'Jordan Bowery' THEN t2.overall_rating ELSE 0 END)
+  ) * 100 / SUM(CASE WHEN t1.player_name = 'Landon Donovan' THEN t2.overall_rating ELSE 0 END) AS LvsJ_percent
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_fifa_api_id = t2.player_fifa_api_id
+WHERE
+  SUBSTRING(t2."date", 1, 10) = '2013-07-12'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  1.0 * (
+    SUM(CASE WHEN T2.player_name = 'Landon Donovan' THEN T1.overall_rating ELSE 0 END) - SUM(CASE WHEN T2.player_name = 'Jordan Bowery' THEN T1.overall_rating ELSE 0 END)
+  ) * 100 / SUM(CASE WHEN T2.player_name = 'Landon Donovan' THEN T1.overall_rating ELSE 0 END) AS percentage
+FROM Player_Attributes AS T1
+JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T1.date = '2013-07-12'
+```
+
+- Our result: 1 row(s): (None,)
+- Gold result: 1 row(s): (25.31645569620253,)
+- Fix applied: no such column: T1.player_name -> repaired alias in code
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q1116: PASS
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 31.56s*
+
+**Question:** List down most tallest players' name.
+
+**Hint:** tallest refers to rank based on the height in descending order; Most tallest players refers to rank = 1 
+
+**Gold SQL**
+
+```sql
+SELECT
+  player_name
+FROM (
+  SELECT
+    player_name,
+    height,
+    DENSE_RANK() OVER (ORDER BY height DESC) AS rank
+  FROM Player
+)
+WHERE
+  rank = 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  player_name
+FROM Player
+WHERE
+  height = (
+    SELECT
+      MAX(height)
+    FROM Player
+  )
+```
+
+- Our result: 1 row(s): ('Kristof van Hout',)
+- Gold result: 1 row(s): ('Kristof van Hout',)
+
+### Q1122: PASS
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 26.5s*
+
+**Question:** State the name of the most strongest player.
+
+**Hint:** strongest players refers to player has MAX(overall_rating)
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  t1.player_name
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  t2.overall_rating = (
+    SELECT
+      MAX(overall_rating)
+    FROM Player_Attributes
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  player_name
+FROM Player
+WHERE
+  player_api_id = (
+    SELECT
+      player_api_id
+    FROM Player_Attributes
+    ORDER BY
+      overall_rating DESC
+    LIMIT 1
+  )
+```
+
+- Our result: 1 row(s): ('Lionel Messi',)
+- Gold result: 1 row(s): ('Lionel Messi',)
+
+### Q1124: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 21.71s*
+
+**Question:** Who are the players that tend to be attacking when their mates were doing attack moves? List down their name.
+
+**Hint:** tend to be attacking when their mates were doing attack moves refers to attacking_work_rate = 'high';
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  t1.player_name
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  t2.attacking_work_rate = 'high'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.player_name
+FROM Player AS T1
+INNER JOIN Player_Attributes AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T2.attacking_work_rate = 'high'
+```
+
+- Our result: 42823 row(s): ('Aaron Cresswell',), ('Aaron Cresswell',), ('Aaron Cresswell',), ('Aaron Cresswell',), ('Aaron Cresswell',) … (42823 rows total)
+- Gold result: 3339 row(s): ('Aaron Cresswell',), ('Aaron Lennon',), ('Aaron Meijers',), ('Aaron Niguez',), ('Aaron Ramsey',) … (3339 rows total)
+
+### Q1130: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 23.24s*
+
+**Question:** What are the short name of team who played safe while creating chance of passing?
+
+**Hint:** played safe while creating chance of passing refers to chanceCreationPassingClass = 'Safe'; short name of team refers to team_short_name
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  t1.team_short_name
+FROM Team AS t1
+INNER JOIN Team_Attributes AS t2
+  ON t1.team_api_id = t2.team_api_id
+WHERE
+  t2.chanceCreationPassingClass = 'Safe'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.team_short_name
+FROM Team AS T1
+INNER JOIN Team_Attributes AS T2
+  ON T1.team_api_id = T2.team_api_id
+WHERE
+  T2.chanceCreationPassingClass = 'Safe'
+```
+
+- Our result: 56 row(s): ('HAA',), ('ARK',), ('ARL',), ('ARS',), ('ARS',) … (56 rows total)
+- Gold result: 43 row(s): ('HAA',), ('ARK',), ('ARL',), ('ARS',), ('BAR',) … (43 rows total)
+
+### Q1133: FAIL
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 26.77s*
+
+**Question:** How many football players born after the 1990s have the first name "Aaron"?
+
+**Hint:** first name "Aaron" refers to player_name LIKE 'Aaron%'; born after the 1990s refers to birthday > '1990'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(id)
+FROM Player
+WHERE
+  birthday > '1990' AND player_name LIKE 'Aaron%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM Player
+WHERE
+  player_name LIKE 'Aaron%' AND STRFTIME('%Y', birthday) > '1990'
+```
+
+- Our result: 1 row(s): (6,)
+- Gold result: 1 row(s): (9,)
+
+### Q1134: PASS
+
+*european_football_2, simple, confidence 1.0, 2 attempt(s), 46.29s*
+
+**Question:** What is the difference between players 6 and 23's jumping scores?
+
+**Hint:** difference between players 6 and 23's jumping scores refers to SUBTRACT(jumping AND id = 6,jumping AND id = 23)
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN t1.id = 6 THEN t1.jumping ELSE 0 END) - SUM(CASE WHEN t1.id = 23 THEN t1.jumping ELSE 0 END)
+FROM Player_Attributes AS t1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.jumping - T2.jumping AS jumping_difference
+FROM Player_Attributes AS T1
+JOIN Player_Attributes AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T1.id = 6 AND T2.id = 23
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (1,)
+
+### Q1135: FAIL
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 30.63s*
+
+**Question:** Please provide top four football players' IDs who are among the lowest potential players and prefer to use the right foot when attacking.
+
+**Hint:** lowest potential players refers to MIN(potential); prefer to use the right foot when attacking refers to preferred_foot = 'right'
+
+**Gold SQL**
+
+```sql
+SELECT
+  id
+FROM Player_Attributes
+WHERE
+  preferred_foot = 'right'
+ORDER BY
+  potential ASC
+LIMIT 4
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.player_api_id
+FROM Player_Attributes AS T1
+JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T1.preferred_foot = 'right'
+GROUP BY
+  T1.player_api_id
+ORDER BY
+  MIN(T1.potential) ASC
+LIMIT 4
+```
+
+- Our result: 4 row(s): (41496,), (166963,), (8893,), (168342,)
+- Gold result: 4 row(s): (132235,), (132236,), (66213,), (66214,)
+
+### Q1136: FAIL
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 29.39s*
+
+**Question:** How many players had the highest potential score for crossing that preferred to use their left foots while attacking?
+
+**Hint:** highest potential score for crossing refers to MAX(crossing); preferred to use their left foots while attacking refers to preferred_foot = 'left'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(t1.id)
+FROM Player_Attributes AS t1
+WHERE
+  t1.preferred_foot = 'left'
+  AND t1.crossing = (
+    SELECT
+      MAX(crossing)
+    FROM Player_Attributes
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.player_api_id,
+  MAX(T1.crossing) AS max_crossing
+FROM Player_Attributes AS T1
+JOIN Player AS T2
+  ON T1.player_api_id = T2.player_api_id
+WHERE
+  T1.preferred_foot = 'left'
+GROUP BY
+  T1.player_api_id
+ORDER BY
+  max_crossing DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (32578, 95)
+- Gold result: 1 row(s): (3,)
+
+### Q1139: PASS
+
+*european_football_2, challenging, confidence 1.0, 1 attempt(s), 22.31s*
+
+**Question:** What was the final score for the match on September 24, 2008, in the Belgian Jupiler League between the home team and the away team?
+
+**Hint:** September 24, 2008 refers to date like '2008-09-24%'; in the Belgian Jupiler League refers to League.name = 'Belgium Jupiler League'; final score for home team refers to home_team_goal; final score for away team refers to away_team_goal
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.home_team_goal,
+  t2.away_team_goal
+FROM League AS t1
+INNER JOIN Match AS t2
+  ON t1.id = t2.league_id
+WHERE
+  t1.name = 'Belgium Jupiler League' AND t2."date" LIKE '2008-09-24%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.home_team_goal,
+  T1.away_team_goal
+FROM Match AS T1
+INNER JOIN League AS T2
+  ON T1.league_id = T2.id
+WHERE
+  T2.name = 'Belgium Jupiler League' AND T1.date LIKE '2008-09-24%'
+```
+
+- Our result: 1 row(s): (1, 1)
+- Gold result: 1 row(s): (1, 1)
+
+### Q1141: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 23.09s*
+
+**Question:** Does the KSV Cercle Brugge team have a slow, balanced or fast speed class?
+
+**Hint:** KSV Cercle Brugge refers to team_long_name = 'KSV Cercle Brugge'; speed class refers to buildUpPlaySpeedClass
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  t1.buildUpPlaySpeedClass
+FROM Team_Attributes AS t1
+INNER JOIN Team AS t2
+  ON t1.team_api_id = t2.team_api_id
+WHERE
+  t2.team_long_name = 'KSV Cercle Brugge'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  buildUpPlaySpeedClass
+FROM Team_Attributes
+JOIN Team
+  ON Team_Attributes.team_api_id = Team.team_api_id
+WHERE
+  Team.team_long_name = 'KSV Cercle Brugge'
+```
+
+- Our result: 6 row(s): ('Balanced',), ('Balanced',), ('Fast',), ('Balanced',), ('Balanced',) … (6 rows total)
+- Gold result: 2 row(s): ('Balanced',), ('Fast',)
+
+### Q1144: FAIL
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 27.86s*
+
+**Question:** Please state the finishing rate and curve score of the player who has the heaviest weight.
+
+**Hint:** finishing rate refer to finishing; curve score refer to curve; heaviest weight refers to MAX(weight)
+
+**Gold SQL**
+
+```sql
+SELECT
+  id,
+  finishing,
+  curve
+FROM Player_Attributes
+WHERE
+  player_api_id = (
+    SELECT
+      player_api_id
+    FROM Player
+    ORDER BY
+      weight DESC
+    LIMIT 1
+  )
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  finishing,
+  curve
+FROM Player_Attributes
+JOIN Player
+  ON Player_Attributes.player_api_id = Player.player_api_id
+WHERE
+  Player.weight = (
+    SELECT
+      MAX(weight)
+    FROM Player
+  )
+```
+
+- Our result: 38 row(s): (13, 13), (13, 13), (13, 13), (13, 13), (12, 12) … (38 rows total)
+- Gold result: 1 row(s): (98022, 13, 13)
+
+### Q1145: PASS
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 16.86s*
+
+**Question:** Which top 4 leagues had the most games in the 2015-2016 season?
+
+**Hint:** in the 2015-2016 season refers to season = '2015/2016'; league with most games refers to League.name where MAX(COUNT(id))
+
+**Gold SQL**
+
+```sql
+SELECT
+  t1.name
+FROM League AS t1
+INNER JOIN Match AS t2
+  ON t1.id = t2.league_id
+WHERE
+  t2.season = '2015/2016'
+GROUP BY
+  t1.name
+ORDER BY
+  COUNT(t2.id) DESC
+LIMIT 4
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  League.name
+FROM League
+INNER JOIN Match
+  ON League."id" = Match."league_id"
+WHERE
+  Match.season = '2015/2016'
+GROUP BY
+  League.name
+ORDER BY
+  COUNT(League.id) DESC
+LIMIT 4
+```
+
+- Our result: 4 row(s): ('Spain LIGA BBVA',), ('Italy Serie A',), ('France Ligue 1',), ('England Premier League',)
+- Gold result: 4 row(s): ('Spain LIGA BBVA',), ('Italy Serie A',), ('France Ligue 1',), ('England Premier League',)
+- Fix applied: no such column: season -> added missing JOIN in code
+
+### Q1146: FAIL
+
+*european_football_2, moderate, confidence None, 3 attempt(s), 47.66s*
+
+**Question:** Please provide the full name of the away team that scored the most goals.
+
+**Hint:** full name refers to team_long_name; away team refers to away_team_api_id; scored the most goals refers to MAX(away_team_goal)
+
+**Gold SQL**
+
+```sql
+SELECT
+  t2.team_long_name
+FROM Match AS t1
+INNER JOIN Team AS t2
+  ON t1.away_team_api_id = t2.team_api_id
+ORDER BY
+  t1.away_team_goal DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.team_long_name
+FROM Matches AS T1
+INNER JOIN Team AS T2
+  ON T1.away_team_api_id = T2.team_api_id
+GROUP BY
+  T1.away_team_api_id
+ORDER BY
+  MAX(T1.away_team_goal) DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Paris Saint-Germain',)
+- Error: `no such table: Matches`
+
+### Q1147: FAIL
+
+*european_football_2, simple, confidence 1.0, 1 attempt(s), 26.72s*
+
+**Question:** Please name one player whose overall strength is the greatest.
+
+**Hint:** overall strength is the greatest refers to MAX(overall_rating)
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  t1.player_name
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+WHERE
+  t2.overall_rating = (
+    SELECT
+      MAX(overall_rating)
+    FROM Player_Attributes
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  player_name
+FROM Player_Attributes
+JOIN Player
+  ON Player_Attributes.player_api_id = Player.player_api_id
+GROUP BY
+  player_name
+ORDER BY
+  SUM(overall_rating) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Danilo',)
+- Gold result: 1 row(s): ('Lionel Messi',)
+- Fix applied: logic fix in code: fanout_ranking: ranked Player by one Player_Attributes row -> GROUP BY + ORDER BY SUM(overall_rating)
+
+### Q1148: PASS
+
+*european_football_2, moderate, confidence 1.0, 1 attempt(s), 28.61s*
+
+**Question:** What is the percentage of players that are under 180 cm who have an overall strength of more than 70?
+
+**Hint:** percentage refers to DIVIDE(COUNT(height < 180 AND overall_rating > 70),COUNT(id)) * 100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN t2.overall_rating > 70 AND t1.height < 180 THEN t1.id ELSE NULL END) AS REAL) * 100 / COUNT(t1.id) AS percent
+FROM Player AS t1
+INNER JOIN Player_Attributes AS t2
+  ON t1.player_api_id = t2.player_api_id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(
+    CASE
+      WHEN Player.height < 180 AND Player_Attributes.overall_rating > 70
+      THEN 1
+      ELSE 0
+    END
+  ) AS REAL) * 100 / COUNT(Player_Attributes.id) AS percentage
+FROM Player_Attributes
+INNER JOIN Player
+  ON Player_Attributes."player_api_id" = Player."player_api_id"
+```
+
+- Our result: 1 row(s): (13.940797269238713,)
+- Gold result: 1 row(s): (13.940797269238713,)
+- Fix applied: no such column: height -> added missing JOIN in code
+
+### Q846: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 21.31s*
+
+**Question:** Please list the reference names of the drivers who are eliminated in the first period in race number 20.
+
+**Hint:** driver reference name refers to driverRef; first qualifying period refers to q1; drivers who are eliminated in the first qualifying period refers to 5 drivers with MAX(q1); race number refers to raceId;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.driverRef
+FROM qualifying AS T1
+INNER JOIN drivers AS T2
+  ON T2.driverId = T1.driverId
+WHERE
+  T1.raceId = 20
+ORDER BY
+  T1.q1 DESC
+LIMIT 5
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.driverRef
+FROM qualifying AS T1
+JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T1.raceId = 20
+GROUP BY
+  T2.driverRef
+ORDER BY
+  SUM(T1.q1) DESC
+LIMIT 5
+```
+
+- Our result: 5 row(s): ('webber',), ('vettel',), ('trulli',), ('sutil',), ('sato',)
+- Gold result: 5 row(s): ('sato',), ('davidson',), ('vettel',), ('sutil',), ('fisichella',)
+- Fix applied: logic fix in code: fanout_ranking: ranked drivers by one qualifying row -> GROUP BY + ORDER BY SUM(T1.q1)
+
+### Q847: FAIL
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 20.91s*
+
+**Question:** What is the surname of the driver with the best lap time in race number 19 in the second qualifying period?
+
+**Hint:** race number refers to raceId; second qualifying period refers to q2; best lap time refers to MIN(q2);
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.surname
+FROM qualifying AS T1
+INNER JOIN drivers AS T2
+  ON T2.driverId = T1.driverId
+WHERE
+  T1.raceId = 19
+ORDER BY
+  T1.q2 ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.surname
+FROM qualifying AS T1
+INNER JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T1.raceId = 19
+  AND T1.q2 = (
+    SELECT
+      MIN(q2)
+    FROM qualifying
+    WHERE
+      raceId = 19
+  )
+```
+
+- Our result: 1 row(s): ('Räikkönen',)
+- Gold result: 1 row(s): ('Fisichella',)
+
+### Q850: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 14.63s*
+
+**Question:** Please give the name of the race held on the circuits in Germany.
+
+**Hint:** Germany is a name of country;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.name
+FROM circuits AS T1
+INNER JOIN races AS T2
+  ON T2.circuitID = T1.circuitId
+WHERE
+  T1.country = 'Germany'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.name
+FROM circuits AS T1
+INNER JOIN races AS T2
+  ON T1.circuitId = T2.circuitId
+WHERE
+  T1.country = 'Germany'
+```
+
+- Our result: 76 row(s): ('German Grand Prix',), ('German Grand Prix',), ('European Grand Prix',), ('European Grand Prix',), ('German Grand Prix',) … (76 rows total)
+- Gold result: 3 row(s): ('German Grand Prix',), ('European Grand Prix',), ('Luxembourg Grand Prix',)
+
+### Q854: PASS
+
+*formula_1, simple, confidence 1.0, 2 attempt(s), 31.45s*
+
+**Question:** What is the coordinates location of the circuits for Australian grand prix?
+
+**Hint:** coordinate position/location refers to lat, lng; circuits for Australian grand prix refers to races.name = 'Australian Grand Prix'
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.lat,
+  T1.lng
+FROM circuits AS T1
+INNER JOIN races AS T2
+  ON T2.circuitID = T1.circuitId
+WHERE
+  T2.name = 'Australian Grand Prix'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  lat,
+  lng
+FROM circuits AS T1
+INNER JOIN races AS T2
+  ON T1.circuitId = T2.circuitId
+WHERE
+  T2.name = 'Australian Grand Prix'
+```
+
+- Our result: 11 row(s): (-34.9272, 138.617), (-34.9272, 138.617), (-34.9272, 138.617), (-34.9272, 138.617), (-34.9272, 138.617) … (11 rows total)
+- Gold result: 1 row(s): (-34.9272, 138.617)
+
+### Q857: PASS
+
+*formula_1, simple, confidence 1.0, 2 attempt(s), 20.97s*
+
+**Question:** Give the coordinate position for Abu Dhabi Grand Prix.
+
+**Hint:** coordinate position/location refers to lat, lng; Abu Dhabi Grand Prix refers to races.name = 'Abu Dhabi Grand Prix'
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.lat,
+  T1.lng
+FROM circuits AS T1
+INNER JOIN races AS T2
+  ON T2.circuitID = T1.circuitId
+WHERE
+  T2.name = 'Abu Dhabi Grand Prix'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  lat,
+  lng
+FROM circuits AS T1
+INNER JOIN races AS T2
+  ON T1.circuitId = T2.circuitId
+WHERE
+  T2.name = 'Abu Dhabi Grand Prix'
+```
+
+- Our result: 9 row(s): (24.4672, 54.6031), (24.4672, 54.6031), (24.4672, 54.6031), (24.4672, 54.6031), (24.4672, 54.6031) … (9 rows total)
+- Gold result: 1 row(s): (24.4672, 54.6031)
+
+### Q859: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 23.71s*
+
+**Question:** What's Bruno Senna's Q1 result in the qualifying race No. 354?
+
+**Hint:** race number refers to raceId; Bruno Senna refers to the full name of the driver; Full name of the driver refers to drivers.forename and drivers.surname;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.q1
+FROM qualifying AS T1
+INNER JOIN drivers AS T2
+  ON T2.driverId = T1.driverId
+WHERE
+  T1.raceId = 354 AND T2.forename = 'Bruno' AND T2.surname = 'Senna'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.q1
+FROM drivers AS T1
+INNER JOIN qualifying AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T1.forename = 'Bruno' AND T1.surname = 'Senna' AND T2.raceId = 354
+```
+
+- Our result: 1 row(s): ('1:23.796',)
+- Gold result: 1 row(s): ('1:23.796',)
+
+### Q861: FAIL
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 24.12s*
+
+**Question:** What is his number of the driver who finished 0:01:54 in the Q3 of qualifying race No.903?
+
+**Hint:** race number refers to raceId; finished 0:0M:SS in the Q3 refers to q3 LIKE 'M:SS%'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.number
+FROM qualifying AS T1
+INNER JOIN drivers AS T2
+  ON T2.driverId = T1.driverId
+WHERE
+  T1.raceId = 903 AND T1.q3 LIKE '1:54%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM qualifying
+WHERE
+  raceId = 903 AND q3 LIKE '1:54%'
+```
+
+- Our result: 1 row(s): (2,)
+- Gold result: 2 row(s): (3,), (5,)
+
+### Q862: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 22.52s*
+
+**Question:** For the Bahrain Grand Prix in 2007, how many drivers not finished the game?
+
+**Hint:** Bahrain Grand Prix refers to races.name = 'Bahrain Grand Prix'; drivers who finished the race refers to time is not empty (i.e. time IS NOT NULL);
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T3.driverId)
+FROM races AS T1
+INNER JOIN results AS T2
+  ON T2.raceId = T1.raceId
+INNER JOIN drivers AS T3
+  ON T3.driverId = T2.driverId
+WHERE
+  T1.year = 2007 AND T1.name = 'Bahrain Grand Prix' AND T2.time IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM results
+WHERE
+  raceId IN (
+    SELECT
+      raceId
+    FROM races
+    WHERE
+      name = 'Bahrain Grand Prix' AND year = 2007
+  )
+  AND time IS NULL
+```
+
+- Our result: 1 row(s): (12,)
+- Gold result: 1 row(s): (12,)
+
+### Q865: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 21.73s*
+
+**Question:** For all the drivers who finished the game in race No. 592, who is the oldest?
+
+**Hint:** drivers who finished the race refers to time is not empty (i.e. time IS NOT NULL); race number refers to raceId; date of birth refers to drivers.dob; The larger the birthday value, the younger the person is, and vice versa;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.forename,
+  T1.surname
+FROM drivers AS T1
+INNER JOIN results AS T2
+  ON T2.driverId = T1.driverId
+WHERE
+  T2.raceId = 592 AND NOT T2.time IS NULL AND NOT T1.dob IS NULL
+ORDER BY
+  T1.dob ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.driverRef
+FROM drivers AS T1
+JOIN results AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T2.raceId = 592 AND NOT T2.time IS NULL
+ORDER BY
+  T1.dob DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('stuck',)
+- Gold result: 1 row(s): ('Jean-Pierre', 'Beltoise')
+
+### Q866: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 18.26s*
+
+**Question:** Who was the player that got the lap time of 0:01:27 in the race No. 161? Show his introduction website.
+
+**Hint:** player and driver are synonyms; the lap time of 0:0M:SS refers to lapTime.time LIKE 'M:SS%';race number refers to raceId; introduction website of the drivers refers to url;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.forename,
+  T2.surname,
+  T2.url
+FROM lapTimes AS T1
+INNER JOIN drivers AS T2
+  ON T2.driverId = T1.driverId
+WHERE
+  T1.raceId = 161 AND T1.time LIKE '1:27%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.url
+FROM drivers AS T1
+INNER JOIN lapTimes AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T2.time LIKE '1:27%' AND T2.raceId = 161
+```
+
+- Our result: 82 row(s): ('http://en.wikipedia.org/wiki/David_Coulthard',), ('http://en.wikipedia.org/wiki/David_Coulthard',), ('http://en.wikipedia.org/wiki/David_Coulthard',), ('http://en.wikipedia.org/wiki/David_Coulthard',), ('http://en.wikipedia.org/wiki/David_Coulthard',) … (82 rows total)
+- Gold result: 9 row(s): ('David', 'Coulthard', 'http://en.wikipedia.org/wiki/David_Coulthard'), ('Jarno', 'Trulli', 'http://en.wikipedia.org/wiki/Jarno_Trulli'), ('Jenson', 'Button', 'http://en.wikipedia.org/wiki/Jenson_Button'), ('Rubens', 'Barrichello', 'http://en.wikipedia.org/wiki/Rubens_Barrichello'), ('Ralf', 'Schumacher', 'http://en.wikipedia.org/wiki/Ralf_Schumacher') … (9 rows total)
+
+### Q868: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 20.91s*
+
+**Question:** Where is Malaysian Grand Prix held? Give the location coordinates.
+
+**Hint:** location coordinates refers to (lat, lng); Malaysian Grand Prix refers to races.name = 'Malaysian Grand Prix'
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.lat,
+  T1.lng
+FROM circuits AS T1
+INNER JOIN races AS T2
+  ON T2.circuitID = T1.circuitId
+WHERE
+  T2.name = 'Malaysian Grand Prix'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.lat,
+  T2.lng
+FROM races AS T1
+INNER JOIN circuits AS T2
+  ON T1.circuitId = T2.circuitId
+WHERE
+  T1.name = 'Malaysian Grand Prix'
+```
+
+- Our result: 19 row(s): (2.76083, 101.738), (2.76083, 101.738), (2.76083, 101.738), (2.76083, 101.738), (2.76083, 101.738) … (19 rows total)
+- Gold result: 1 row(s): (2.76083, 101.738)
+
+### Q869: PASS
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 19.55s*
+
+**Question:** For the constructor which got the highest point in the race No. 9 , what is its introduction website?
+
+**Hint:** race number refers to raceId; constructor which got the highest point refers to MAX(constructorResults.points); introduction website of the constructor refers to url;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.url
+FROM constructorResults AS T1
+INNER JOIN constructors AS T2
+  ON T2.constructorId = T1.constructorId
+WHERE
+  T1.raceId = 9
+ORDER BY
+  T1.points DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.url
+FROM constructorResults AS T1
+INNER JOIN constructors AS T2
+  ON T1.constructorId = T2.constructorId
+WHERE
+  T1.raceId = 9
+GROUP BY
+  T2.url
+ORDER BY
+  SUM(T1.points) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('http://en.wikipedia.org/wiki/Red_Bull_Racing',)
+- Gold result: 1 row(s): ('http://en.wikipedia.org/wiki/Red_Bull_Racing',)
+- Fix applied: logic fix in code: fanout_ranking: ranked constructors by one constructorResults row -> GROUP BY + ORDER BY SUM(T1.points)
+
+### Q872: FAIL
+
+*formula_1, simple, confidence None, 3 attempt(s), 31.34s*
+
+**Question:** In the race No. 45, for the driver who had the Q3 time as 0:01:33, what is his abbreviated code?
+
+**Hint:** race number refers to raceId; had the Q3 time as 0:0M:SS refers to q3 LIKE 'M:SS%'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.code
+FROM qualifying AS T1
+INNER JOIN drivers AS T2
+  ON T2.driverId = T1.driverId
+WHERE
+  T1.raceId = 45 AND T1.q3 LIKE '1:33%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.code
+FROM driverStandings AS T1
+INNER JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T1.raceId = 45 AND T1.q3 LIKE '1:33%'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('HAM',)
+- Error: `no such column: T1.q3`
+- Fix applied: no such column: T1.q3
+- Fix applied: no such column: T1.q3
+- Fix applied: no such column: T1.q3
+
+### Q875: FAIL
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 14.27s*
+
+**Question:** Show me the season page of year when the race No. 901 took place.
+
+**Hint:** the season page refers to url; race number refers to raceId;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.url
+FROM races AS T1
+INNER JOIN seasons AS T2
+  ON T2.year = T1.year
+WHERE
+  T1.raceId = 901
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  races.url
+FROM races
+WHERE
+  races.raceId = 901
+```
+
+- Our result: 1 row(s): ('https://en.wikipedia.org/wiki/2014_Malaysian_Grand_Prix',)
+- Gold result: 1 row(s): ('http://en.wikipedia.org/wiki/2014_Formula_One_season',)
+
+### Q877: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 24.18s*
+
+**Question:** For all the drivers who finished the game in race No. 872, who is the youngest?
+
+**Hint:** race number refers to raceId; drivers who finished the race refers to time has value; the youngest is a driver where MAX(dob);
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.forename,
+  T1.surname
+FROM drivers AS T1
+INNER JOIN results AS T2
+  ON T2.driverId = T1.driverId
+WHERE
+  T2.raceId = 872 AND NOT T2.time IS NULL
+ORDER BY
+  T1.dob DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.driverRef
+FROM drivers AS T1
+JOIN results AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T2.raceId = 872 AND NOT T2.time IS NULL
+ORDER BY
+  T1.dob DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('perez',)
+- Gold result: 1 row(s): ('Sergio', 'Pérez')
+
+### Q879: FAIL
+
+*formula_1, moderate, confidence None, 3 attempt(s), 20.62s*
+
+**Question:** For the driver who set the fastest lap speed, what is his nationality?
+
+**Hint:** the fastest lap speed refers to (MAX) fastestLapSpeed;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.nationality
+FROM drivers AS T1
+INNER JOIN results AS T2
+  ON T2.driverId = T1.driverId
+ORDER BY
+  T2.fastestLapSpeed DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  nationality
+FROM drivers
+INNER JOIN results
+  ON drivers."driverId" = results."driverId"
+WHERE
+  driverId = (
+    SELECT
+      driverId
+    FROM lapTimes
+    ORDER BY
+      results.fastestLapSpeed DESC
+    LIMIT 1
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Italian',)
+- Error: `ambiguous column name: driverId`
+- Fix applied: no such column: fastestLapSpeed -> added missing JOIN in code
+- Fix applied: no such column: fastestLapSpeed -> added missing JOIN in code
+- Fix applied: no such column: fastestLapSpeed -> added missing JOIN in code
+
+### Q880: FAIL
+
+*formula_1, challenging, confidence None, 3 attempt(s), 46.11s*
+
+**Question:** Paul di Resta was in the No. 853 race, what percent faster did he finish in the 853rd race than the next race for the fastest lap speed?
+
+**Hint:** Paul di Resta refers to the full name of the driver; Full name of the driver refers to drivers.forename ='Paul' and drivers.surname = 'di Resta'; race number refers to raceId; percentage = DIVIDE(SUBTRACT(fastestLapSpeed(raceId = 853), (fastestLapSpeed (raceId = 854)) * 100 , (fastestLapSpeed(raceId = 853))
+
+**Gold SQL**
+
+```sql
+SELECT
+  (
+    SUM(IIF(T2.raceId = 853, T2.fastestLapSpeed, 0)) - SUM(IIF(T2.raceId = 854, T2.fastestLapSpeed, 0))
+  ) * 100 / SUM(IIF(T2.raceId = 853, T2.fastestLapSpeed, 0))
+FROM drivers AS T1
+INNER JOIN results AS T2
+  ON T2.driverId = T1.driverId
+WHERE
+  T1.forename = 'Paul' AND T1.surname = 'di Resta'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    FASTESTLAPSPEED(raceId = 853) - FASTESTLAPSPEED(raceId = 854)
+  ) * 100 / FASTESTLAPSPEED(raceId = 853) AS percentage_faster
+FROM results
+WHERE
+  drivers.forename = 'Paul' AND drivers.surname = 'di Resta' AND raceId = 853
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (32.50155167390781,)
+- Error: `no such function: fastestLapSpeed`
+
+### Q881: FAIL
+
+*formula_1, moderate, confidence 1.0, 2 attempt(s), 33.16s*
+
+**Question:** For the drivers who took part in the race in 1983/7/16, what's their race completion rate?
+
+**Hint:** DIVIDE(COUNT(driverid when time has value ), (COUNT(driverid )) as percentage; in 1983/7/16 refers to when date = '1983-07-16'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN NOT T2.time IS NULL THEN T2.driverId END) AS REAL) * 100 / COUNT(T2.driverId)
+FROM races AS T1
+INNER JOIN results AS T2
+  ON T2.raceId = T1.raceId
+WHERE
+  T1.date = '1983-07-16'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  d.driverRef,
+  1.0 * COUNT(CASE WHEN NOT races.time IS NULL THEN ds.driverid END) / COUNT(ds.driverid) AS race_completion_rate
+FROM driverStandings AS ds
+JOIN drivers AS d
+  ON ds.driverId = d.driverId
+JOIN races
+  ON ds.raceId = races.raceId
+WHERE
+  races.date = '1983-07-16'
+GROUP BY
+  d.driverRef
+```
+
+- Our result: 34 row(s): ('acheson', 0.0), ('alboreto', 0.0), ('angelis', 0.0), ('arnoux', 0.0), ('baldi', 0.0) … (34 rows total)
+- Gold result: 1 row(s): (17.24137931034483,)
+- Fix applied: no such column: ds.time -> repaired alias in code
+- Fix applied: no such column: races.time
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q884: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 12.93s*
+
+**Question:** List the names of all races that occurred in the earliest recorded year and month.
+
+**Hint:** earliest recorded year and month refers to year = year(min(date)) and month = month(min(date));
+
+**Gold SQL**
+
+```sql
+SELECT
+  name
+FROM races
+WHERE
+  STRFTIME('%Y', date) = (
+    SELECT
+      STRFTIME('%Y', date)
+    FROM races
+    ORDER BY
+      date ASC
+    LIMIT 1
+  )
+  AND STRFTIME('%m', date) = (
+    SELECT
+      STRFTIME('%m', date)
+    FROM races
+    ORDER BY
+      date ASC
+    LIMIT 1
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  name
+FROM races
+ORDER BY
+  date ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('British Grand Prix',)
+- Gold result: 3 row(s): ('British Grand Prix',), ('Monaco Grand Prix',), ('Indianapolis 500',)
+
+### Q892: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 14.57s*
+
+**Question:** State the driver with the most points scored. Find his full name with that points.
+
+**Hint:** the most points scored refers to max(points); Full name of the driver refers to drivers.forename and drivers.surname;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.forename,
+  T3.surname,
+  T2.points
+FROM races AS T1
+INNER JOIN driverStandings AS T2
+  ON T2.raceId = T1.raceId
+INNER JOIN drivers AS T3
+  ON T3.driverId = T2.driverId
+ORDER BY
+  T2.points DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.forename,
+  T1.surname
+FROM drivers AS T1
+INNER JOIN driverStandings AS T2
+  ON T1.driverId = T2.driverId
+GROUP BY
+  T1.forename,
+  T1.surname
+ORDER BY
+  SUM(T2.points) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Lewis', 'Hamilton')
+- Gold result: 1 row(s): ('Sebastian', 'Vettel', 397.0)
+- Fix applied: logic fix in code: fanout_ranking: ranked drivers by one driverStandings row -> GROUP BY + ORDER BY SUM(T2.points)
+
+### Q894: FAIL
+
+*formula_1, moderate, confidence None, 3 attempt(s), 37.94s*
+
+**Question:** What is the best lap time recorded? List the driver and race with such recorded lap time.
+
+**Hint:** the best lap time refers to min(milliseconds); List the driver refers to drivers.forename and drivers.surname; List the race refers to races.name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.milliseconds,
+  T1.forename,
+  T1.surname,
+  T3.name
+FROM drivers AS T1
+INNER JOIN lapTimes AS T2
+  ON T1.driverId = T2.driverId
+INNER JOIN races AS T3
+  ON T2.raceId = T3.raceId
+ORDER BY
+  T2.milliseconds ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.forename,
+  T1.surname,
+  T2.name,
+  T2.date,
+  T2.time,
+  T1.lapTime
+FROM drivers AS T1
+JOIN lapTimes AS T2
+  ON T1.driverId = T2.driverId
+ORDER BY
+  T1.lapTime ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (67411, 'Lewis', 'Hamilton', 'Austrian Grand Prix')
+- Error: `no such column: T2.name`
+- Fix applied: no such column: T2.name
+- Fix applied: no such column: T2.name
+- Fix applied: no such column: T2.name
+
+### Q895: PASS
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 23.97s*
+
+**Question:** What is the average lap time for Lewis Hamilton in the 2009 Malaysian Grand Prix?
+
+**Hint:** average lap time = AVG(milliseconds); 'Lewis Hamilton' refers to the full name of the driver; Full name of the driver refers to drivers.forename and drivers.surname; 'Malaysian Grand Prix' refers to races.name = 'Malaysian Grand Prix'
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T2.milliseconds)
+FROM races AS T1
+INNER JOIN lapTimes AS T2
+  ON T2.raceId = T1.raceId
+INNER JOIN drivers AS T3
+  ON T3.driverId = T2.driverId
+WHERE
+  T3.forename = 'Lewis'
+  AND T3.surname = 'Hamilton'
+  AND T1.year = 2009
+  AND T1.name = 'Malaysian Grand Prix'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T2.milliseconds)
+FROM drivers AS T1
+INNER JOIN lapTimes AS T2
+  ON T1.driverId = T2.driverId
+INNER JOIN races AS T3
+  ON T2.raceId = T3.raceId
+WHERE
+  T1.forename = 'Lewis'
+  AND T1.surname = 'Hamilton'
+  AND T3.name = 'Malaysian Grand Prix'
+  AND T3.year = 2009
+```
+
+- Our result: 1 row(s): (109398.54838709677,)
+- Gold result: 1 row(s): (109398.54838709677,)
+
+### Q896: FAIL
+
+*formula_1, challenging, confidence 1.0, 2 attempt(s), 43.06s*
+
+**Question:** Calculate the percentage whereby Hamilton was not at the 1st track of the the f1 circuit since 2010.
+
+**Hint:** percentage = DIVIDE(COUNT(raceId) where surname = 'Hamilton' and position>1), (COUNT(raceId) where surname = 'Hamilton'); since 2010 refers to year >= 2010
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN T2.position <> 1 THEN T2.position END) AS REAL) * 100 / COUNT(T2.driverStandingsId)
+FROM races AS T1
+INNER JOIN driverStandings AS T2
+  ON T2.raceId = T1.raceId
+INNER JOIN drivers AS T3
+  ON T3.driverId = T2.driverId
+WHERE
+  T3.surname = 'Hamilton' AND T1.year >= 2010
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T1.position > 1 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.raceId) AS percentage_not_first
+FROM results AS T1
+JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+JOIN races AS T3
+  ON T1.raceId = T3.raceId
+WHERE
+  T2.surname = 'Hamilton' AND T3.year >= 2010
+```
+
+- Our result: 1 row(s): (54.225352112676056,)
+- Gold result: 1 row(s): (73.2394366197183,)
+- Fix applied: no such column: races.year
+- Fix applied: no such column: races.year
+- Fix applied: no such column: races.year
+- Fix applied: no such column: T2.position -> repaired alias in code
+
+### Q897: FAIL
+
+*formula_1, moderate, confidence 0.67, 1 attempt(s), 23.08s*
+
+**Question:** Name the driver with the most winning. Mention his nationality and what is his maximum point scores.
+
+**Hint:** Full name of the driver refers to drivers.forename and drivers.surname; the most winning refers to MAX(COUNT(wins)); average point scores refers to MAX(points);
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.forename,
+  T1.surname,
+  T1.nationality,
+  MAX(T2.points)
+FROM drivers AS T1
+INNER JOIN driverStandings AS T2
+  ON T2.driverId = T1.driverId
+WHERE
+  T2.wins >= 1
+GROUP BY
+  T1.forename,
+  T1.surname,
+  T1.nationality
+ORDER BY
+  COUNT(T2.wins) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.forename,
+  T1.surname,
+  MAX(T2.wins) AS max_wins
+FROM drivers AS T1
+JOIN driverStandings AS T2
+  ON T1.driverId = T2.driverId
+GROUP BY
+  T1.driverId
+ORDER BY
+  max_wins DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Michael', 'Schumacher', 13)
+- Gold result: 1 row(s): ('Michael', 'Schumacher', 'German', 148.0)
+
+### Q898: FAIL
+
+*formula_1, simple, confidence None, 3 attempt(s), 42.83s*
+
+**Question:** How old is the youngest Japanese driver? What is his name?
+
+**Hint:** date of birth refers to drivers.dob; The larger the birthday value, the younger the person is, and vice versa; Japanese refers to nationality = 'Japanese'; age = YEAR(CURRENT_TIMESTAMP) - YEAR(dob);
+
+**Gold SQL**
+
+```sql
+SELECT
+  STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', dob),
+  forename,
+  surname
+FROM drivers
+WHERE
+  nationality = 'Japanese'
+ORDER BY
+  dob DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.forename,
+  T2.surname,
+  STRFTIME('%Y', 'now') - STRFTIME('%Y', T2.dob) AS age
+FROM drivers AS T1
+INNER JOIN constructors AS T3
+  ON T1.constructorId = T3.constructorId
+INNER JOIN results AS T4
+  ON T1.driverId = T4.driverId
+INNER JOIN drivers AS T2
+  ON T4.driverId = T2.driverId
+WHERE
+  T3.nationality = 'Japanese'
+ORDER BY
+  T2.dob ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (40, 'Kamui', 'Kobayashi')
+- Error: `no such column: T1.constructorId`
+- Fix applied: no such column: T1.constructorId
+- Fix applied: no such column: T1.constructorId
+- Fix applied: no such column: T1.constructorId
+
+### Q901: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 41.17s*
+
+**Question:** Name the races along with its circuit name and location for f1 races hosted in September 2005.
+
+**Hint:** in September 2005 refers to MONTH(date) = 9 and YEAR(date) = 2005
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.name,
+  T1.name,
+  T1.location
+FROM circuits AS T1
+INNER JOIN races AS T2
+  ON T2.circuitID = T1.circuitId
+WHERE
+  T2.year = 2005 AND STRFTIME('%m', T2.date) = '09'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  races.name,
+  circuits.name,
+  circuits.location
+FROM races
+JOIN circuits
+  ON races.circuitId = circuits.circuitId
+WHERE
+  STRFTIME('%Y', races.date) = '2005' AND STRFTIME('%m', races.date) = '09'
+```
+
+- Our result: 3 row(s): ('Italian Grand Prix', 'Autodromo Nazionale di Monza', 'Monza'), ('Belgian Grand Prix', 'Circuit de Spa-Francorchamps', 'Spa'), ('Brazilian Grand Prix', 'Autódromo José Carlos Pace', 'São Paulo')
+- Gold result: 3 row(s): ('Italian Grand Prix', 'Autodromo Nazionale di Monza', 'Monza'), ('Belgian Grand Prix', 'Circuit de Spa-Francorchamps', 'Spa'), ('Brazilian Grand Prix', 'Autódromo José Carlos Pace', 'São Paulo')
+
+### Q902: FAIL
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 21.73s*
+
+**Question:** Which race was Alex Yoong in when he was in track number less than 20?
+
+**Hint:** Alex Yoong refers to the full name of the driver; Full name of the driver refers to drivers.forename and drivers.surname;track number less than 10 refers to position < 20
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.name
+FROM races AS T1
+INNER JOIN driverStandings AS T2
+  ON T2.raceId = T1.raceId
+INNER JOIN drivers AS T3
+  ON T3.driverId = T2.driverId
+WHERE
+  T3.forename = 'Alex' AND T3.surname = 'Yoong' AND T2.position < 20
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.name
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+INNER JOIN drivers AS T3
+  ON T1.driverId = T3.driverId
+WHERE
+  T3.forename = 'Alex' AND T3.surname = 'Yoong' AND T1.position < 20
+```
+
+- Our result: 5 row(s): ('Brazilian Grand Prix',), ('Canadian Grand Prix',), ('French Grand Prix',), ('Italian Grand Prix',), ('Japanese Grand Prix',)
+- Gold result: 15 row(s): ('Malaysian Grand Prix',), ('Brazilian Grand Prix',), ('San Marino Grand Prix',), ('Spanish Grand Prix',), ('Austrian Grand Prix',) … (15 rows total)
+
+### Q904: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 21.65s*
+
+**Question:** State the race and year of race in which Michael Schumacher had his fastest lap.
+
+**Hint:** fastest lap refers to min(milliseconds); Alex Yoong refers to the full name of the driver; Full name of the driver refers to drivers.forename and drivers.surname;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.name,
+  T1.year
+FROM races AS T1
+INNER JOIN lapTimes AS T2
+  ON T2.raceId = T1.raceId
+INNER JOIN drivers AS T3
+  ON T3.driverId = T2.driverId
+WHERE
+  T3.forename = 'Michael' AND T3.surname = 'Schumacher'
+ORDER BY
+  T2.milliseconds ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.name,
+  T2.year
+FROM lapTimes AS T1
+JOIN races AS T2
+  ON T1.raceId = T2.raceId
+JOIN drivers AS T3
+  ON T1.driverId = T3.driverId
+WHERE
+  T3.forename = 'Michael' AND T3.surname = 'Schumacher'
+GROUP BY
+  T2.name,
+  T2.year
+ORDER BY
+  SUM(T1.milliseconds) ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Luxembourg Grand Prix', 1997)
+- Gold result: 1 row(s): ('Austrian Grand Prix', 2003)
+- Fix applied: logic fix in code: fanout_ranking: ranked races by one lapTimes row -> GROUP BY + ORDER BY SUM(T1.milliseconds)
+
+### Q906: FAIL
+
+*formula_1, moderate, confidence None, 3 attempt(s), 41.88s*
+
+**Question:** Which was Lewis Hamilton first race? What was his points recorded for his first race event?
+
+**Hint:** first race refers to min(Year); Lewis Hamiltonrefers to the full name of the driver; Full name of the driver refers to drivers.forename and drivers.surname;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.name,
+  T2.points
+FROM races AS T1
+INNER JOIN driverStandings AS T2
+  ON T2.raceId = T1.raceId
+INNER JOIN drivers AS T3
+  ON T3.driverId = T2.driverId
+WHERE
+  T3.forename = 'Lewis' AND T3.surname = 'Hamilton'
+ORDER BY
+  T1.year ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.year,
+  T1.points
+FROM results AS T1
+JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T2.forename = 'Lewis' AND T2.surname = 'Hamilton'
+ORDER BY
+  T2.year ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Malaysian Grand Prix', 14.0)
+- Error: `no such column: T2.year`
+- Fix applied: no such column: T2.year
+- Fix applied: no such column: T2.year
+- Fix applied: no such column: T2.year
+
+### Q909: ASKED (best guess wrong)
+
+*formula_1, moderate, confidence 0.33, 1 attempt(s), 17.47s*
+
+**Question:** Among all European Grand Prix races, what is the percentage of the races were hosted in Germany?
+
+**Hint:** European Grand Prix races refers to races.name = 'European Grand Prix';percentage = divide(COUNT(races where country = Germany and name = 'Europearn Grand Prix'),COUNT(races where name = 'Europearn Grand Prix'))*100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN T1.country = 'Germany' THEN T2.circuitID END) AS REAL) * 100 / COUNT(T2.circuitId)
+FROM circuits AS T1
+INNER JOIN races AS T2
+  ON T2.circuitID = T1.circuitId
+WHERE
+  T2.name = 'European Grand Prix'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM races
+WHERE
+  name = 'European Grand Prix'
+```
+
+- Our result: 1 row(s): (23,)
+- Gold result: 1 row(s): (52.17391304347826,)
+- Fix applied: no such column: country -> added missing JOIN in code
+- Fix applied: no such column: country -> added missing JOIN in code
+
+### Q910: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 11.6s*
+
+**Question:** What's the location coordinates of Silverstone Circuit?
+
+**Hint:** location coordinates refers to (lat, lng); Silverstone Circuit refers to circuits.name = 'Silverstone Circuit'
+
+**Gold SQL**
+
+```sql
+SELECT
+  lat,
+  lng
+FROM circuits
+WHERE
+  name = 'Silverstone Circuit'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  lat,
+  lng
+FROM circuits
+WHERE
+  name = 'Silverstone Circuit'
+```
+
+- Our result: 1 row(s): (52.0786, -1.01694)
+- Gold result: 1 row(s): (52.0786, -1.01694)
+
+### Q912: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 11.47s*
+
+**Question:** What's the reference name of Marina Bay Street Circuit?
+
+**Hint:** reference name refers to circuitRef; Marina Bay Street Circuit refers to circuits.name = 'Marina Bay Street Circuit'
+
+**Gold SQL**
+
+```sql
+SELECT
+  circuitRef
+FROM circuits
+WHERE
+  name = 'Marina Bay Street Circuit'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  circuitRef
+FROM circuits
+WHERE
+  name = 'Marina Bay Street Circuit'
+```
+
+- Our result: 1 row(s): ('marina_bay',)
+- Gold result: 1 row(s): ('marina_bay',)
+
+### Q915: FAIL
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 11.39s*
+
+**Question:** Which country is the oldest driver from?
+
+**Hint:** date of birth refers to drivers.dob; The larger the birthday value, the younger the person is, and vice versa;
+
+**Gold SQL**
+
+```sql
+SELECT
+  nationality
+FROM drivers
+WHERE
+  NOT dob IS NULL
+ORDER BY
+  dob ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  nationality
+FROM drivers
+ORDER BY
+  dob ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('South African',)
+- Gold result: 1 row(s): ('French',)
+
+### Q928: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 21.02s*
+
+**Question:** Which driver ranked the first in the Canadian Grand Prix in 2007? Please give his reference name.
+
+**Hint:** reference name refers to driverRef; Canadian Grand Prix refers to races.name = 'Canadian Grand Prix';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.forename,
+  T3.surname,
+  T3.driverRef
+FROM races AS T1
+INNER JOIN results AS T2
+  ON T2.raceId = T1.raceId
+INNER JOIN drivers AS T3
+  ON T3.driverId = T2.driverId
+WHERE
+  T1.name = 'Canadian Grand Prix' AND T2.rank = 1 AND T1.year = 2007
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.driverRef
+FROM driverStandings AS T1
+INNER JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+INNER JOIN races AS T3
+  ON T1.raceId = T3.raceId
+WHERE
+  T3.name = 'Canadian Grand Prix' AND T3.year = 2007 AND T1.position = 1
+```
+
+- Our result: 1 row(s): ('hamilton',)
+- Gold result: 1 row(s): ('Fernando', 'Alonso', 'alonso')
+
+### Q930: FAIL
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 16.2s*
+
+**Question:** In which Formula_1 race did Lewis Hamilton rank the highest?
+
+**Hint:** rank the highest refers to min(rank); Lewis Hamilton refers to the full name of the driver; Full name of the driver refers to drivers.forename and drivers.surname;
+
+**Gold SQL**
+
+```sql
+SELECT
+  name
+FROM races
+WHERE
+  raceId IN (
+    SELECT
+      raceId
+    FROM results
+    WHERE
+      rank = 1
+      AND driverId = (
+        SELECT
+          driverId
+        FROM drivers
+        WHERE
+          forename = 'Lewis' AND surname = 'Hamilton'
+      )
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.name
+FROM driverStandings AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+INNER JOIN drivers AS T3
+  ON T1.driverId = T3.driverId
+WHERE
+  T3.forename = 'Lewis' AND T3.surname = 'Hamilton'
+GROUP BY
+  T2.name
+ORDER BY
+  SUM(T1.position) ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Azerbaijan Grand Prix',)
+- Gold result: 37 row(s): ('Chinese Grand Prix',), ('Malaysian Grand Prix',), ('Japanese Grand Prix',), ('Chinese Grand Prix',), ('Spanish Grand Prix',) … (37 rows total)
+- Fix applied: logic fix in code: fanout_ranking: ranked races by one driverStandings row -> GROUP BY + ORDER BY SUM(T1.position)
+
+### Q931: PASS
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 20.26s*
+
+**Question:** What was the fastest lap speed among all drivers in the 2009 Spanish Grand Prix?
+
+**Hint:** the fastest lap speed among all refers to max(fastestLapSpeed); Spanish Grand Prix refers to races.name = 'Spanish Grand Prix';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.fastestLapSpeed
+FROM races AS T1
+INNER JOIN results AS T2
+  ON T2.raceId = T1.raceId
+WHERE
+  T1.name = 'Spanish Grand Prix'
+  AND T1.year = 2009
+  AND NOT T2.fastestLapSpeed IS NULL
+ORDER BY
+  T2.fastestLapSpeed DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  MAX(T2.fastestLapSpeed)
+FROM races AS T1
+INNER JOIN results AS T2
+  ON T1.raceId = T2.raceId
+WHERE
+  T1.name = 'Spanish Grand Prix' AND T1.year = 2009
+```
+
+- Our result: 1 row(s): ('202.484',)
+- Gold result: 1 row(s): ('202.484',)
+
+### Q933: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 19.86s*
+
+**Question:** What was Lewis Hamilton's final rank in the 2008 Chinese Grand Prix?
+
+**Hint:** Lewis Hamilton refers to the full name of the driver; Full name of the driver refers to drivers.forename and drivers.surname; final rank refers to positionOrder; Chinese Grand Prix refers to races.name = 'Chinese Grand Prix';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.positionOrder
+FROM races AS T1
+INNER JOIN results AS T2
+  ON T2.raceId = T1.raceId
+INNER JOIN drivers AS T3
+  ON T3.driverId = T2.driverId
+WHERE
+  T3.forename = 'Lewis'
+  AND T3.surname = 'Hamilton'
+  AND T1.name = 'Chinese Grand Prix'
+  AND T1.year = 2008
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.positionOrder
+FROM drivers AS T1
+INNER JOIN results AS T2
+  ON T1.driverId = T2.driverId
+INNER JOIN races AS T3
+  ON T2.raceId = T3.raceId
+WHERE
+  T1.forename = 'Lewis'
+  AND T1.surname = 'Hamilton'
+  AND T3.name = 'Chinese Grand Prix'
+```
+
+- Our result: 11 row(s): (1,), (19,), (6,), (2,), (1,) … (11 rows total)
+- Gold result: 1 row(s): (1,)
+
+### Q937: FAIL
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 21.06s*
+
+**Question:** What's the finish time for the driver who ranked second in 2008's AustChineseralian Grand Prix?
+
+**Hint:** finish time refers to time; Chinese Grand Prix refers to races.name = 'Chinese Grand Prix';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.time
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+WHERE
+  T1.rank = 2 AND T2.name = 'Chinese Grand Prix' AND T2.year = 2008
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.time
+FROM driverStandings AS T1
+INNER JOIN results AS T2
+  ON T1.driverId = T2.driverId
+INNER JOIN races AS T3
+  ON T1.raceId = T3.raceId
+WHERE
+  T3.name = 'Chinese Grand Prix' AND T3.year = 2008 AND T1.position = 2
+```
+
+- Our result: 250 row(s): (None,), (None,), (None,), (None,), (None,) … (250 rows total)
+- Gold result: 1 row(s): ('+16.445',)
+
+### Q940: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 22.07s*
+
+**Question:** Among the drivers that finished the race in the 2008 Chinese Grand Prix, how many of them have participated in Formula_1 races?
+
+**Hint:** COUNT(raceID) > 0 reveals that this driver participated in races; drivers who finished the race refers to time has value.
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM (
+  SELECT
+    T1.driverId
+  FROM results AS T1
+  INNER JOIN races AS T2
+    ON T1.raceId = T2.raceId
+  WHERE
+    T2.name = 'Chinese Grand Prix' AND T2.year = 2008 AND NOT T1.time IS NULL
+  GROUP BY
+    T1.driverId
+  HAVING
+    COUNT(T2.raceId) > 0
+)
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.raceId) > 0 AS participated
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+WHERE
+  T2.name = 'Chinese Grand Prix' AND T2.year = 2008 AND NOT T1.time IS NULL
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (14,)
+
+### Q944: FAIL
+
+*formula_1, challenging, confidence 1.0, 2 attempt(s), 39.98s*
+
+**Question:** How much faster in percentage is the champion than the driver who finished the race last in the 2008 Australian Grand Prix?
+
+**Hint:** how much faster in percentage = divide(subtract(incremental time, champion time), last_driver time) * 100; last driver finished time = incremental time + champion time; only champion's finished time is represented by 'HH:MM:SS.mmm'; finished the game refers to time is not null
+
+**Gold SQL**
+
+```sql
+WITH time_in_seconds AS (
+  SELECT
+    T1.positionOrder,
+    CASE
+      WHEN T1.positionOrder = 1
+      THEN (
+        CAST(SUBSTRING(T1.time, 1, 1) AS REAL) * 3600
+      ) + (
+        CAST(SUBSTRING(T1.time, 3, 2) AS REAL) * 60
+      ) + CAST(SUBSTRING(T1.time, 6) AS REAL)
+      ELSE CAST(SUBSTRING(T1.time, 2) AS REAL)
+    END AS time_seconds
+  FROM results AS T1
+  INNER JOIN races AS T2
+    ON T1.raceId = T2.raceId
+  WHERE
+    T2.name = 'Australian Grand Prix' AND NOT T1.time IS NULL AND T2.year = 2008
+), champion_time AS (
+  SELECT
+    time_seconds
+  FROM time_in_seconds
+  WHERE
+    positionOrder = 1
+), last_driver_incremental AS (
+  SELECT
+    time_seconds
+  FROM time_in_seconds
+  WHERE
+    positionOrder = (
+      SELECT
+        MAX(positionOrder)
+      FROM time_in_seconds
+    )
+)
+SELECT
+  (
+    CAST((
+      SELECT
+        time_seconds
+      FROM last_driver_incremental
+    ) AS REAL) * 100
+  ) / (
+    SELECT
+      time_seconds + (
+        SELECT
+          time_seconds
+        FROM last_driver_incremental
+      )
+    FROM champion_time
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    T1.time - T2.time
+  ) * 100 / T2.time AS percentage_faster
+FROM results AS T1
+JOIN results AS T2
+  ON T1.raceId = T2.raceId
+JOIN races AS T3
+  ON T1.raceId = T3.raceId
+WHERE
+  T3.name = 'Australian Grand Prix'
+  AND T3.year = 2008
+  AND T1.statusId = 1
+  AND T2.statusId = 1
+  AND NOT T1.time IS NULL
+  AND NOT T2.time IS NULL
+ORDER BY
+  T1.time ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (None,)
+
+### Q945: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 12.17s*
+
+**Question:** How many circuits are there in Adelaide, Australia?
+
+**Hint:** Australia is the country; Melbourne is the location of circuit;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(circuitId)
+FROM circuits
+WHERE
+  location = 'Adelaide' AND country = 'Australia'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM circuits
+WHERE
+  country = 'Australia' AND location = 'Adelaide'
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (1,)
+
+### Q948: FAIL
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 18.68s*
+
+**Question:** What are the maximum points of British constructors?
+
+**Hint:** maximum points = MAX(points); British is a nationality
+
+**Gold SQL**
+
+```sql
+SELECT
+  MAX(T1.points)
+FROM constructorStandings AS T1
+INNER JOIN constructors AS T2
+  ON T1.constructorId = T2.constructorId
+WHERE
+  T2.nationality = 'British'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  MAX(T1.points)
+FROM constructorResults AS T1
+INNER JOIN constructors AS T2
+  ON T1.constructorId = T2.constructorId
+WHERE
+  T2.nationality = 'British'
+```
+
+- Our result: 1 row(s): (66.0,)
+- Gold result: 1 row(s): (497.0,)
+
+### Q950: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 19.53s*
+
+**Question:** Please list the constructor names with 0 points at race 291.
+
+**Hint:** race at 291 refers to raceID = 291;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.name
+FROM constructorStandings AS T1
+INNER JOIN constructors AS T2
+  ON T1.constructorId = T2.constructorId
+WHERE
+  T1.points = 0 AND T1.raceId = 291
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.name
+FROM constructors AS T1
+JOIN constructorStandings AS T2
+  ON T1.constructorId = T2.constructorId
+WHERE
+  T2.raceId = 291 AND T2.points = 0
+```
+
+- Our result: 6 row(s): ('Ligier',), ('Jordan',), ('Larrousse',), ('Brabham',), ('Dallara',) … (6 rows total)
+- Gold result: 6 row(s): ('Ligier',), ('Jordan',), ('Larrousse',), ('Brabham',), ('Dallara',) … (6 rows total)
+
+### Q951: FAIL
+
+*formula_1, simple, confidence None, 3 attempt(s), 39.31s*
+
+**Question:** How many Japanese constructors have 0 points in 2 races?
+
+**Hint:** 2 races refers to COUNT(raceID) = 2; Japanese refers to constructors.nationality = 'Japanese';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.raceId)
+FROM constructorStandings AS T1
+INNER JOIN constructors AS T2
+  ON T1.constructorId = T2.constructorId
+WHERE
+  T1.points = 0 AND T2.nationality = 'Japanese'
+GROUP BY
+  T1.constructorId
+HAVING
+  COUNT(raceId) = 2
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.constructorId) AS num_japanese_constructors_with_0_points_in_2_races
+FROM constructorResults AS T1
+JOIN constructors AS T2
+  ON T1.constructorId = T2.constructorId
+WHERE
+  T2.nationality = 'Japanese' AND T1.points = 0 AND COUNT(T1.raceId) = 2
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (2,)
+- Error: `misuse of aggregate: COUNT()`
+
+### Q954: FAIL
+
+*formula_1, challenging, confidence 1.0, 2 attempt(s), 40.55s*
+
+**Question:** Please calculate the race completion percentage of Japanese drivers from 2007 to 2009.
+
+**Hint:** from 2007 to 2009 refers to year between 2007 and 2009; race completion refers to time is not null; percentage = Divide(COUNT(DriverID where time is not null and year between 2007 and 2009),Count (DriverID where year between 2007 and 2009))*100; 
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(NOT T1.time IS NULL, 1, 0)) AS REAL) * 100 / COUNT(T1.raceId)
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+INNER JOIN drivers AS T3
+  ON T1.driverId = T3.driverId
+WHERE
+  T3.nationality = 'Japanese' AND T2.year BETWEEN 2007 AND 2009
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    COUNT(CASE WHEN NOT T2.time IS NULL THEN T1.driverId ELSE NULL END) * 100.0
+  ) / COUNT(T1.driverId) AS race_completion_percentage
+FROM driverStandings AS T1
+JOIN results AS T2
+  ON T1.driverId = T2.driverId
+JOIN races AS T3
+  ON T1.raceId = T3.raceId
+WHERE
+  T3.year BETWEEN 2007 AND 2009
+  AND T1.driverId IN (
+    SELECT
+      driverId
+    FROM drivers
+    WHERE
+      nationality = 'Japanese'
+  )
+```
+
+- Our result: 1 row(s): (24.391396832900025,)
+- Gold result: 1 row(s): (29.032258064516128,)
+- Fix applied: no such column: year
+
+### Q955: FAIL
+
+*formula_1, challenging, confidence None, 3 attempt(s), 40.96s*
+
+**Question:** What is the average time in seconds of champion for each year, before year 1975?
+
+**Hint:** only champion's finished time is represented by 'HH:MM:SS.mmm'; finished the game refers to time is not null; before year 1975 refers to year < 1975;
+
+**Gold SQL**
+
+```sql
+WITH time_in_seconds AS (
+  SELECT
+    T2.year,
+    T2.raceId,
+    T1.positionOrder,
+    CASE
+      WHEN T1.positionOrder = 1
+      THEN (
+        CAST(SUBSTRING(T1.time, 1, 1) AS REAL) * 3600
+      ) + (
+        CAST(SUBSTRING(T1.time, 3, 2) AS REAL) * 60
+      ) + CAST(SUBSTRING(T1.time, 6, 2) AS REAL) + CAST(SUBSTRING(T1.time, 9) AS REAL) / 1000
+      ELSE 0
+    END AS time_seconds
+  FROM results AS T1
+  INNER JOIN races AS T2
+    ON T1.raceId = T2.raceId
+  WHERE
+    NOT T1.time IS NULL
+), champion_time AS (
+  SELECT
+    year,
+    raceId,
+    time_seconds
+  FROM time_in_seconds
+  WHERE
+    positionOrder = 1
+)
+SELECT
+  year,
+  AVG(time_seconds)
+FROM champion_time
+WHERE
+  year < 1975
+GROUP BY
+  year
+HAVING
+  NOT AVG(time_seconds) IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  STRFTIME('%Y', races.date) AS year,
+  AVG(time) AS avg_time
+FROM results
+JOIN status
+  ON results.statusId = status.statusId
+INNER JOIN races
+  ON results."raceId" = races."raceId"
+WHERE
+  STRFTIME('%Y', races.date) < 1975
+  AND status.status = 'Finished'
+  AND time LIKE '%:%:%.%'
+  AND NOT time IS NULL
+GROUP BY
+  year
+```
+
+- Our result: 0 rows
+- Gold result: 25 row(s): (1950, 9712.01842857143), (1951, 10870.343222222224), (1952, 11061.26325), (1953, 10828.015666666666), (1954, 11212.563444444444) … (25 rows total)
+- Error: `ambiguous column name: time`
+- Fix applied: no such column: date -> added missing JOIN in code
+
+### Q959: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 21.1s*
+
+**Question:** What is the fastest lap number of the champion in 2009?
+
+**Hint:** in 2009 refers to year = 2009; Only the time of the champion shows in the format of "hour: minutes: seconds.millionsecond"
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.fastestLap
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+WHERE
+  T2.year = 2009 AND T1.time LIKE '_:%:__.___'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.fastestLap
+FROM races AS T1
+INNER JOIN results AS T2
+  ON T1.raceId = T2.raceId
+WHERE
+  T1.year = 2009 AND T2.position = 1 AND T2.time LIKE '%:%:%.%'
+```
+
+- Our result: 16 row(s): (18,), (42,), (11,), (17,), (49,) … (16 rows total)
+- Gold result: 16 row(s): (18,), (42,), (11,), (17,), (49,) … (16 rows total)
+
+### Q960: PASS
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 22.17s*
+
+**Question:** What is the average of fastest lap speed in the 2009 Spanish Grand Prix race?
+
+**Hint:** Spanish Grand Prix is the name of race refers to name = 'Spanish Grand Prix'; average fastest lap speed refers to avg(fastestLapSpeed);
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T1.fastestLapSpeed)
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+WHERE
+  T2.year = 2009 AND T2.name = 'Spanish Grand Prix'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T2.fastestLapSpeed)
+FROM races AS T1
+INNER JOIN results AS T2
+  ON T1.raceId = T2.raceId
+WHERE
+  T1.name = 'Spanish Grand Prix' AND T1.year = 2009
+```
+
+- Our result: 1 row(s): (199.6415625,)
+- Gold result: 1 row(s): (199.6415625,)
+
+### Q962: ASKED (best guess wrong)
+
+*formula_1, challenging, confidence 0.33, 1 attempt(s), 23.05s*
+
+**Question:** From 2000 to 2005, what percentage of drivers who were born before 1985 and the lap numbers were over 50?
+
+**Hint:** born before 1985 refers to year(dob)<1985; in 2000 to 2005 refers to year between 2000 and 2005; percentage = Divide(COUNT(driverId where year (dob) <1985 and laps >50),COUNT(DriverID where year between 2000 and 2005) *100;
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(STRFTIME('%Y', T3.dob) < '1985' AND T1.laps > 50, 1, 0)) AS REAL) * 100 / COUNT(*)
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+INNER JOIN drivers AS T3
+  ON T1.driverId = T3.driverId
+WHERE
+  T2.year BETWEEN 2000 AND 2005
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(drivers.driverId)
+FROM drivers
+INNER JOIN results
+  ON drivers."driverId" = results."driverId"
+WHERE
+  STRFTIME('%Y', drivers.dob) < '1985' AND results.laps > 50
+```
+
+- Our result: 1 row(s): (10363,)
+- Gold result: 1 row(s): (64.88474742520843,)
+- Fix applied: no such column: laps -> added missing JOIN in code
+- Fix applied: no such column: laps -> added missing JOIN in code
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q963: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 25.08s*
+
+**Question:** How many French drivers who obtain the laptime less than 02:00.00?
+
+**Hint:** lap time less than 02:00.00 refers to seconds < 120;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.driverId)
+FROM drivers AS T1
+INNER JOIN lapTimes AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T1.nationality = 'French'
+  AND (
+    CAST(SUBSTRING(T2.time, 1, 2) AS INTEGER) * 60 + CAST(SUBSTRING(T2.time, 4, 2) AS INTEGER) + CAST(SUBSTRING(T2.time, 7, 2) AS REAL) / 1000
+  ) < 120
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM lapTimes
+JOIN drivers
+  ON lapTimes.driverId = drivers.driverId
+JOIN results
+  ON lapTimes.driverId = results.driverId
+JOIN races
+  ON lapTimes.raceId = races.raceId
+WHERE
+  drivers.nationality = 'French' AND lapTimes.time < '02:00.00'
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (23295,)
+
+### Q964: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 17.18s*
+
+**Question:** List out the code for drivers who have nationality in American.
+
+**Hint:** nationality = 'American'
+
+**Gold SQL**
+
+```sql
+SELECT
+  code
+FROM drivers
+WHERE
+  Nationality = 'American'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  code
+FROM drivers
+WHERE
+  nationality = 'American'
+```
+
+- Our result: 157 row(s): ('SPE',), (None,), (None,), (None,), (None,) … (157 rows total)
+- Gold result: 157 row(s): ('SPE',), (None,), (None,), (None,), (None,) … (157 rows total)
+
+### Q967: FAIL
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 36.71s*
+
+**Question:** State code numbers of top 3 yougest drivers. How many Netherlandic drivers among them?
+
+**Hint:** youngest driver refers to Max (year(dob)); Netherlandic and Dutch refer to the same country
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM (
+  SELECT
+    T1.nationality
+  FROM drivers AS T1
+  ORDER BY
+    JULIANDAY(T1.dob) DESC
+  LIMIT 3
+) AS T3
+WHERE
+  T3.nationality = 'Dutch'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.forename,
+  T1.surname,
+  COUNT(*) AS n_dutch
+FROM drivers AS T1
+JOIN results AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T1.nationality = 'Dutch'
+GROUP BY
+  T1.forename,
+  T1.surname
+ORDER BY
+  T1.dob ASC
+LIMIT 3
+```
+
+- Our result: 3 row(s): ('Dries', 'van der Lof', 1), ('Jan', 'Flinterman', 2), ('Rob', 'Slotemaker', 1)
+- Gold result: 1 row(s): (1,)
+- Fix applied: no such column: T2.forename -> repaired alias in code
+- Fix applied: no such column: T2.surname -> repaired alias in code
+
+### Q971: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 18.66s*
+
+**Question:** Please state the reference name of the oldest German driver.
+
+**Hint:** oldest refers to MIN(year(dob)); reference names appear in drverRef.
+
+**Gold SQL**
+
+```sql
+SELECT
+  driverRef
+FROM drivers
+WHERE
+  nationality = 'German'
+ORDER BY
+  JULIANDAY(dob) ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  driverRef
+FROM drivers
+WHERE
+  nationality = 'German'
+ORDER BY
+  dob ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('brudes',)
+- Gold result: 1 row(s): ('brudes',)
+
+### Q972: FAIL
+
+*formula_1, moderate, confidence None, 3 attempt(s), 39.91s*
+
+**Question:** Which drivers who were born in 1971 and has the fastest lap time on the race? Give id and code of these drivers.
+
+**Hint:** born in 1971 refers to year(dob) = 1971; has the fastest lap time refers to fastestLapTime has values
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.driverId,
+  T2.code
+FROM results AS T1
+INNER JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  STRFTIME('%Y', T2.dob) = '1971' AND NOT T1.fastestLapTime IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.driverId,
+  T1.code
+FROM drivers AS T1
+INNER JOIN lapTimes AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  STRFTIME('%Y', T1.dob) = '1971' AND NOT T2.fastestLapTime IS NULL
+ORDER BY
+  T2.fastestLapTime
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 150 row(s): (14, 'COU'), (14, 'COU'), (14, 'COU'), (14, 'COU'), (14, 'COU') … (150 rows total)
+- Error: `no such column: T2.fastestLapTime`
+- Fix applied: no such column: T2.fastestLapTime
+- Fix applied: no such column: T2.fastestLapTime
+
+### Q977: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 18.74s*
+
+**Question:** From race no. 50 to 100, how many finishers have been disqualified?
+
+**Hint:** disqualified refers to statusID = 2, finisher refers to time! = null; race no. refers to raceId; raceId > 50 and raceId < 100;
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(IIF(NOT time IS NULL, 1, 0))
+FROM results
+WHERE
+  statusId = 2 AND raceID < 100 AND raceId > 50
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM results
+JOIN status
+  ON results.statusId = status.statusId
+WHERE
+  results.raceId BETWEEN 50 AND 100
+  AND status.status = 'Disqualified'
+  AND NOT results.time IS NULL
+```
+
+- Our result: 1 row(s): (2,)
+- Gold result: 1 row(s): (2,)
+
+### Q978: PASS
+
+*formula_1, simple, confidence 1.0, 1 attempt(s), 13.17s*
+
+**Question:** How many times the circuits were held in Austria? Please give their location and coordinates.
+
+**Hint:** location coordinates refers to (lat,lng); Austria refers to country = 'Austria';
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  location,
+  lat,
+  lng
+FROM circuits
+WHERE
+  country = 'Austria'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  location,
+  lat,
+  lng
+FROM circuits
+WHERE
+  country = 'Austria'
+```
+
+- Our result: 3 row(s): ('Spielburg', 47.2197, 14.7647), ('Styria', 47.2039, 14.7478), ('Spielburg', 47.2197, 14.7647)
+- Gold result: 2 row(s): ('Spielburg', 47.2197, 14.7647), ('Styria', 47.2039, 14.7478)
+
+### Q981: FAIL
+
+*formula_1, moderate, confidence 1.0, 2 attempt(s), 34.74s*
+
+**Question:** On what year did the youngest driver had his first qualifying race? Also state the name, date and time of the race.
+
+**Hint:** date of birth refers to drivers.dob; The larger the birthday value, the younger the person is, and vice versa; first qualifying race refers to MIN(races.date);
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.year,
+  T3.name,
+  T3.date,
+  T3.time
+FROM qualifying AS T1
+INNER JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+INNER JOIN races AS T3
+  ON T1.raceId = T3.raceId
+WHERE
+  T1.driverId = (
+    SELECT
+      driverId
+    FROM drivers
+    ORDER BY
+      dob DESC
+    LIMIT 1
+  )
+ORDER BY
+  T3.date ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.year,
+  T2.name,
+  T2.date,
+  T2.time
+FROM qualifying AS T1
+JOIN races AS T2
+  ON T1.raceId = T2.raceId
+JOIN drivers AS T3
+  ON T1.driverId = T3.driverId
+WHERE
+  T3.dob = (
+    SELECT
+      MIN(dob)
+    FROM drivers
+  )
+ORDER BY
+  T3.dob ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (2017, 'Chinese Grand Prix', '2017-04-09', '06:00:00')
+
+### Q988: FAIL (right logic, extra columns)
+
+*formula_1, challenging, confidence 1.0, 1 attempt(s), 28.29s*
+
+**Question:** List down top 3 German drivers who has the shortest average pit stop duration and were born between 1980-1985.
+
+**Hint:** Full name of the driver refers to drivers.forename and drivers.surname; born between 1980-1985 refers to 1980<= year(dob) <=1985; Average pitstop duration refers to Divide(SUM(duration),COUNT(duration)); shortest average refers to Min(avg(duration));
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.forename,
+  T2.surname
+FROM pitStops AS T1
+INNER JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T2.nationality = 'German' AND STRFTIME('%Y', T2.dob) BETWEEN '1980' AND '1985'
+GROUP BY
+  T2.forename,
+  T2.surname
+ORDER BY
+  AVG(T1.duration)
+LIMIT 3
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.forename,
+  T2.surname,
+  AVG(T3.duration) AS avg_duration
+FROM pitStops AS T3
+JOIN drivers AS T2
+  ON T3.driverId = T2.driverId
+JOIN races AS T1
+  ON T3.raceId = T1.raceId
+WHERE
+  T2.nationality = 'German' AND STRFTIME('%Y', T2.dob) BETWEEN '1980' AND '1985'
+GROUP BY
+  T2.driverId
+ORDER BY
+  avg_duration ASC
+LIMIT 3
+```
+
+- Our result: 3 row(s): ('Nico', 'Rosberg', 23.267591666666664), ('Adrian', 'Sutil', 23.467137931034483), ('Timo', 'Glock', 23.68938888888889)
+- Gold result: 3 row(s): ('Nico', 'Rosberg'), ('Adrian', 'Sutil'), ('Timo', 'Glock')
+
+### Q989: FAIL (right logic, extra columns)
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 22.64s*
+
+**Question:** Who is the champion of the Canadian Grand Prix in 2008? Indicate his finish time.
+
+**Hint:** Only the time of the champion shows in the format of "hour: minutes: seconds.millionsecond";
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.time
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+WHERE
+  T2.name = 'Canadian Grand Prix' AND T2.year = 2008 AND T1.time LIKE '_:%:__.___'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.forename,
+  T2.surname,
+  T1.time
+FROM results AS T1
+JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+JOIN races AS T3
+  ON T1.raceId = T3.raceId
+WHERE
+  T3.name = 'Canadian Grand Prix' AND T3.year = 2008 AND T1.position = 1
+```
+
+- Our result: 1 row(s): ('Robert', 'Kubica', '1:36:24.227')
+- Gold result: 1 row(s): ('1:36:24.227',)
+
+### Q990: FAIL
+
+*formula_1, challenging, confidence None, 3 attempt(s), 34.78s*
+
+**Question:** What is the constructor reference name of the champion in the 2009 Singapore Grand Prix? Please give its website.
+
+**Hint:** the time of the champion shows in the format of "minutes: seconds.millionsecond" in which Max(time); constructor reference name refers to constructorRef; website refers to url
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.constructorRef,
+  T3.url
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+INNER JOIN constructors AS T3
+  ON T1.constructorId = T3.constructorId
+WHERE
+  T2.name = 'Singapore Grand Prix' AND T2.year = 2009 AND T1.time LIKE '_:%:__.___'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.constructorRef,
+  T2.url
+FROM races AS T1
+INNER JOIN constructorStandings AS T2
+  ON T1.raceId = T2.raceId
+WHERE
+  T1.name = 'Singapore Grand Prix' AND T1.year = 2009
+ORDER BY
+  T2.time DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('mclaren', 'http://en.wikipedia.org/wiki/McLaren')
+- Error: `no such column: T2.constructorRef`
+- Fix applied: no such column: T2.constructorRef
+- Fix applied: no such column: T2.constructorRef
+- Fix applied: no such column: T2.constructorRef
+
+### Q994: FAIL
+
+*formula_1, challenging, confidence 1.0, 1 attempt(s), 23.91s*
+
+**Question:** Which constructor scored most points from Monaco Grand Prix between 1980 and 2010? List the score, name and nationality of this team.
+
+**Hint:** Monaco Grand Priz refers to the race; race in year between 1980 and 2010
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(T1.points),
+  T2.name,
+  T2.nationality
+FROM constructorResults AS T1
+INNER JOIN constructors AS T2
+  ON T1.constructorId = T2.constructorId
+INNER JOIN races AS T3
+  ON T3.raceid = T1.raceid
+WHERE
+  T3.name = 'Monaco Grand Prix' AND T3.year BETWEEN 1980 AND 2010
+GROUP BY
+  T2.name
+ORDER BY
+  SUM(T1.points) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.name,
+  T3.nationality
+FROM constructorStandings AS T1
+JOIN races AS T2
+  ON T1.raceId = T2.raceId
+JOIN constructors AS T3
+  ON T1.constructorId = T3.constructorId
+WHERE
+  T2.name = 'Monaco Grand Prix' AND T2.year BETWEEN 1980 AND 2010
+GROUP BY
+  T3.constructorId
+ORDER BY
+  SUM(T1.points) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Monaco Grand Prix', 'British')
+- Gold result: 1 row(s): (218.5, 'McLaren', 'British')
+- Fix applied: no such column: T2.nationality -> repaired alias in code
+- Fix applied: logic fix in code: ranking_projection: dropped ranking-only column(s) SUM(T1.points) AS total_points from SELECT
+
+### Q1001: PASS
+
+*formula_1, challenging, confidence 1.0, 1 attempt(s), 23.02s*
+
+**Question:** What is full name of the racer who ranked 1st in the 3rd qualifying race held in the Marina Bay Street Circuit in 2008?
+
+**Hint:** Ranked 1st in the 3rd qualifying race refer to MIN(q3); 2008 is the year of race; full name of racer = forename, surname
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.forename,
+  T2.surname
+FROM qualifying AS T1
+INNER JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+INNER JOIN races AS T3
+  ON T1.raceid = T3.raceid
+WHERE
+  NOT q3 IS NULL
+  AND T3.year = 2008
+  AND T3.circuitId IN (
+    SELECT
+      circuitId
+    FROM circuits
+    WHERE
+      name = 'Marina Bay Street Circuit'
+  )
+ORDER BY
+  CAST(SUBSTRING(q3, 1, INSTR(q3, ':') - 1) AS INTEGER) * 60 + CAST(SUBSTRING(q3, INSTR(q3, ':') + 1, INSTR(q3, '.') - INSTR(q3, ':') - 1) AS REAL) + CAST(SUBSTRING(q3, INSTR(q3, '.') + 1) AS REAL) / 1000 ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.forename,
+  T2.surname
+FROM qualifying AS T1
+INNER JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+INNER JOIN races AS T3
+  ON T1.raceId = T3.raceId
+WHERE
+  T3.year = 2008
+  AND T3.circuitId = (
+    SELECT
+      circuitId
+    FROM circuits
+    WHERE
+      name = 'Marina Bay Street Circuit'
+  )
+  AND T1.q3 = (
+    SELECT
+      MIN(q3)
+    FROM qualifying
+    WHERE
+      raceId = T3.raceId
+  )
+```
+
+- Our result: 1 row(s): ('Felipe', 'Massa')
+- Gold result: 1 row(s): ('Felipe', 'Massa')
+
+### Q1002: FAIL
+
+*formula_1, moderate, confidence None, 3 attempt(s), 32.73s*
+
+**Question:** As of the present, what is the full name of the youngest racer? Indicate her nationality and the name of the race to which he/she first joined.
+
+**Hint:** full name refers to forename+surname; Youngest racer = MAX(dob)
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.forename,
+  T1.surname,
+  T1.nationality,
+  T3.name
+FROM drivers AS T1
+INNER JOIN driverStandings AS T2
+  ON T1.driverId = T2.driverId
+INNER JOIN races AS T3
+  ON T2.raceId = T3.raceId
+ORDER BY
+  JULIANDAY(T1.dob) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.forename,
+  T1.surname,
+  T1.nationality,
+  T2.name
+FROM drivers AS T1
+JOIN driverStandings AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T1.dob = (
+    SELECT
+      MAX(dob)
+    FROM drivers
+  )
+ORDER BY
+  T1.dob ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Lance', 'Stroll', 'Canadian', 'Chinese Grand Prix')
+- Error: `no such column: T2.name`
+- Fix applied: no such column: T2.name
+- Fix applied: no such column: T2.name
+- Fix applied: no such column: T2.name
+
+### Q1003: FAIL
+
+*formula_1, moderate, confidence 1.0, 1 attempt(s), 21.99s*
+
+**Question:** How many accidents did the driver who had the highest number accidents in the Canadian Grand Prix have?
+
+**Hint:** number of accidents refers to the number where statusid = 3; Canadian Grand Prix refers to the race of name
+
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.driverId)
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+INNER JOIN status AS T3
+  ON T1.statusId = T3.statusId
+WHERE
+  T3.statusId = 3 AND T2.name = 'Canadian Grand Prix'
+GROUP BY
+  T1.driverId
+ORDER BY
+  COUNT(T1.driverId) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM results
+WHERE
+  statusid = 3
+  AND raceId = (
+    SELECT
+      raceId
+    FROM races
+    WHERE
+      name = 'Canadian Grand Prix'
+  )
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (2,)
+
+### Q1011: FAIL
+
+*formula_1, challenging, confidence None, 3 attempt(s), 32.08s*
+
+**Question:** Which top 20 driver created the shortest lap time ever record in a Formula_1 race? Please give them full names.
+
+**Hint:** shortest lap time refers to MIN(time); the time format for the shortest lap time is 'MM:SS.mmm' or 'M:SS.mmm'; full name of the driver refers to forename, surname
+
+**Gold SQL**
+
+```sql
+WITH lap_times_in_seconds AS (
+  SELECT
+    driverId,
+    (
+      CASE
+        WHEN SUBSTRING(time, 1, INSTR(time, ':') - 1) <> ''
+        THEN CAST(SUBSTRING(time, 1, INSTR(time, ':') - 1) AS REAL) * 60
+        ELSE 0
+      END + CASE
+        WHEN SUBSTRING(time, INSTR(time, ':') + 1, INSTR(time, '.') - INSTR(time, ':') - 1) <> ''
+        THEN CAST(SUBSTRING(time, INSTR(time, ':') + 1, INSTR(time, '.') - INSTR(time, ':') - 1) AS REAL)
+        ELSE 0
+      END + CASE
+        WHEN SUBSTRING(time, INSTR(time, '.') + 1) <> ''
+        THEN CAST(SUBSTRING(time, INSTR(time, '.') + 1) AS REAL) / 1000
+        ELSE 0
+      END
+    ) AS time_in_seconds
+  FROM lapTimes
+)
+SELECT
+  T2.forename,
+  T2.surname,
+  T1.driverId
+FROM (
+  SELECT
+    driverId,
+    MIN(time_in_seconds) AS min_time_in_seconds
+  FROM lap_times_in_seconds
+  GROUP BY
+    driverId
+) AS T1
+INNER JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+ORDER BY
+  T1.min_time_in_seconds ASC
+LIMIT 20
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.forename,
+  T2.surname
+FROM driverStandings AS T1
+JOIN drivers AS T2
+  ON T1.driverId = T2.driverId
+WHERE
+  T1.time = (
+    SELECT
+      MIN(time)
+    FROM driverStandings
+  )
+ORDER BY
+  T1.time ASC
+LIMIT 20
+```
+
+- Our result: 0 rows
+- Gold result: 20 row(s): ('Nico', 'Hülkenberg', 807), ('Daniel', 'Ricciardo', 817), ('Adrian', 'Sutil', 16), ('Kevin', 'Magnussen', 825), ('Nico', 'Rosberg', 3) … (20 rows total)
+- Error: `no such column: T1.time`
+- Fix applied: no such column: T1.forename -> repaired alias in code
+- Fix applied: no such column: T1.surname -> repaired alias in code
+- Fix applied: no such column: T1.time
+- Fix applied: no such column: T1.time
+- Fix applied: no such column: T1.time
+
+### Q1014: FAIL
+
+*formula_1, challenging, confidence None, 3 attempt(s), 30.73s*
+
+**Question:** Please list the lap records for the circuits in Italy.
+
+**Hint:** lap record means the fastest time recorded which refers to time
+
+**Gold SQL**
+
+```sql
+WITH fastest_lap_times AS (
+  SELECT
+    T1.raceId,
+    T1.FastestLapTime,
+    (
+      CAST(SUBSTRING(T1.FastestLapTime, 1, INSTR(T1.FastestLapTime, ':') - 1) AS REAL) * 60
+    ) + (
+      CAST(SUBSTRING(
+        T1.FastestLapTime,
+        INSTR(T1.FastestLapTime, ':') + 1,
+        INSTR(T1.FastestLapTime, '.') - INSTR(T1.FastestLapTime, ':') - 1
+      ) AS REAL)
+    ) + (
+      CAST(SUBSTRING(T1.FastestLapTime, INSTR(T1.FastestLapTime, '.') + 1) AS REAL) / 1000
+    ) AS time_in_seconds
+  FROM results AS T1
+  WHERE
+    NOT T1.FastestLapTime IS NULL
+)
+SELECT
+  T1.FastestLapTime AS lap_record
+FROM results AS T1
+INNER JOIN races AS T2
+  ON T1.raceId = T2.raceId
+INNER JOIN circuits AS T3
+  ON T2.circuitId = T3.circuitId
+INNER JOIN (
+  SELECT
+    MIN(fastest_lap_times.time_in_seconds) AS min_time_in_seconds
+  FROM fastest_lap_times
+  INNER JOIN races AS T2
+    ON fastest_lap_times.raceId = T2.raceId
+  INNER JOIN circuits AS T3
+    ON T2.circuitId = T3.circuitId
+  WHERE
+    T3.country = 'Italy'
+) AS T4
+  ON (
+    CAST(SUBSTRING(T1.FastestLapTime, 1, INSTR(T1.FastestLapTime, ':') - 1) AS REAL) * 60
+  ) + (
+    CAST(SUBSTRING(
+      T1.FastestLapTime,
+      INSTR(T1.FastestLapTime, ':') + 1,
+      INSTR(T1.FastestLapTime, '.') - INSTR(T1.FastestLapTime, ':') - 1
+    ) AS REAL)
+  ) + (
+    CAST(SUBSTRING(T1.FastestLapTime, INSTR(T1.FastestLapTime, '.') + 1) AS REAL) / 1000
+  ) = T4.min_time_in_seconds
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  lt.circuitId,
+  lt.lap,
+  lt.time
+FROM lapTimes AS lt
+JOIN races AS r
+  ON lt.raceId = r.raceId
+JOIN circuits AS c
+  ON r.circuitId = c.circuitId
+WHERE
+  c.country = 'Italy'
+ORDER BY
+  lt.time ASC
+LIMIT 1000
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('1:20.411',)
+- Error: `no such column: lt.circuitId`
+- Fix applied: no such column: lt.circuitId
+- Fix applied: no such column: lt.circuitId
+- Fix applied: no such column: lt.circuitId
+
+### Q717: PASS
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 15.61s*
+
+**Question:** Please list all the superpowers of 3-D Man.
+
+**Hint:** 3-D Man refers to superhero_name = '3-D Man'; superpowers refers to power_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.power_name
+FROM superhero AS T1
+INNER JOIN hero_power AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN superpower AS T3
+  ON T2.power_id = T3.id
+WHERE
+  T1.superhero_name = '3-D Man'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.power_name
+FROM superhero AS T1
+INNER JOIN hero_power AS T3
+  ON T1.id = T3.hero_id
+INNER JOIN superpower AS T2
+  ON T3.power_id = T2.id
+WHERE
+  T1.superhero_name = '3-D Man'
+```
+
+- Our result: 4 row(s): ('Agility',), ('Super Strength',), ('Stamina',), ('Super Speed',)
+- Gold result: 4 row(s): ('Agility',), ('Super Strength',), ('Stamina',), ('Super Speed',)
+
+### Q719: PASS
+
+*superhero, moderate, confidence 1.0, 2 attempt(s), 28.6s*
+
+**Question:** Among the superheroes with the super power of "Super Strength", how many of them have a height of over 200cm?
+
+**Hint:** super power of "Super Strength" refers to power_name = 'Super Strength'; a height of over 200cm refers to height_cm > 200
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM superhero AS T1
+INNER JOIN hero_power AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN superpower AS T3
+  ON T2.power_id = T3.id
+WHERE
+  T3.power_name = 'Super Strength' AND T1.height_cm > 200
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM superhero
+INNER JOIN hero_power
+  ON superhero.id = hero_power.hero_id
+INNER JOIN superpower
+  ON hero_power.power_id = superpower.id
+WHERE
+  superpower.power_name = 'Super Strength' AND superhero.height_cm > 200
+```
+
+- Our result: 1 row(s): (56,)
+- Gold result: 1 row(s): (56,)
+- Fix applied: no such column: power_name -> added missing JOIN in code
+
+### Q723: PASS
+
+*superhero, moderate, confidence 1.0, 2 attempt(s), 31.21s*
+
+**Question:** Among the superheroes with blue eyes, how many of them have the super power of "Agility"?
+
+**Hint:** blue eyes refers to colour = 'Blue' and eye_colour_id = colour.id; super power of "Agility" refers to power_name = 'Agility'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM superhero AS T1
+INNER JOIN hero_power AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN superpower AS T3
+  ON T2.power_id = T3.id
+INNER JOIN colour AS T4
+  ON T1.eye_colour_id = T4.id
+WHERE
+  T3.power_name = 'Agility' AND T4.colour = 'Blue'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM superhero
+JOIN colour
+  ON superhero.eye_colour_id = colour.id
+JOIN hero_power
+  ON superhero.id = hero_power.hero_id
+JOIN superpower
+  ON hero_power.power_id = superpower.id
+WHERE
+  colour.colour = 'Blue' AND superpower.power_name = 'Agility'
+```
+
+- Our result: 1 row(s): (83,)
+- Gold result: 1 row(s): (83,)
+- Fix applied: no such column: superpower.power_name
+
+### Q724: FAIL
+
+*superhero, challenging, confidence 1.0, 1 attempt(s), 18.94s*
+
+**Question:** Please list the superhero names of all the superheroes that have blue eyes and blond hair.
+
+**Hint:** blue eyes refers to colour = 'Blue' and eye_colour_id = colour.id; blond hair refers to colour = 'Blond' and hair_colour_id = colour.id; super power of "Agility" refers to power_name = 'Agility'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.eye_colour_id = T2.id
+INNER JOIN colour AS T3
+  ON T1.hair_colour_id = T3.id
+WHERE
+  T2.colour = 'Blue' AND T3.colour = 'Blond'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero_name
+FROM superhero
+JOIN colour
+  ON superhero.skin_colour_id = colour.id
+JOIN colour AS hair_colour
+  ON superhero.hair_colour_id = hair_colour.id
+WHERE
+  colour.colour = 'Blue' AND hair_colour.colour = 'Blond'
+```
+
+- Our result: 2 row(s): ('Archangel',), ('Killer Frost',)
+- Gold result: 90 row(s): ('Adam Monroe',), ('Adam Strange',), ('Agent 13',), ('Alan Scott',), ('Angel',) … (90 rows total)
+
+### Q726: FAIL
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 17.48s*
+
+**Question:** Rank heroes published by Marvel Comics by their height in descending order.
+
+**Hint:** name refers to superhero_name; the tallest hero refers to MAX(height_cm); published by Marvel Comics refers to publisher_name = 'Marvel Comics'
+
+**Gold SQL**
+
+```sql
+SELECT
+  superhero_name,
+  height_cm,
+  RANK() OVER (ORDER BY height_cm DESC) AS HeightRank
+FROM superhero
+INNER JOIN publisher
+  ON superhero.publisher_id = publisher.id
+WHERE
+  publisher.publisher_name = 'Marvel Comics'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.superhero_name,
+  MAX(T2.height_cm) AS tallest_height
+FROM publisher AS T1
+JOIN superhero AS T2
+  ON T1.id = T2.publisher_id
+WHERE
+  T1.publisher_name = 'Marvel Comics'
+GROUP BY
+  T2.publisher_id
+ORDER BY
+  tallest_height DESC
+LIMIT 10
+```
+
+- Our result: 1 row(s): ('Surtur', 30480)
+- Gold result: 387 row(s): ('Surtur', 30480, 1), ('Ymir', 30480, 1), ('Bloodwraith', 3050, 3), ('Utgard-Loki', 1520, 4), ('Fin Fang Foom', 975, 5) … (387 rows total)
+- Fix applied: no such column: T1.height_cm -> repaired alias in code
+
+### Q728: FAIL
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 16.17s*
+
+**Question:** Rank superheroes from Marvel Comics by their eye color popularity, starting with the most common color.
+
+**Hint:** the superheroes from Marvel Comics refers to publisher_name = 'Marvel Comics'; most common color refers to COUNT(superhero.id) DESC;
+
+**Gold SQL**
+
+```sql
+SELECT
+  colour.colour AS EyeColor,
+  COUNT(superhero.id) AS Count,
+  RANK() OVER (ORDER BY COUNT(superhero.id) DESC) AS PopularityRank
+FROM superhero
+INNER JOIN colour
+  ON superhero.eye_colour_id = colour.id
+INNER JOIN publisher
+  ON superhero.publisher_id = publisher.id
+WHERE
+  publisher.publisher_name = 'Marvel Comics'
+GROUP BY
+  colour.colour
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  eye_colour_id,
+  COUNT(superhero.id) AS eye_color_count
+FROM superhero
+JOIN publisher
+  ON superhero.publisher_id = publisher.id
+WHERE
+  publisher.publisher_name = 'Marvel Comics'
+GROUP BY
+  eye_colour_id
+ORDER BY
+  eye_color_count DESC
+LIMIT 10
+```
+
+- Our result: 10 row(s): (7, 126), (9, 89), (1, 47), (14, 40), (23, 31) … (10 rows total)
+- Gold result: 19 row(s): ('Blue', 126, 1), ('Brown', 89, 2), ('No Colour', 47, 3), ('Green', 40, 4), ('Red', 31, 5) … (19 rows total)
+
+### Q730: PASS
+
+*superhero, challenging, confidence 1.0, 1 attempt(s), 18.92s*
+
+**Question:** List the superheroes from Marvel Comics who have the super power of 'Super Strength'.
+
+**Hint:** the superheroes from Marvel Comics refers to publisher_name = 'Marvel Comics'; super power of "Super Strength" refers to power_name = 'Super Strength';
+
+**Gold SQL**
+
+```sql
+SELECT
+  superhero_name
+FROM superhero AS T1
+WHERE
+  EXISTS(
+    SELECT
+      1
+    FROM hero_power AS T2
+    INNER JOIN superpower AS T3
+      ON T2.power_id = T3.id
+    WHERE
+      T3.power_name = 'Super Strength' AND T1.id = T2.hero_id
+  )
+  AND EXISTS(
+    SELECT
+      1
+    FROM publisher AS T4
+    WHERE
+      T4.publisher_name = 'Marvel Comics' AND T1.publisher_id = T4.id
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero.superhero_name
+FROM superhero
+JOIN publisher
+  ON superhero.publisher_id = publisher.id
+JOIN hero_power
+  ON superhero.id = hero_power.hero_id
+JOIN superpower
+  ON hero_power.power_id = superpower.id
+WHERE
+  publisher.publisher_name = 'Marvel Comics'
+  AND superpower.power_name = 'Super Strength'
+```
+
+- Our result: 201 row(s): ('3-D Man',), ('A-Bomb',), ('Abomination',), ('Abraxas',), ('Absorbing Man',) … (201 rows total)
+- Gold result: 201 row(s): ('3-D Man',), ('A-Bomb',), ('Abomination',), ('Abraxas',), ('Absorbing Man',) … (201 rows total)
+
+### Q732: FAIL
+
+*superhero, moderate, confidence None, 3 attempt(s), 31.37s*
+
+**Question:** Which publisher published the slowest superhero?
+
+**Hint:** the slowest superhero refers to attribute_name = 'Speed' where MIN(attribute_value); publisher refers to publisher_name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.publisher_name
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+INNER JOIN hero_attribute AS T3
+  ON T1.id = T3.hero_id
+INNER JOIN attribute AS T4
+  ON T3.attribute_id = T4.id
+WHERE
+  T4.attribute_name = 'Speed'
+ORDER BY
+  T3.attribute_value
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.publisher_name
+FROM hero_attribute AS T1
+INNER JOIN superhero AS T2
+  ON T1.hero_id = T2.id
+INNER JOIN attribute AS T3
+  ON T1.attribute_id = T3.id
+WHERE
+  T3.attribute_name = 'Speed'
+GROUP BY
+  T2.publisher_name
+ORDER BY
+  MIN(T1.attribute_value)
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Marvel Comics',)
+- Error: `no such column: T2.publisher_name`
+- Fix applied: no such column: T2.publisher_name
+- Fix applied: no such column: T2.publisher_name
+- Fix applied: no such column: T2.publisher_name
+
+### Q733: PASS
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 18.04s*
+
+**Question:** How many gold-eyed superheroes did Marvel Comics publish?
+
+**Hint:** gold-eyed refers to colour = 'Gold' where eye_colour_id = colour.id; superheroes that Marvel Comics published refers to publisher_name = 'Marvel Comics'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+INNER JOIN colour AS T3
+  ON T1.eye_colour_id = T3.id
+WHERE
+  T2.publisher_name = 'Marvel Comics' AND T3.colour = 'Gold'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+INNER JOIN colour AS T3
+  ON T1.eye_colour_id = T3.id
+WHERE
+  T2.publisher_name = 'Marvel Comics' AND T3.colour = 'Gold'
+```
+
+- Our result: 1 row(s): (2,)
+- Gold result: 1 row(s): (2,)
+
+### Q736: PASS
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 17.37s*
+
+**Question:** Who is the dumbest superhero?
+
+**Hint:** the dumbest superhero refers to MIN(attribute_value) where attribute_name = 'Intelligence'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN hero_attribute AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN attribute AS T3
+  ON T2.attribute_id = T3.id
+WHERE
+  T3.attribute_name = 'Intelligence'
+ORDER BY
+  T2.attribute_value
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero.superhero_name
+FROM superhero
+JOIN hero_attribute
+  ON superhero.id = hero_attribute.hero_id
+JOIN attribute
+  ON hero_attribute.attribute_id = attribute.id
+WHERE
+  attribute.attribute_name = 'Intelligence'
+GROUP BY
+  superhero.superhero_name
+ORDER BY
+  SUM(hero_attribute.attribute_value) ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Ammo',)
+- Gold result: 1 row(s): ('Ammo',)
+- Fix applied: logic fix in code: fanout_ranking: ranked superhero by one hero_attribute row -> GROUP BY + ORDER BY SUM(hero_attribute.attribute_value)
+
+### Q737: PASS
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 12.93s*
+
+**Question:** What is Copycat's race?
+
+**Hint:** Copycat is the superhero_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.race
+FROM superhero AS T1
+INNER JOIN race AS T2
+  ON T1.race_id = T2.id
+WHERE
+  T1.superhero_name = 'Copycat'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  race.race
+FROM superhero
+INNER JOIN race
+  ON superhero."race_id" = race."id"
+WHERE
+  superhero.superhero_name = 'Copycat'
+```
+
+- Our result: 1 row(s): ('Mutant',)
+- Gold result: 1 row(s): ('Mutant',)
+- Fix applied: no such column: race -> added missing JOIN in code
+
+### Q738: FAIL
+
+*superhero, simple, confidence None, 3 attempt(s), 32.17s*
+
+**Question:** Which superheroes have a durability attribute value of less than 50?
+
+**Hint:** durability of less than 50 refers to attribute_name = 'Durability' AND attribute_value < 50
+
+**Gold SQL**
+
+```sql
+SELECT
+  superhero_name
+FROM superhero AS T1
+WHERE
+  EXISTS(
+    SELECT
+      1
+    FROM hero_attribute AS T2
+    INNER JOIN attribute AS T3
+      ON T2.attribute_id = T3.id
+    WHERE
+      T3.attribute_name = 'Durability'
+      AND T2.attribute_value < 50
+      AND T1.id = T2.hero_id
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  superhero.superhero_name
+FROM superhero_attribute
+JOIN superhero
+  ON superhero_attribute.hero_id = superhero.id
+JOIN attribute
+  ON superhero_attribute.attribute_id = attribute.id
+WHERE
+  attribute.attribute_name = 'Durability'
+  AND superhero_attribute.attribute_value < 50
+```
+
+- Our result: 0 rows
+- Gold result: 371 row(s): ('3-D Man',), ('A-Bomb',), ('Abe Sapien',), ('Adam Monroe',), ('Adam Strange',) … (371 rows total)
+- Error: `no such table: superhero_attribute`
+
+### Q739: PASS
+
+*superhero, moderate, confidence 1.0, 2 attempt(s), 27.06s*
+
+**Question:** What are the names of the superheroes with the power of death touch?
+
+**Hint:** name of superheroes refers to refers to superhero_name; the power of death touch refers to power_name = 'Death Touch'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN hero_power AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN superpower AS T3
+  ON T2.power_id = T3.id
+WHERE
+  T3.power_name = 'Death Touch'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero.superhero_name
+FROM superhero
+INNER JOIN hero_power
+  ON superhero.id = hero_power.hero_id
+INNER JOIN superpower
+  ON hero_power.power_id = superpower.id
+WHERE
+  superpower.power_name = 'Death Touch'
+```
+
+- Our result: 7 row(s): ('Black Flash',), ('Blackwulf',), ('Hela',), ('Living Tribunal',), ('One-Above-All',) … (7 rows total)
+- Gold result: 7 row(s): ('Black Flash',), ('Blackwulf',), ('Hela',), ('Living Tribunal',), ('One-Above-All',) … (7 rows total)
+- Fix applied: no such column: power_name -> added missing JOIN in code
+
+### Q740: PASS
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 19.39s*
+
+**Question:** How many female superheroes have a strength value of 100?
+
+**Hint:** female refers to gender = 'Female'; strength value of 100 refers to attribute_name = 'Strength' AND attribute_value = 100
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM superhero AS T1
+INNER JOIN hero_attribute AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN attribute AS T3
+  ON T2.attribute_id = T3.id
+INNER JOIN gender AS T4
+  ON T1.gender_id = T4.id
+WHERE
+  T3.attribute_name = 'Strength'
+  AND T2.attribute_value = 100
+  AND T4.gender = 'Female'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM superhero AS T1
+INNER JOIN gender AS T2
+  ON T1.gender_id = T2.id
+INNER JOIN hero_attribute AS T3
+  ON T1.id = T3.hero_id
+INNER JOIN attribute AS T4
+  ON T3.attribute_id = T4.id
+WHERE
+  T2.gender = 'Female'
+  AND T4.attribute_name = 'Strength'
+  AND T3.attribute_value = 100
+```
+
+- Our result: 1 row(s): (12,)
+- Gold result: 1 row(s): (12,)
+
+### Q743: FAIL
+
+*superhero, challenging, confidence None, 3 attempt(s), 36.04s*
+
+**Question:** What is the percentage of superheroes who act in their own self-interest or make decisions based on their own moral code? Indicate how many of the said superheroes were published by Marvel Comics.
+
+**Hint:** published by Marvel Comics refers to publisher_name = 'Marvel Comics'; superheroes who act in their own self-interest or make decisions based on their own moral code refers to alignment = 'Bad'; calculation = MULTIPLY(DIVIDE(SUM(alignment = 'Bad); count(id)), 100)
+
+**Gold SQL**
+
+```sql
+SELECT
+  (
+    CAST(COUNT(*) AS REAL) * 100 / (
+      SELECT
+        COUNT(*)
+      FROM superhero
+    )
+  ),
+  CAST(SUM(CASE WHEN T2.publisher_name = 'Marvel Comics' THEN 1 ELSE 0 END) AS REAL)
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+INNER JOIN alignment AS T3
+  ON T3.id = T1.alignment_id
+WHERE
+  T3.alignment = 'Bad'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.alignment = 'Bad' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id)
+FROM publisher AS T1
+INNER JOIN superhero AS T2
+  ON T1.id = T2.publisher_id
+WHERE
+  T1.publisher_name = 'Marvel Comics'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (28.266666666666666, 118.0)
+- Error: `no such column: T2.alignment`
+- Fix applied: no such column: T2.alignment
+- Fix applied: no such column: T2.alignment
+- Fix applied: no such column: T2.alignment
+
+### Q744: FAIL
+
+*superhero, challenging, confidence 1.0, 1 attempt(s), 13.77s*
+
+**Question:** Between DC and Marvel Comics, which publisher has published more superheroes? Find the difference in the number of superheroes they have published.
+
+**Hint:** DC refers to publisher_name = 'DC Comics'; Marvel Comics refers to publisher_name = 'Marvel Comics'; calculation = SUBTRACT(SUM(publisher_name = 'Marvel Comics'), SUM(publisher_name = 'DC Comics'))
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN T2.publisher_name = 'Marvel Comics' THEN 1 ELSE 0 END) - SUM(CASE WHEN T2.publisher_name = 'DC Comics' THEN 1 ELSE 0 END)
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN publisher_name = 'Marvel Comics' THEN 1 ELSE 0 END) - SUM(CASE WHEN publisher_name = 'DC Comics' THEN 1 ELSE 0 END) AS difference_in_superheroes
+FROM publisher
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (163,)
+
+### Q745: PASS
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 10.45s*
+
+**Question:** Give the publisher ID of Star Trek.
+
+**Hint:** Star Trek is the publisher_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  id
+FROM publisher
+WHERE
+  publisher_name = 'Star Trek'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  id
+FROM publisher
+WHERE
+  publisher_name = 'Star Trek'
+```
+
+- Our result: 1 row(s): (20,)
+- Gold result: 1 row(s): (20,)
+
+### Q747: PASS
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 12.87s*
+
+**Question:** What is the total number of superheroes without full name?
+
+**Hint:** superheroes without full name refers to full_name IS NULL
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(id)
+FROM superhero
+WHERE
+  full_name IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM superhero
+WHERE
+  full_name IS NULL
+```
+
+- Our result: 1 row(s): (122,)
+- Gold result: 1 row(s): (122,)
+
+### Q750: PASS
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 14.81s*
+
+**Question:** What is the average weight of all female superheroes?
+
+**Hint:** female refers to gender = 'Female'; average weight refers to AVG(weight_kg)
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T1.weight_kg)
+FROM superhero AS T1
+INNER JOIN gender AS T2
+  ON T1.gender_id = T2.id
+WHERE
+  T2.gender = 'Female'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(superhero.weight_kg)
+FROM superhero
+INNER JOIN gender
+  ON superhero."gender_id" = gender."id"
+WHERE
+  gender.gender = 'Female'
+```
+
+- Our result: 1 row(s): (60.77956989247312,)
+- Gold result: 1 row(s): (60.77956989247312,)
+- Fix applied: no such column: gender -> added missing JOIN in code
+
+### Q751: FAIL
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 17.21s*
+
+**Question:** List down at least five superpowers of male superheroes.
+
+**Hint:** male refers to gender = 'Male'; superpowers refers to power_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.power_name
+FROM superhero AS T1
+INNER JOIN hero_power AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN superpower AS T3
+  ON T3.id = T2.power_id
+INNER JOIN gender AS T4
+  ON T4.id = T1.gender_id
+WHERE
+  T4.gender = 'Male'
+LIMIT 5
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superpower.power_name
+FROM hero_power
+JOIN superhero
+  ON hero_power.hero_id = superhero.id
+JOIN gender
+  ON superhero.gender_id = gender.id
+INNER JOIN superpower
+  ON hero_power."power_id" = superpower."id"
+WHERE
+  gender.gender = 'Male'
+GROUP BY
+  superpower.power_name
+ORDER BY
+  COUNT(superpower.power_name) DESC
+LIMIT 5
+```
+
+- Our result: 5 row(s): ('Super Strength',), ('Stamina',), ('Durability',), ('Super Speed',), ('Agility',)
+- Gold result: 5 row(s): ('Agility',), ('Super Strength',), ('Stamina',), ('Super Speed',), ('Accelerated Healing',)
+- Fix applied: no such column: power_name -> added missing JOIN in code
+
+### Q753: PASS
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 15.48s*
+
+**Question:** Among the superheroes with height from 170 to 190, list the names of the superheroes with no eye color.
+
+**Hint:** height from 170 to 190 refers to height_cm BETWEEN 170 AND 190; no eye color refers to colour = 'No Colour'
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.eye_colour_id = T2.id
+WHERE
+  T1.height_cm BETWEEN 170 AND 190 AND T2.colour = 'No Colour'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero_name
+FROM superhero
+WHERE
+  height_cm BETWEEN 170 AND 190
+  AND eye_colour_id = (
+    SELECT
+      id
+    FROM colour
+    WHERE
+      colour = 'No Colour'
+  )
+```
+
+- Our result: 15 row(s): ('Chuck Norris',), ('Destroyer',), ('Flash III',), ('Goku',), ('Green Goblin III',) … (15 rows total)
+- Gold result: 15 row(s): ('Chuck Norris',), ('Destroyer',), ('Flash III',), ('Goku',), ('Green Goblin III',) … (15 rows total)
+
+### Q758: FAIL
+
+*superhero, moderate, confidence None, 3 attempt(s), 28.76s*
+
+**Question:** Provide the hair colour of the human superhero who is 185 cm tall.
+
+**Hint:** 185 cm tall refers to height_cm = 185; human superhero refers to race = 'human'; hair colour refers to colour where hair_colour_id = colour.id;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T3.colour
+FROM superhero AS T1
+INNER JOIN race AS T2
+  ON T1.race_id = T2.id
+INNER JOIN colour AS T3
+  ON T1.hair_colour_id = T3.id
+WHERE
+  T1.height_cm = 185 AND T2.race = 'Human'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.hair_colour
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.hair_colour_id = T2.id
+WHERE
+  T1.height_cm = 185 AND T1.race = 'Human'
+```
+
+- Our result: 0 rows
+- Gold result: 5 row(s): ('Blond',), ('Brown',), ('Black',), ('Brown/White',), ('No Colour',)
+- Error: `no such column: T1.hair_colour`
+- Fix applied: no such column: T1.hair_colour
+- Fix applied: no such column: T1.hair_colour
+- Fix applied: no such column: T1.hair_colour
+
+### Q760: FAIL
+
+*superhero, challenging, confidence 1.0, 1 attempt(s), 18.23s*
+
+**Question:** In superheroes with height between 150 to 180, what is the percentage of heroes published by Marvel Comics?
+
+**Hint:** height between 150 to 180 refers to height_cm BETWEEN 150 AND 180; heroes published by Marvel Comics refers to publisher_name = 'Marvel Comics'; calculation = MULTIPLY(DIVIDE(SUM(publisher.id = 13)), COUNT(publisher.id), 100)
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN T2.publisher_name = 'Marvel Comics' THEN 1 ELSE NULL END) AS REAL) * 100 / COUNT(T1.id)
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+WHERE
+  T1.height_cm BETWEEN 150 AND 180
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  1.0 * COUNT(publisher.id) * 100 / SUM(CASE WHEN publisher.id = 13 THEN 1 ELSE 0 END) AS percentage
+FROM superhero
+JOIN publisher
+  ON superhero.publisher_id = publisher.id
+WHERE
+  superhero.height_cm BETWEEN 150 AND 180
+```
+
+- Our result: 1 row(s): (164.28571428571428,)
+- Gold result: 1 row(s): (60.869565217391305,)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q761: PASS
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 17.37s*
+
+**Question:** Among the male superheroes, list the super hero names of superheroes with weight greater than the 79% average weight of all superheroes.
+
+**Hint:** super hero names refers to superhero_name;male superheros refers to gender = 'Male';Calculation = weight_kg > MULTIPLY(AVG(weight_kg), 0.79)
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN gender AS T2
+  ON T1.gender_id = T2.id
+WHERE
+  T2.gender = 'Male'
+  AND T1.weight_kg * 100 > (
+    SELECT
+      AVG(weight_kg)
+    FROM superhero
+  ) * 79
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero.superhero_name
+FROM superhero
+INNER JOIN gender
+  ON superhero."gender_id" = gender."id"
+WHERE
+  gender.gender = 'Male'
+  AND superhero.weight_kg > (
+    SELECT
+      AVG(superhero.weight_kg) * 0.79
+    FROM superhero
+  )
+```
+
+- Our result: 1 row(s): ('King Kong',)
+- Gold result: 1 row(s): ('King Kong',)
+- Fix applied: no such column: gender -> added missing JOIN in code
+
+### Q764: FAIL
+
+*superhero, simple, confidence None, 3 attempt(s), 26.45s*
+
+**Question:** What are the superpowers of heroes with ID 1?
+
+**Hint:** superpowers refers to power_name; heroes with ID 1 refers to hero_id = 1;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.power_name
+FROM hero_power AS T1
+INNER JOIN superpower AS T2
+  ON T1.power_id = T2.id
+WHERE
+  T1.hero_id = 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  power_name
+FROM superpower
+WHERE
+  power_id IN (
+    SELECT
+      power_id
+    FROM hero_power
+    WHERE
+      hero_id = 1
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 4 row(s): ('Agility',), ('Super Strength',), ('Stamina',), ('Super Speed',)
+- Error: `no such column: power_id`
+- Fix applied: no such column: power_id
+- Fix applied: no such column: power_id
+- Fix applied: no such column: power_id
+
+### Q765: FAIL
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 16.52s*
+
+**Question:** How many heroes have stealth power?
+
+**Hint:** stealth power refers to power_name = 'Stealth';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.hero_id)
+FROM hero_power AS T1
+INNER JOIN superpower AS T2
+  ON T1.power_id = T2.id
+WHERE
+  T2.power_name = 'Stealth'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM superpower
+WHERE
+  power_name = 'Stealth'
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (127,)
+
+### Q766: FAIL
+
+*superhero, moderate, confidence 1.0, 2 attempt(s), 28.24s*
+
+**Question:** What is the hero's full name with the highest attribute in strength?
+
+**Hint:** highest attribute in strength refers to MAX(attribute_value) WHERE attribute_name = 'strength';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.full_name
+FROM superhero AS T1
+INNER JOIN hero_attribute AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN attribute AS T3
+  ON T2.attribute_id = T3.id
+WHERE
+  T3.attribute_name = 'Strength'
+ORDER BY
+  T2.attribute_value DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.full_name
+FROM hero_attribute AS T1
+INNER JOIN superhero AS T2
+  ON T1.hero_id = T2.id
+INNER JOIN attribute AS T3
+  ON T1.attribute_id = T3.id
+WHERE
+  T3.attribute_name = 'Strength'
+GROUP BY
+  T2.full_name
+ORDER BY
+  SUM(T1.attribute_value) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('-',)
+- Gold result: 1 row(s): ('Richard Milhouse Jones',)
+- Fix applied: no such column: T1.attribute_name
+- Fix applied: logic fix in code: fanout_ranking: ranked superhero by one hero_attribute row -> GROUP BY + ORDER BY SUM(T1.attribute_value)
+
+### Q769: PASS
+
+*superhero, challenging, confidence 1.0, 1 attempt(s), 19.54s*
+
+**Question:** Which superhero has the most durability published by Dark Horse Comics?
+
+**Hint:** which superhero refers to superhero_name; most durability refers to MAX(attribute_value) WHERE attribute_name = 'durability'; published by Dark Horse Comics refers to publisher_name = 'Dark Horse Comics';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN hero_attribute AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN attribute AS T3
+  ON T3.id = T2.attribute_id
+INNER JOIN publisher AS T4
+  ON T4.id = T1.publisher_id
+WHERE
+  T4.publisher_name = 'Dark Horse Comics' AND T3.attribute_name = 'Durability'
+ORDER BY
+  T2.attribute_value DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero.superhero_name
+FROM superhero
+JOIN publisher
+  ON superhero.publisher_id = publisher.id
+JOIN hero_attribute
+  ON superhero.id = hero_attribute.hero_id
+JOIN attribute
+  ON hero_attribute.attribute_id = attribute.id
+WHERE
+  publisher.publisher_name = 'Dark Horse Comics'
+  AND attribute.attribute_name = 'Durability'
+GROUP BY
+  superhero.superhero_name
+ORDER BY
+  SUM(attribute_value) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Dash',)
+- Gold result: 1 row(s): ('Dash',)
+- Fix applied: logic fix in code: fanout_ranking: ranked superhero by one hero_attribute row -> GROUP BY + ORDER BY SUM(attribute_value)
+
+### Q772: FAIL
+
+*superhero, challenging, confidence None, 3 attempt(s), 41.95s*
+
+**Question:** List the eyes, hair and skin colour of all female superheroes published by Dark Horse Comics.
+
+**Hint:** eyes refers to eye_colour_id; hair refers to hair_colour_id; skin colour refers to skin_colour_id; female superheroes refers to gender = 'Female'; published by Dark Horse Comics refers to publisher_name = 'Dark Horse Comics';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.eye_colour_id,
+  T1.hair_colour_id,
+  T1.skin_colour_id
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T2.id = T1.publisher_id
+INNER JOIN gender AS T3
+  ON T3.id = T1.gender_id
+WHERE
+  T2.publisher_name = 'Dark Horse Comics' AND T3.gender = 'Female'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T3.colour AS eyes,
+  T4.colour AS hair,
+  T5.colour AS skin_colour
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+INNER JOIN colour AS T3
+  ON T1.eye_colour_id = T3.id
+INNER JOIN colour AS T4
+  ON T1.hair_colour_id = T4.id
+INNER JOIN colour AS T5
+  ON T1.skin_colour_id = T5.id
+WHERE
+  T1.gender = 'Female' AND T2.publisher_name = 'Dark Horse Comics'
+```
+
+- Our result: 0 rows
+- Gold result: 5 row(s): (14, 6, 1), (9, 9, 1), (1, 1, 1), (1, 1, 28), (30, 4, 1)
+- Error: `no such column: T1.gender`
+- Fix applied: no such column: T1.gender
+- Fix applied: no such column: T1.gender
+- Fix applied: no such column: T1.gender
+
+### Q773: FAIL
+
+*superhero, challenging, confidence 1.0, 1 attempt(s), 16.23s*
+
+**Question:** Which superhero has the same eyes, hair and skin colour? Indicate the publisher of the superhero.
+
+**Hint:** which superhero refers to superhero_name; the same eyes, hair and skin colour refers to hair_colour_id = skin_colour_id AND hair_colour_id = eye_colour_id; publisher refers to publisher_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name,
+  T2.publisher_name
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+WHERE
+  T1.eye_colour_id = T1.hair_colour_id AND T1.eye_colour_id = T1.skin_colour_id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.publisher_name
+FROM superhero AS T1
+JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+WHERE
+  T1.hair_colour_id = T1.skin_colour_id AND T1.hair_colour_id = T1.eye_colour_id
+```
+
+- Our result: 157 row(s): ('Marvel Comics',), ('Wildstorm',), ('NBC - Heroes',), ('Wildstorm',), ('NBC - Heroes',) … (157 rows total)
+- Gold result: 157 row(s): ('Agent Zero', 'Marvel Comics'), ('Alex Mercer', 'Wildstorm'), ('Alex Woolsly', 'NBC - Heroes'), ('Allan Quatermain', 'Wildstorm'), ('Ando Masahashi', 'NBC - Heroes') … (157 rows total)
+- Fix applied: no such column: T1.publisher_name -> repaired alias in code
+
+### Q775: FAIL
+
+*superhero, challenging, confidence None, 3 attempt(s), 37.4s*
+
+**Question:** What is the percentage of blue female superheroes among all female superheroes?
+
+**Hint:** percentage = MULTIPLY(DIVIDE(SUM(colour = 'Blue' WHERE gender = 'Female'), COUNT(gender = 'Female')), 100); blue refers to the color = 'Blue' WHERE skin_colour_id = colour.id; female refers to gender = 'Female';
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN T3.colour = 'Blue' THEN T1.id ELSE NULL END) AS REAL) * 100 / COUNT(T1.id)
+FROM superhero AS T1
+INNER JOIN gender AS T2
+  ON T1.gender_id = T2.id
+INNER JOIN colour AS T3
+  ON T1.skin_colour_id = T3.id
+WHERE
+  T2.gender = 'Female'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN T1.colour = 'Blue' THEN 1 ELSE 0 END) * 100 / COUNT(*) AS percentage_blue_female
+FROM colour AS T1
+JOIN superhero AS T2
+  ON T1.id = T2.skin_colour_id
+WHERE
+  T2.gender = 'Female'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (2.4630541871921183,)
+- Error: `no such column: T2.gender`
+- Fix applied: no such column: T2.gender
+- Fix applied: no such column: T2.gender
+- Fix applied: no such column: T2.gender
+
+### Q779: PASS
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 15.41s*
+
+**Question:** How many powers does Amazo hero have?
+
+**Hint:** Amazo hero refers to superhero_name = 'Amazo';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.power_id)
+FROM hero_power AS T1
+INNER JOIN superhero AS T2
+  ON T1.hero_id = T2.id
+WHERE
+  T2.superhero_name = 'Amazo'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(power_id)
+FROM hero_power AS T1
+INNER JOIN superhero AS T2
+  ON T1.hero_id = T2.id
+WHERE
+  T2.superhero_name = 'Amazo'
+```
+
+- Our result: 1 row(s): (44,)
+- Gold result: 1 row(s): (44,)
+
+### Q781: PASS
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 14.42s*
+
+**Question:** Provide the heights of the heroes whose eye colours are amber.
+
+**Hint:** heights of the heroes refers to height_cm; eye colours are amber refers to colour.colour = 'Amber' WHERE eye_colour_id = colour.id;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.height_cm
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.eye_colour_id = T2.id
+WHERE
+  T2.colour = 'Amber'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.height_cm
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.eye_colour_id = T2.id
+WHERE
+  T2.colour = 'Amber'
+```
+
+- Our result: 3 row(s): (178,), (198,), (175,)
+- Gold result: 3 row(s): (178,), (198,), (175,)
+
+### Q782: PASS
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 15.37s*
+
+**Question:** List the heroes' names whose eyes and hair colours are both black.
+
+**Hint:** heroes' names refers to superhero_name; eyes and hair colours are both black refers to eye_colour_id AND hair_colour_id WHERE colour.colour = 'Black';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.eye_colour_id = T2.id AND T1.hair_colour_id = T2.id
+WHERE
+  T2.colour = 'Black'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero_name
+FROM superhero
+JOIN colour
+  ON superhero.eye_colour_id = colour.id
+JOIN colour AS hair_colour
+  ON superhero.hair_colour_id = hair_colour.id
+WHERE
+  colour.colour = 'Black' AND hair_colour.colour = 'Black'
+```
+
+- Our result: 11 row(s): ('Armor',), ('Atom Girl',), ('Bizarro',), ('Galactus',), ('General Zod',) … (11 rows total)
+- Gold result: 11 row(s): ('Armor',), ('Atom Girl',), ('Bizarro',), ('Galactus',), ('General Zod',) … (11 rows total)
+
+### Q785: PASS
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 13.14s*
+
+**Question:** Describe the names of neutral alignment superheroes.
+
+**Hint:** names of superheroes refers to superhero_name; neutral alignment refers to alignment = 'Neutral';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN alignment AS T2
+  ON T1.alignment_id = T2.id
+WHERE
+  T2.alignment = 'Neutral'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero.superhero_name
+FROM superhero
+INNER JOIN alignment
+  ON superhero."alignment_id" = alignment."id"
+WHERE
+  alignment.alignment = 'Neutral'
+```
+
+- Our result: 28 row(s): ('Ares',), ('Bizarro',), ('Black Flash',), ('Brundlefly',), ('Captain Cold',) … (28 rows total)
+- Gold result: 28 row(s): ('Ares',), ('Bizarro',), ('Black Flash',), ('Brundlefly',), ('Captain Cold',) … (28 rows total)
+- Fix applied: no such column: alignment -> added missing JOIN in code
+
+### Q786: FAIL
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 11.49s*
+
+**Question:** How many heroes have the highest attribute value in strength?
+
+**Hint:** highest attribute value in strength refers to MAX(attribute_value) WHERE attribute_name = 'Strength';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.hero_id)
+FROM hero_attribute AS T1
+INNER JOIN attribute AS T2
+  ON T1.attribute_id = T2.id
+WHERE
+  T2.attribute_name = 'Strength'
+  AND T1.attribute_value = (
+    SELECT
+      MAX(attribute_value)
+    FROM hero_attribute
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  MAX(hero_attribute.attribute_value)
+FROM attribute
+INNER JOIN hero_attribute
+  ON attribute."id" = hero_attribute."attribute_id"
+WHERE
+  attribute.attribute_name = 'Strength'
+```
+
+- Our result: 1 row(s): (100,)
+- Gold result: 1 row(s): (63,)
+- Fix applied: no such column: attribute_value -> added missing JOIN in code
+
+### Q788: FAIL
+
+*superhero, challenging, confidence 1.0, 1 attempt(s), 16.95s*
+
+**Question:** How many percent of female heroes were published by Marvel Comics?
+
+**Hint:** percent = MULTIPLY(DIVIDE(SUM(gender = 'Female' WHERE publisher_name = 'Marvel Comics'), COUNT(publisher_name = 'Marvel Comics')), 100); female heroes refers to gender = 'Female'; Marvel Comics refers to publisher_name = 'Marvel Comics';
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(
+    CASE
+      WHEN T3.gender = 'Female' AND T2.publisher_name = 'Marvel Comics'
+      THEN 1
+      ELSE NULL
+    END
+  ) AS REAL) / COUNT(CASE WHEN T2.publisher_name = 'Marvel Comics' THEN 1 ELSE NULL END) * 100
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+INNER JOIN gender AS T3
+  ON T1.gender_id = T3.id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  1.0 * COUNT(*) * 100 / SUM(CASE WHEN gender = 'Female' THEN 1 ELSE 0 END) AS female_percentage
+FROM superhero
+JOIN gender
+  ON superhero.gender_id = gender.id
+INNER JOIN publisher
+  ON superhero."publisher_id" = publisher."id"
+WHERE
+  publisher.publisher_name = 'Marvel Comics'
+```
+
+- Our result: 1 row(s): (348.64864864864865,)
+- Gold result: 1 row(s): (28.68217054263566,)
+- Fix applied: no such column: publisher_name -> added missing JOIN in code
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q790: FAIL
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 20.18s*
+
+**Question:** Calculate the difference between Emil Blonsky's weight and Charles Chandler's weight.
+
+**Hint:** difference = SUBTRACT(SUM(weight_kg WHERE full_name = 'Emil Blonsky'), SUM(weight_kg WHERE full_name = 'Charles Chandler')); Emil Blonsky is the full name of superhero; Charles Chandler is the full name of superhero;
+
+**Gold SQL**
+
+```sql
+SELECT
+  (
+    SELECT
+      weight_kg
+    FROM superhero
+    WHERE
+      full_name LIKE 'Emil Blonsky'
+  ) - (
+    SELECT
+      weight_kg
+    FROM superhero
+    WHERE
+      full_name LIKE 'Charles Chandler'
+  ) AS CALCULATE
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(weight_kg)
+FROM superhero
+WHERE
+  full_name IN ('Emil Blonsky', 'Charles Chandler')
+```
+
+- Our result: 1 row(s): (531,)
+- Gold result: 1 row(s): (351,)
+
+### Q791: FAIL
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 14.46s*
+
+**Question:** Calculate the average height for all superhero.
+
+**Hint:** average = DIVIDE(SUM(height_cm), COUNT(all heros));
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(height_cm) AS REAL) / COUNT(id)
+FROM superhero
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(height_cm)
+FROM superhero
+```
+
+- Our result: 1 row(s): (267.7514450867052,)
+- Gold result: 1 row(s): (247.04533333333333,)
+
+### Q792: PASS
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 15.2s*
+
+**Question:** What is Abomination's superpower?
+
+**Hint:** Abomination refers to superhero_name = 'Abomination'; superpower refers to power_name;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.power_name
+FROM superhero AS T1
+INNER JOIN hero_power AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN superpower AS T3
+  ON T2.power_id = T3.id
+WHERE
+  T1.superhero_name = 'Abomination'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.power_name
+FROM superhero AS T1
+INNER JOIN hero_power AS T3
+  ON T1.id = T3.hero_id
+INNER JOIN superpower AS T2
+  ON T3.power_id = T2.id
+WHERE
+  T1.superhero_name = 'Abomination'
+```
+
+- Our result: 8 row(s): ('Accelerated Healing',), ('Intelligence',), ('Super Strength',), ('Stamina',), ('Super Speed',) … (8 rows total)
+- Gold result: 8 row(s): ('Accelerated Healing',), ('Intelligence',), ('Super Strength',), ('Stamina',), ('Super Speed',) … (8 rows total)
+
+### Q794: FAIL
+
+*superhero, moderate, confidence None, 3 attempt(s), 29.99s*
+
+**Question:** Which hero was the fastest?
+
+**Hint:** which hero refers to superhero_name; fastest refers to MAX(attribute_value) WHERE attribute_name = 'Speed';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN hero_attribute AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN attribute AS T3
+  ON T2.attribute_id = T3.id
+WHERE
+  T3.attribute_name = 'Speed'
+ORDER BY
+  T2.attribute_value DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.superhero_name
+FROM hero_attribute AS T1
+INNER JOIN superhero AS T2
+  ON T1.hero_id = T2.id
+WHERE
+  T1.attribute_name = 'Speed'
+ORDER BY
+  T1.attribute_value DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Air-Walker',)
+- Error: `no such column: T1.attribute_name`
+- Fix applied: no such column: T1.attribute_name
+- Fix applied: no such column: T1.attribute_name
+- Fix applied: no such column: T1.attribute_name
+
+### Q796: PASS
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 26.12s*
+
+**Question:** State all of 3-D Man's attributes along with their values.
+
+**Hint:** 3-D Man is the superhero_name. attributes refers to attribute_name; values refers to attribute_value;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.attribute_name,
+  T2.attribute_value
+FROM superhero AS T1
+INNER JOIN hero_attribute AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN attribute AS T3
+  ON T2.attribute_id = T3.id
+WHERE
+  T1.superhero_name = '3-D Man'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  a.attribute_name,
+  ha.attribute_value
+FROM hero_attribute AS ha
+JOIN superhero AS s
+  ON ha.hero_id = s.id
+JOIN attribute AS a
+  ON ha.attribute_id = a.id
+WHERE
+  s.superhero_name = '3-D Man'
+```
+
+- Our result: 6 row(s): ('Intelligence', 80), ('Strength', 35), ('Speed', 45), ('Durability', 45), ('Power', 45) … (6 rows total)
+- Gold result: 6 row(s): ('Intelligence', 80), ('Strength', 35), ('Speed', 45), ('Durability', 45), ('Power', 45) … (6 rows total)
+
+### Q797: PASS
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 15.44s*
+
+**Question:** Which superheroes have blue eyes with brown hair?
+
+**Hint:** which superheroes refers to superhero_name; blue eyes refers to color = 'Blue' and color.id = eye_colour_id; brown hair refers to color = 'Brown' and color.id = hair_colour_id;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.eye_colour_id = T2.id
+INNER JOIN colour AS T3
+  ON T1.hair_colour_id = T3.id
+WHERE
+  T2.colour = 'Blue' AND T3.colour = 'Brown'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero_name
+FROM superhero
+JOIN colour
+  ON superhero.eye_colour_id = colour.id
+JOIN colour AS hair_colour
+  ON superhero.hair_colour_id = hair_colour.id
+WHERE
+  colour.colour = 'Blue' AND hair_colour.colour = 'Brown'
+```
+
+- Our result: 22 row(s): ('Atlas',), ('Atlas',), ('Big Man',), ('Bloodaxe',), ('Blue Beetle',) … (22 rows total)
+- Gold result: 22 row(s): ('Atlas',), ('Atlas',), ('Big Man',), ('Bloodaxe',), ('Blue Beetle',) … (22 rows total)
+
+### Q798: FAIL (right logic, extra columns)
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 15.1s*
+
+**Question:** What is the publisher for Hawkman, Karate Kid and Speedy?
+
+**Hint:** publisher refers to publisher_name; Hawkman refers to superhero_name = 'Hawkman'; Karate Kid refers to superhero_name = 'Karate Kid'; Speedy refers to superhero_name = 'Speedy';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.publisher_name
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+WHERE
+  T1.superhero_name IN ('Hawkman', 'Karate Kid', 'Speedy')
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.publisher_name,
+  COUNT(*)
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+WHERE
+  T1.superhero_name IN ('Hawkman', 'Karate Kid', 'Speedy')
+GROUP BY
+  T2.publisher_name
+```
+
+- Our result: 1 row(s): ('DC Comics', 3)
+- Gold result: 3 row(s): ('DC Comics',), ('DC Comics',), ('DC Comics',)
+
+### Q800: FAIL
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 13.82s*
+
+**Question:** Calculate the percentage of superheroes with blue eyes.
+
+**Hint:** percentage = MULTIPLY(DIVIDE(SUM(superhero_name WHERE color = 'Blue'), COUNT(superhero_name)), 100.0); blue eyes refers to color = 'Blue' and color.id =  eye_colour_id = 7;
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN T2.colour = 'Blue' THEN 1 ELSE NULL END) AS REAL) * 100 / COUNT(T1.id)
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.eye_colour_id = T2.id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(superhero_name)
+FROM superhero
+```
+
+- Our result: 1 row(s): (750,)
+- Gold result: 1 row(s): (31.2,)
+
+### Q801: FAIL
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 18.79s*
+
+**Question:** Find the ratio between male superheroes and female superheroes.
+
+**Hint:** ratio = DIVIDE(SUM(gender_id = 1) / SUM(gender_id = 2)); male superheroes refers to gender = 'Female'; female superheroes refers to gender = 'Male';
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN T2.gender = 'Male' THEN T1.id ELSE NULL END) AS REAL) / COUNT(CASE WHEN T2.gender = 'Female' THEN T1.id ELSE NULL END)
+FROM superhero AS T1
+INNER JOIN gender AS T2
+  ON T1.gender_id = T2.id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(1.0 * SUM(CASE WHEN gender = 'Male' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN gender = 'Female' THEN 1 ELSE 0 END) AS ratio
+FROM gender
+```
+
+- Our result: 1 row(s): (1.0,)
+- Gold result: 1 row(s): (2.5566502463054186,)
+- Fix applied: logic fix in code: ratio_completion: question asks for a ratio; replaced the two counts with 1.0 * A / B
+
+### Q806: PASS
+
+*superhero, simple, confidence 1.0, 1 attempt(s), 15.19s*
+
+**Question:** Provide the eye colour of the superhero who has Karen Beecher-Duncan as their full name.
+
+**Hint:** eye colour refers to colour.colour where eye_colour_id = colour.id; Karen Beecher-Duncan is the full name of superhero;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.colour
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.eye_colour_id = T2.id
+WHERE
+  T1.full_name = 'Karen Beecher-Duncan'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.colour
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.eye_colour_id = T2.id
+WHERE
+  T1.full_name = 'Karen Beecher-Duncan'
+```
+
+- Our result: 1 row(s): ('Brown',)
+- Gold result: 1 row(s): ('Brown',)
+
+### Q819: FAIL
+
+*superhero, challenging, confidence None, 3 attempt(s), 26.28s*
+
+**Question:** In superheroes with missing weight data, calculate the difference between the number of superheroes with blue eyes and no eye color.
+
+**Hint:** missing weight data refers to weight_kg = 0 OR T1.weight_kg = NULL; difference = SUBTRACT(SUM(colour.id = 7), SUM(colour.id = 1)); blue eyes refers to eye_colour_id WHERE colour.id = 7; no eye color refers to eye_colour_id WHERE colour.id = 1;
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN T2.id = 7 THEN 1 ELSE 0 END) - SUM(CASE WHEN T2.id = 1 THEN 1 ELSE 0 END)
+FROM superhero AS T1
+INNER JOIN colour AS T2
+  ON T1.eye_colour_id = T2.id
+WHERE
+  T1.weight_kg = 0 OR T1.weight_kg IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN T1.eye_colour_id = 7 THEN 1 ELSE 0 END) - SUM(CASE WHEN T1.eye_colour_id = 1 THEN 1 ELSE 0 END) AS difference
+FROM superheroes AS T1
+WHERE
+  T1.weight_kg = 0 OR T1.weight_kg IS NULL
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (-122,)
+- Error: `no such table: superheroes`
+
+### Q822: PASS
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 15.84s*
+
+**Question:** How many green-skinned villains are there in the superhero universe?
+
+**Hint:** green-skinned refers to colour.colour = 'Green' WHERE skin_colour_id = colour.id; villains refers to alignment = 'Bad';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM superhero AS T1
+INNER JOIN alignment AS T2
+  ON T1.alignment_id = T2.id
+INNER JOIN colour AS T3
+  ON T1.skin_colour_id = T3.id
+WHERE
+  T2.alignment = 'Bad' AND T3.colour = 'Green'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM superhero
+WHERE
+  skin_colour_id = (
+    SELECT
+      id
+    FROM colour
+    WHERE
+      colour = 'Green'
+  )
+  AND alignment_id = (
+    SELECT
+      id
+    FROM alignment
+    WHERE
+      alignment = 'Bad'
+  )
+```
+
+- Our result: 1 row(s): (6,)
+- Gold result: 1 row(s): (6,)
+
+### Q824: PASS
+
+*superhero, moderate, confidence 1.0, 1 attempt(s), 16.74s*
+
+**Question:** Identify superheroes who can control wind and list their names in alphabetical order.
+
+**Hint:** superheroes refers to superhero_name; can control wind refers to power_name = 'Wind Control';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.superhero_name
+FROM superhero AS T1
+INNER JOIN hero_power AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN superpower AS T3
+  ON T2.power_id = T3.id
+WHERE
+  T3.power_name = 'Wind Control'
+ORDER BY
+  T1.superhero_name
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  superhero_name
+FROM superhero
+WHERE
+  superhero_name IN (
+    SELECT
+      superhero_name
+    FROM superhero
+    JOIN hero_power
+      ON superhero.id = hero_power.hero_id
+    JOIN superpower
+      ON hero_power.power_id = superpower.id
+    WHERE
+      superpower.power_name = 'Wind Control'
+  )
+ORDER BY
+  superhero_name ASC
+LIMIT 10
+```
+
+- Our result: 3 row(s): ('Crystal',), ('Red Tornado',), ('Tempest',)
+- Gold result: 3 row(s): ('Crystal',), ('Red Tornado',), ('Tempest',)
+
+### Q825: FAIL
+
+*superhero, moderate, confidence None, 3 attempt(s), 29.17s*
+
+**Question:** Identify the gender of the superhero who has the ability of Phoenix Force.
+
+**Hint:** ability of Phoenix Force refers to power_name = 'Phoenix Force';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T4.gender
+FROM superhero AS T1
+INNER JOIN hero_power AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN superpower AS T3
+  ON T2.power_id = T3.id
+INNER JOIN gender AS T4
+  ON T1.gender_id = T4.id
+WHERE
+  T3.power_name = 'Phoenix Force'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.gender
+FROM superhero AS T1
+INNER JOIN hero_power AS T2
+  ON T1.id = T2.hero_id
+INNER JOIN superpower AS T3
+  ON T2.power_id = T3.id
+WHERE
+  T3.power_name = 'Phoenix Force'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Female',)
+- Error: `no such column: T1.gender`
+- Fix applied: no such column: T1.gender
+- Fix applied: no such column: T1.gender
+- Fix applied: no such column: T1.gender
+
+### Q829: FAIL
+
+*superhero, challenging, confidence 1.0, 1 attempt(s), 16.53s*
+
+**Question:** Which publisher created more superheroes: DC or Marvel Comics? Find the difference in the number of superheroes.
+
+**Hint:** DC refers to publisher_name = 'DC Comics'; Marvel Comics refers to publisher_name = 'Marvel Comics'; difference = SUBTRACT(SUM(publisher_name = 'DC Comics'), SUM(publisher_name = 'Marvel Comics'));
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN T2.publisher_name = 'DC Comics' THEN 1 ELSE 0 END) - SUM(CASE WHEN T2.publisher_name = 'Marvel Comics' THEN 1 ELSE 0 END)
+FROM superhero AS T1
+INNER JOIN publisher AS T2
+  ON T1.publisher_id = T2.id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN publisher_name = 'DC Comics' THEN 1 ELSE 0 END) - SUM(CASE WHEN publisher_name = 'Marvel Comics' THEN 1 ELSE 0 END) AS difference_in_superheroes
+FROM publisher
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (-163,)
+
+### Q531: FAIL (right logic, extra columns)
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 24.4s*
+
+**Question:** Which user has a higher reputation, Harlan or Jarrod Dixon?
+
+**Hint:** "Harlan" and "Jarrod Dixon" are both DisplayName; highest reputation refers to Max(Reputation)
+
+**Gold SQL**
+
+```sql
+SELECT
+  DisplayName
+FROM users
+WHERE
+  DisplayName IN ('Harlan', 'Jarrod Dixon')
+  AND Reputation = (
+    SELECT
+      MAX(Reputation)
+    FROM users
+    WHERE
+      DisplayName IN ('Harlan', 'Jarrod Dixon')
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  DisplayName,
+  MAX(Reputation)
+FROM users
+WHERE
+  DisplayName IN ('Harlan', 'Jarrod Dixon')
+```
+
+- Our result: 1 row(s): ('Harlan', 457)
+- Gold result: 1 row(s): ('Harlan',)
+
+### Q532: PASS
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 14.56s*
+
+**Question:** Please list the display names of all the users whose accounts were created in the year 2011.
+
+**Hint:** account created in the year 2011 refers to year(CreationDate) = 2011
+
+**Gold SQL**
+
+```sql
+SELECT
+  DisplayName
+FROM users
+WHERE
+  STRFTIME('%Y', CreationDate) = '2011'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  DisplayName
+FROM users
+WHERE
+  STRFTIME('%Y', CreationDate) = '2011'
+```
+
+- Our result: 4430 row(s): ('Rob',), ('Anubhav',), ('Betamoo',), ('dram',), ('dcurtis',) … (4430 rows total)
+- Gold result: 4430 row(s): ('Rob',), ('Anubhav',), ('Betamoo',), ('dram',), ('dcurtis',) … (4430 rows total)
+
+### Q533: FAIL
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 13.41s*
+
+**Question:** How many users last accessed the website after 2014/9/1?
+
+**Hint:** last accessed after 2014/9/1 refers to LastAccessDate > '2014-09-01'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(Id)
+FROM users
+WHERE
+  DATE(LastAccessDate) > '2014-09-01'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(Id)
+FROM users
+WHERE
+  LastAccessDate > '2014-09-01'
+```
+
+- Our result: 1 row(s): (5146,)
+- Gold result: 1 row(s): (4941,)
+
+### Q539: FAIL
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 15.12s*
+
+**Question:** Who is the owner of the post "Eliciting priors from experts"?
+
+**Hint:** "Eliciting priors from experts" is the Title of post; owner refers to DisplayName
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.DisplayName
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T1.Title = 'Eliciting priors from experts'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  OwnerDisplayName
+FROM posts
+WHERE
+  Title = 'Eliciting priors from experts'
+```
+
+- Our result: 1 row(s): (None,)
+- Gold result: 1 row(s): ('csgillespie',)
+
+### Q537: FAIL
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 18.99s*
+
+**Question:** How many posts does the user csgillespie own?
+
+**Hint:** "csgillespie" is the DisplayName of user
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T2.DisplayName = 'csgillespie'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM users
+WHERE
+  DisplayName = 'csgillespie'
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (121,)
+
+### Q544: PASS
+
+*codebase_community, moderate, confidence 1.0, 1 attempt(s), 22.42s*
+
+**Question:** What is the display name of the user who last edited the post "Examples for teaching: Correlation does not mean causation"?
+
+**Hint:** "Examples for teaching: Correlation does not mean causation" is the Title of post; user who last edited refers to LastEditorUserId
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.DisplayName
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.LastEditorUserId = T2.Id
+WHERE
+  T1.Title = 'Examples for teaching: Correlation does not mean causation'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.DisplayName
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.LastEditorUserId = T2.Id
+WHERE
+  T1.Title = 'Examples for teaching: Correlation does not mean causation'
+```
+
+- Our result: 1 row(s): ('Abhilash',)
+- Gold result: 1 row(s): ('Abhilash',)
+
+### Q547: PASS
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 20.61s*
+
+**Question:** Among the posts owned by an elder user, how many of them have a score of over 19?
+
+**Hint:** elder users refers to Age > 65; Score of over 19 refers to Score > = 20
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.Id)
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T1.Score >= 20 AND T2.Age > 65
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM posts
+WHERE
+  OwnerUserId IN (
+    SELECT
+      Id
+    FROM users
+    WHERE
+      Age > 65
+  )
+  AND Score > 19
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (1,)
+
+### Q549: PASS
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 22.94s*
+
+**Question:** From which post is the tag "bayesian" excerpted from? Please give the body of the post.
+
+**Hint:** "bayesian" is the TagName; excerpt from refers to ExcerptPostId
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Body
+FROM tags AS T1
+INNER JOIN posts AS T2
+  ON T2.Id = T1.ExcerptPostId
+WHERE
+  T1.TagName = 'bayesian'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Body
+FROM tags AS T1
+INNER JOIN posts AS T2
+  ON T1.ExcerptPostId = T2.Id
+WHERE
+  T1.TagName = 'bayesian'
+```
+
+- Our result: 1 row(s): ("Bayesian inference is a method of statistical inference which uses Bayes' theorem to find probability estimates of parameters or hypotheses.",)
+- Gold result: 1 row(s): ("Bayesian inference is a method of statistical inference which uses Bayes' theorem to find probability estimates of parameters or hypotheses.",)
+
+### Q555: FAIL
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 19.75s*
+
+**Question:** What is the average score of the posts owned by the user csgillespie?
+
+**Hint:** "csgillespie" is the DisplayName of user; average score refers to AVG(Score)
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T1.Score)
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T2.DisplayName = 'csgillespie'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(Score)
+FROM posts
+WHERE
+  OwnerDisplayName = 'csgillespie'
+```
+
+- Our result: 1 row(s): (None,)
+- Gold result: 1 row(s): (9.0,)
+
+### Q557: PASS
+
+*codebase_community, moderate, confidence 1.0, 1 attempt(s), 22.03s*
+
+**Question:** Among the posts with a score of over 5, what is the percentage of them being owned by an elder user?
+
+**Hint:** score of over 5 refers to Score > 5; elder user refers to Age > 65; percentage = Divide (Count(Id where Age>65), Count(Id)) * 100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T2.Age > 65, 1, 0)) AS REAL) * 100 / COUNT(T1.Id)
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T1.Score > 5
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN T2.Age > 65 THEN T1.Id ELSE NULL END) AS REAL) * 100 / COUNT(T1.Id)
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T1.Score > 5
+```
+
+- Our result: 1 row(s): (0.16899404073645824,)
+- Gold result: 1 row(s): (0.16899404073645824,)
+
+### Q563: FAIL
+
+*codebase_community, moderate, confidence None, 3 attempt(s), 52.43s*
+
+**Question:** User No.3025 gave a comment at 20:29:39 on 2014/4/23 to a post, how many favorite counts did that post get?
+
+**Hint:** user no. 3025 refers to UserId = '3025'; comment at 20:29:39 on 2014/4/23 refers to CreationDate = '2014/4/23 20:29:39.0'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.FavoriteCount
+FROM posts AS T1
+INNER JOIN comments AS T2
+  ON T1.Id = T2.PostId
+WHERE
+  T2.CreationDate = '2014-04-23 20:29:39.0' AND T2.UserId = 3025
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  FavoriteCount
+FROM posts
+WHERE
+  OwnerUserId = '3025' AND CreationDate = '2014-04-23 20:29:39.0'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (3,)
+- Error: `no such column: CreationDate`
+- Fix applied: no such column: CreationDate
+- Fix applied: no such column: CreationDate
+- Fix applied: no such column: CreationDate
+
+### Q565: FAIL
+
+*codebase_community, moderate, confidence 1.0, 2 attempt(s), 39.62s*
+
+**Question:** User No.23853 gave a comment to a post at 9:08:18 on 2013/7/12, was that post well-finished?
+
+**Hint:** user no. 23853 refers to UserId = '23853'; at 9:08:18 on 2013/7/12 refers to CreationDate = '2013-07-12 09:08:18.0'; not well-finished refers to ClosedDate IS NULL and vice versa
+
+**Gold SQL**
+
+```sql
+SELECT
+  IIF(T2.ClosedDate IS NULL, 'NOT well-finished', 'well-finished') AS resylt
+FROM comments AS T1
+INNER JOIN posts AS T2
+  ON T1.PostId = T2.Id
+WHERE
+  T1.UserId = 23853 AND T1.CreationDate = '2013-07-12 09:08:18.0'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CASE WHEN T2.ClosedDate IS NULL THEN 'Yes' ELSE 'No' END AS IsWellFinished
+FROM comments AS T1
+JOIN posts AS T2
+  ON T1.PostId = T2.Id
+WHERE
+  T1.UserId = '23853' AND T1.CreationDate = '2013-07-12 09:08:18.0'
+```
+
+- Our result: 1 row(s): ('No',)
+- Gold result: 1 row(s): ('well-finished',)
+- Fix applied: no such column: UserId
+- Fix applied: no such column: T2.CreationDate -> repaired alias in code
+
+### Q567: FAIL
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 19.1s*
+
+**Question:** For the user with the display name of "Tiago Pasqualini", how many posts did he/she own?
+
+**Hint:** "Tiago Pasqualini" is the DisplayName;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.Id)
+FROM users AS T1
+INNER JOIN posts AS T2
+  ON T1.Id = T2.OwnerUserId
+WHERE
+  T1.DisplayName = 'Tiago Pasqualini'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM users
+WHERE
+  DisplayName = 'Tiago Pasqualini'
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (2,)
+
+### Q568: PASS
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 15.4s*
+
+**Question:** Provide the display name of the user who made the vote No.6347.
+
+**Hint:** vote no. 6347 refers to Id = '6347'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.DisplayName
+FROM users AS T1
+INNER JOIN votes AS T2
+  ON T1.Id = T2.UserId
+WHERE
+  T2.Id = 6347
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.DisplayName
+FROM votes AS T1
+INNER JOIN users AS T2
+  ON T1.UserId = T2.Id
+WHERE
+  T1.Id = 6347
+```
+
+- Our result: 1 row(s): ('George Dontas',)
+- Gold result: 1 row(s): ('George Dontas',)
+
+### Q571: FAIL
+
+*codebase_community, moderate, confidence 1.0, 1 attempt(s), 22.29s*
+
+**Question:** For the user No.24, how many times is the number of his/her posts compared to his/her votes?
+
+**Hint:** user no. 24 refers to UserId = OwnerUserId = '24'; times of his/her post than votes = Divide (Count(post.Id), Count(votes.Id))
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(DISTINCT T2.Id) AS REAL) / COUNT(DISTINCT T1.Id)
+FROM votes AS T1
+INNER JOIN posts AS T2
+  ON T1.UserId = T2.OwnerUserId
+WHERE
+  T1.UserId = 24
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  1.0 * COUNT(posts.Id) / COUNT(votes.Id) AS ratio
+FROM users
+JOIN posts
+  ON users.Id = posts.OwnerUserId
+JOIN votes
+  ON posts.Id = votes.PostId
+WHERE
+  users.Id = 24
+```
+
+- Our result: 1 row(s): (1.0,)
+- Gold result: 1 row(s): (0.375,)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q572: PASS
+
+*codebase_community, moderate, confidence 1.0, 1 attempt(s), 16.73s*
+
+**Question:** How many views did the post titled 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer' get?
+
+**Hint:** "Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer" is the Title of post; views refers to ViewCount
+
+**Gold SQL**
+
+```sql
+SELECT
+  ViewCount
+FROM posts
+WHERE
+  Title = 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  ViewCount
+FROM posts
+WHERE
+  Title = 'Integration of Weka and/or RapidMiner into Informatica PowerCenter/Developer'
+```
+
+- Our result: 1 row(s): (60,)
+- Gold result: 1 row(s): (60,)
+
+### Q573: PASS
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 15.67s*
+
+**Question:** Write the contents of comments with a score of 17.
+
+**Hint:** score of 17 refers to Score = 17; contents of comments refers to Text
+
+**Gold SQL**
+
+```sql
+SELECT
+  Text
+FROM comments
+WHERE
+  Score = 17
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Text
+FROM comments
+WHERE
+  Score = 17
+```
+
+- Our result: 5 row(s): ('Reminds me that in my early days as a referee i spent *far* too long reviewing a statistical paper that was eventually rejected by that particular journal, but the other referees and I suggested a more useful application for the method, and I also sketched an algebraic proof to replace an unsatisfactory simulation study in the manuscript. The authors have since got two published papers out of it. I\'m not *annoyed* by that, but an acknowledgement such as "we thank referees of an earlier version of the paper for helpful comments" would have been good manners.',), ("If you're going to use R, I'd recommend embedding your R code in an Sweave document that produces your report.  That way the R code stays with the report.",), ('As a non-expert, I think that the key to the entire debate is that people actually reason like Bayesians. You have to be trained to think like a frequentist, and even then it\'s easy to slip up and either reason or present your reasoning as if it were Bayesian. "There\'s a 95% chance that the value is within this confidence interval." Enough said.',), ('In the linear regression model the dependent variable $y$ is considered continuous, whereas in logistic regression it is categorical, i.e., discrete. In application, the former is used in regression settings while the latter is used for binary classification or multi-class classification (where it is called multinomial logistic regression).',), ('Did anyone else notice that the tour guide changes colors between the second and third frames?',)
+- Gold result: 5 row(s): ('Reminds me that in my early days as a referee i spent *far* too long reviewing a statistical paper that was eventually rejected by that particular journal, but the other referees and I suggested a more useful application for the method, and I also sketched an algebraic proof to replace an unsatisfactory simulation study in the manuscript. The authors have since got two published papers out of it. I\'m not *annoyed* by that, but an acknowledgement such as "we thank referees of an earlier version of the paper for helpful comments" would have been good manners.',), ("If you're going to use R, I'd recommend embedding your R code in an Sweave document that produces your report.  That way the R code stays with the report.",), ('As a non-expert, I think that the key to the entire debate is that people actually reason like Bayesians. You have to be trained to think like a frequentist, and even then it\'s easy to slip up and either reason or present your reasoning as if it were Bayesian. "There\'s a 95% chance that the value is within this confidence interval." Enough said.',), ('In the linear regression model the dependent variable $y$ is considered continuous, whereas in logistic regression it is categorical, i.e., discrete. In application, the former is used in regression settings while the latter is used for binary classification or multi-class classification (where it is called multinomial logistic regression).',), ('Did anyone else notice that the tour guide changes colors between the second and third frames?',)
+
+### Q576: PASS
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 16.04s*
+
+**Question:** Name the user that commented 'thank you user93!'
+
+**Hint:** "thank you user93" is the Text of comment; user refers to DisplayName
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.DisplayName
+FROM users AS T1
+INNER JOIN comments AS T2
+  ON T1.Id = T2.UserId
+WHERE
+  T2.Text = 'thank you user93!'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.DisplayName
+FROM comments AS T1
+INNER JOIN users AS T2
+  ON T1.UserId = T2.Id
+WHERE
+  T1.Text = 'thank you user93!'
+```
+
+- Our result: 1 row(s): ('Preets',)
+- Gold result: 1 row(s): ('Preets',)
+
+### Q578: FAIL
+
+*codebase_community, moderate, confidence 1.0, 1 attempt(s), 21.23s*
+
+**Question:** Which user made a post titled 'Understanding what Dassault iSight is doing?' and how much is the reputation of the user?
+
+**Hint:** "Understanding what Dassault iSight is doing?" is the Title of post; user refers to DisplayName;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.DisplayName,
+  T1.Reputation
+FROM users AS T1
+INNER JOIN posts AS T2
+  ON T1.Id = T2.OwnerUserId
+WHERE
+  T2.Title = 'Understanding what Dassault iSight is doing?'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Reputation
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T1.Title = 'Understanding what Dassault iSight is doing?'
+```
+
+- Our result: 1 row(s): (146,)
+- Gold result: 1 row(s): ('Hendy', 146)
+
+### Q581: FAIL
+
+*codebase_community, moderate, confidence 1.0, 2 attempt(s), 25.31s*
+
+**Question:** Who is the owner of the post titled 'Open source tools for visualizing multi-dimensional data?'
+
+**Hint:** 'Open source tools for visualizing multi-dimensional data' is the Title of Post; owner refers to DisplayName;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.DisplayName
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T1.Title = 'Open source tools for visualizing multi-dimensional data?'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  OwnerDisplayName
+FROM posts
+WHERE
+  Title = 'Open source tools for visualizing multi-dimensional data'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Paul',)
+
+### Q584: FAIL
+
+*codebase_community, moderate, confidence 1.0, 1 attempt(s), 35.09s*
+
+**Question:** Write all the comments left by users who edited the post titled 'Why square the difference instead of taking the absolute value in standard deviation?'
+
+**Hint:** "Why square the difference instead of taking the absolute value in standard deviation?" is the Title of post;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Comment
+FROM posts AS T1
+INNER JOIN postHistory AS T2
+  ON T1.Id = T2.PostId
+WHERE
+  T1.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*) AS comment_count,
+  u.DisplayName
+FROM comments AS c
+JOIN postHistory AS ph
+  ON c.PostId = ph.PostId
+JOIN users AS u
+  ON ph.UserId = u.Id
+WHERE
+  c.CreationDate > '2010-07-19 19:12:12.0'
+  AND c.CreationDate < '2026-11-16 00:00:00.0'
+  AND ph.CreationDate > '2010-07-19 19:12:12.0'
+  AND ph.CreationDate < '2026-11-16 00:00:00.0'
+  AND c.PostId = (
+    SELECT
+      p.Id
+    FROM posts AS p
+    WHERE
+      p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'
+  )
+GROUP BY
+  u.DisplayName
+ORDER BY
+  comment_count DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (44, 'c4il')
+- Gold result: 8 row(s): ('',), ('',), ('',), ('edited title',), ('TeXified the formulas.',) … (8 rows total)
+
+### Q586: FAIL
+
+*codebase_community, challenging, confidence None, 3 attempt(s), 38.53s*
+
+**Question:** Which user added a bounty amount of 50 to the post title mentioning variance?
+
+**Hint:** bounty amount of 50 refers to BountyAmount = 50; user refers to DisplayName; title mentioning variance refers to Title include 'variance'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.DisplayName,
+  T1.Title
+FROM posts AS T1
+INNER JOIN votes AS T2
+  ON T1.Id = T2.PostId
+INNER JOIN users AS T3
+  ON T3.Id = T2.UserId
+WHERE
+  T2.BountyAmount = 50 AND T1.Title LIKE '%variance%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.DisplayName
+FROM posts AS T1
+JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T1.BountyAmount = 50 AND T1.Title LIKE '%variance%'
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('chl', 'How to combine confidence intervals for a variance component of a mixed-effects model when using multiple imputation'), ('shabbychef', 'Unbiased estimation of covariance matrix for multiply censored data')
+- Error: `no such column: T1.BountyAmount`
+- Fix applied: no such column: T1.BountyAmount
+- Fix applied: no such column: T1.BountyAmount
+- Fix applied: no such column: T1.BountyAmount
+
+### Q587: FAIL
+
+*codebase_community, moderate, confidence 1.0, 3 attempt(s), 52.41s*
+
+**Question:** Calculate the average view count of each post tagged as 'humor' and list the title and the comment of each post.
+
+**Hint:** tagged as  'humor' refers to tag = '<humor>'; comment of the post refers to Text; average view count = AVG(ViewCount)
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T2.ViewCount),
+  T2.Title,
+  T1.Text
+FROM comments AS T1
+INNER JOIN posts AS T2
+  ON T2.Id = T1.PostId
+WHERE
+  T2.Tags = '<humor>'
+GROUP BY
+  T2.Title,
+  T1.Text
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Title,
+  T3.Text,
+  AVG(T2.ViewCount) AS AverageViewCount
+FROM tags AS T1
+JOIN posts AS T2
+  ON T1.ExcerptPostId = T2.Id
+JOIN comments AS T3
+  ON T2.Id = T3.PostId
+WHERE
+  T1.TagName = '<humor>'
+GROUP BY
+  T2.Title,
+  T3.Text
+```
+
+- Our result: 0 rows
+- Gold result: 9 row(s): (288.0, 'So how many staticians *does* it take to screw in a lightbulb?', '@Jason Punyon in particular gets a humorless downvote for removing my "verboten" tag! ;-)'), (288.0, 'So how many staticians *does* it take to screw in a lightbulb?', 'Probably better asked on meta.  People feel like they have to downvote it because it is an off-topic question.  But then the downvotes make it look like staticians have no sense of humor :('), (64481.0, 'What is your favorite "data analysis" cartoon?', '@Sharpie, feel free to close or reopen according to your feelings! I agree with Shane, a bit is ok, but not too much. For example, this question already included a funny cartoon. The jokes question not really a funny joke....'), (64481.0, 'What is your favorite "data analysis" cartoon?', "@sharpie: are jokes out?  We obviously don't want the entire site to be humor, but everyone benefits from a little educational humor in small doses."), (64481.0, 'What is your favorite "data analysis" cartoon?', 'Also my question on the source of a statistical quote was closed too. See here.http://stats.stackexchange.com/questions/15739/who-said-tell-a-story-with-the-data') … (9 rows total)
+- Fix applied: no such column: T1.Text
+- Fix applied: no such column: T1.Text -> repaired alias in code
+
+### Q592: FAIL
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 14.16s*
+
+**Question:** How many users are awarded with more than 5 badges?
+
+**Hint:** more than 5 badges refers to Count (Name) > 5; user refers to UserId
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(UserId)
+FROM (
+  SELECT
+    UserId,
+    COUNT(Name) AS num
+  FROM badges
+  GROUP BY
+    UserId
+) AS T
+WHERE
+  T.num > 5
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(Name)
+FROM badges
+WHERE
+  NOT Name IS NULL
+```
+
+- Our result: 1 row(s): (79851,)
+- Gold result: 1 row(s): (2875,)
+
+### Q595: FAIL
+
+*codebase_community, moderate, confidence 1.0, 2 attempt(s), 33.48s*
+
+**Question:** Which user have only one post history per post and having at least 1000 views?
+
+**Hint:** having at least 1000 view refers to Views > = 1000; user refers to UserId
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.UserId
+FROM users AS T1
+INNER JOIN postHistory AS T2
+  ON T1.Id = T2.UserId
+INNER JOIN posts AS T3
+  ON T2.PostId = T3.Id
+WHERE
+  T3.ViewCount >= 1000
+GROUP BY
+  T2.UserId
+HAVING
+  COUNT(DISTINCT T2.PostHistoryTypeId) = 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  u.Id
+FROM users AS u
+JOIN posts AS p
+  ON u.Id = p.OwnerUserId
+GROUP BY
+  u.Id
+HAVING
+  COUNT(p.Id) = 1 AND u.Views >= 1000
+```
+
+- Our result: 0 rows
+- Gold result: 94 row(s): (57,), (61,), (80,), (124,), (139,) … (94 rows total)
+
+### Q598: PASS
+
+*codebase_community, challenging, confidence 1.0, 2 attempt(s), 23.94s*
+
+**Question:** What is the percentage difference of student badges given during 2010 and 2011?
+
+**Hint:** student badges refers to badge's name = 'Student'; during 2010 refers to Year(Date) = 2010; during 2011 refers to Year(Date) = 2011; percentage difference = Subtract (Divide(Count(Name where Year(Date) = 2010), Count (Name)) *100, Divide(Count(Name where Year(Date) = 2011), Count(Name)) * 100)
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(STRFTIME('%Y', Date) = '2010', 1, 0)) AS REAL) * 100 / COUNT(Id) - CAST(SUM(IIF(STRFTIME('%Y', Date) = '2011', 1, 0)) AS REAL) * 100 / COUNT(Id)
+FROM badges
+WHERE
+  Name = 'Student'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    SUM(CASE WHEN STRFTIME('%Y', Date) = '2010' THEN 1 ELSE 0 END) * 100.0 / COUNT(Name)
+  ) - (
+    SUM(CASE WHEN STRFTIME('%Y', Date) = '2011' THEN 1 ELSE 0 END) * 100.0 / COUNT(Name)
+  ) AS percentage_difference
+FROM badges
+WHERE
+  Name = 'Student'
+```
+
+- Our result: 1 row(s): (-9.544015626052403,)
+- Gold result: 1 row(s): (-9.544015626052403,)
+
+### Q604: FAIL
+
+*codebase_community, moderate, confidence None, 3 attempt(s), 45.01s*
+
+**Question:** What is the average of the up votes and the average user age for users creating more than 10 posts?
+
+**Hint:** creating more than 10 post refers to Count (UserId) > 10; average of the up votes = Divide (Sum(UpVotes), Count (UserId)); average age = Divide (Sum(Age), Count(UserId))
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T1.UpVotes),
+  AVG(T1.Age)
+FROM users AS T1
+INNER JOIN (
+  SELECT
+    OwnerUserId,
+    COUNT(*) AS post_count
+  FROM posts
+  GROUP BY
+    OwnerUserId
+  HAVING
+    post_count > 10
+) AS T2
+  ON T1.Id = T2.OwnerUserId
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T2.UpVotes) / COUNT(T2.UserId) AS AverageUpVotes,
+  AVG(T2.Age) AS AverageAge
+FROM users AS T1
+JOIN posts AS T2
+  ON T1.Id = T2.OwnerUserId
+GROUP BY
+  T1.Id
+HAVING
+  COUNT(T2.UserId) > 10
+ORDER BY
+  AverageUpVotes DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (182.2832618025751, 34.083333333333336)
+- Error: `no such column: T2.UserId`
+- Fix applied: no such column: T2.UserId
+- Fix applied: no such column: T2.UserId
+- Fix applied: no such column: T2.UserId
+
+### Q629: FAIL
+
+*codebase_community, simple, confidence None, 3 attempt(s), 23.59s*
+
+**Question:** Calculate the ratio of votes in 2010 and 2011.
+
+**Hint:** DIVIDE(COUNT(Id where YEAR(CreationDate) = 2010), COUNT(Id where YEAR(CreationDate) = 2011)) FROM votes;
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(STRFTIME('%Y', CreationDate) = '2010', 1, 0)) AS REAL) / SUM(IIF(STRFTIME('%Y', CreationDate) = '2011', 1, 0))
+FROM votes
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN YEAR(CreationDate) = 2010 THEN Id ELSE NULL END) AS REAL) / COUNT(CASE WHEN YEAR(CreationDate) = 2011 THEN Id ELSE NULL END) AS VoteRatio
+FROM votes
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1.307099679981036,)
+- Error: `no such function: YEAR`
+
+### Q633: PASS
+
+*codebase_community, moderate, confidence 1.0, 1 attempt(s), 16.15s*
+
+**Question:** Which post by slashnick has the most answers count? State the post ID.
+
+**Hint:** most answers count refers to MAX(AnswerCount); post by slashnick refers to DisplayName = 'slashnick';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.PostId
+FROM users AS T1
+INNER JOIN postHistory AS T2
+  ON T1.Id = T2.UserId
+INNER JOIN posts AS T3
+  ON T2.PostId = T3.Id
+WHERE
+  T1.DisplayName = 'slashnick'
+ORDER BY
+  T3.AnswerCount DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  posts.Id
+FROM posts
+INNER JOIN users
+  ON posts."OwnerUserId" = users."Id"
+WHERE
+  users.DisplayName = 'slashnick'
+ORDER BY
+  posts.AnswerCount DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (351,)
+- Gold result: 1 row(s): (351,)
+- Fix applied: no such column: DisplayName -> added missing JOIN in code
+
+### Q634: FAIL
+
+*codebase_community, challenging, confidence None, 3 attempt(s), 30.12s*
+
+**Question:** Among posts by Harvey Motulsky and Noah Snyder, which one has higher popularity?
+
+**Hint:** Has higher popularity means the post has higher view count ; calculation = MAX(SUM(ViewCount)) where DisplayName = 'Harvey Motulsky' OR DisplayName = 'Noah Snyder';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.DisplayName
+FROM users AS T1
+INNER JOIN postHistory AS T2
+  ON T1.Id = T2.UserId
+INNER JOIN posts AS T3
+  ON T2.PostId = T3.Id
+WHERE
+  T1.DisplayName = 'Harvey Motulsky' OR T1.DisplayName = 'Noah Snyder'
+GROUP BY
+  T1.DisplayName
+ORDER BY
+  SUM(T3.ViewCount) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  users.DisplayName,
+  MAX(SUM(posts.ViewCount)) AS TotalViewCount
+FROM posts
+INNER JOIN users
+  ON posts."OwnerUserId" = users."Id"
+WHERE
+  posts.OwnerDisplayName IN ('Harvey Motulsky', 'Noah Snyder')
+GROUP BY
+  users.DisplayName
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Harvey Motulsky',)
+- Error: `misuse of aggregate function SUM()`
+- Fix applied: no such column: DisplayName -> added missing JOIN in code
+
+### Q637: FAIL
+
+*codebase_community, moderate, confidence 1.0, 2 attempt(s), 35.36s*
+
+**Question:** State all the tags used by Mark Meckes in his posts that doesn't have comments.
+
+**Hint:** used by Mark Meckes refers to DisplayName = 'Mark Meckes'; Doen't have comments refers to CommentCount = 0;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.Tags
+FROM users AS T1
+INNER JOIN postHistory AS T2
+  ON T1.Id = T2.UserId
+INNER JOIN posts AS T3
+  ON T3.Id = T2.PostId
+WHERE
+  T1.DisplayName = 'Mark Meckes' AND T3.CommentCount = 0
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.TagName
+FROM posts AS T1
+INNER JOIN tags AS T2
+  ON T1.Id = T2.ExcerptPostId
+INNER JOIN comments AS T3
+  ON T1.Id = T3.PostId
+WHERE
+  T1.OwnerDisplayName = 'Mark Meckes' AND T1.CommentCount = 0
+```
+
+- Our result: 0 rows
+- Gold result: 5 row(s): ('<books>',), ('<books>',), ('<books>',), ('<books>',), (None,)
+- Fix applied: no such column: T3.CommentCount -> repaired alias in code
+
+### Q639: FAIL
+
+*codebase_community, challenging, confidence None, 3 attempt(s), 37.3s*
+
+**Question:** Based on posts posted by Community, calculate the percentage of posts that use the R language.
+
+**Hint:** DIVIDE(COUNT(PostId WHERE TagName = 'r')), (COUNT(PostId WHERE DisplayName = 'Community')) as percentage; R language refers to tagname = 'r'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T3.TagName = 'r', 1, 0)) AS REAL) * 100 / COUNT(T1.Id)
+FROM users AS T1
+INNER JOIN postHistory AS T2
+  ON T1.Id = T2.UserId
+INNER JOIN tags AS T3
+  ON T3.ExcerptPostId = T2.PostId
+WHERE
+  T1.DisplayName = 'Community'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN T2.TagName = 'r' THEN T1.PostId ELSE NULL END) AS REAL) * 100 / COUNT(T1.PostId) AS percentage
+FROM posts AS T1
+JOIN tags AS T2
+  ON T1.ParentId = T2.ExcerptPostId
+WHERE
+  T1.OwnerDisplayName = 'Community'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (0.19569471624266144,)
+- Error: `no such column: T1.PostId`
+- Fix applied: no such column: T1.PostId
+- Fix applied: no such column: T1.PostId
+- Fix applied: no such column: T1.PostId
+
+### Q640: FAIL
+
+*codebase_community, moderate, confidence None, 3 attempt(s), 28.62s*
+
+**Question:** Calculate the difference in view count from post posted by Mornington and view count from posts posted by Amos.
+
+**Hint:** calculation = SUBTRACT(SUM(ViewCount where DisplayName = 'Mornington'), SUM(ViewCount where DisplayName = 'Amos'));
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(IIF(T1.DisplayName = 'Mornington', T3.ViewCount, 0)) - SUM(IIF(T1.DisplayName = 'Amos', T3.ViewCount, 0)) AS diff
+FROM users AS T1
+INNER JOIN postHistory AS T2
+  ON T1.Id = T2.UserId
+INNER JOIN posts AS T3
+  ON T3.Id = T2.PostId
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(ViewCount) - SUM(ViewCount)
+FROM posts
+WHERE
+  DisplayName = 'Mornington'
+INTERSECT
+SELECT
+  SUM(ViewCount)
+FROM posts
+WHERE
+  DisplayName = 'Amos'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (-1491,)
+- Error: `no such column: DisplayName`
+- Fix applied: no such column: DisplayName
+- Fix applied: no such column: DisplayName
+- Fix applied: no such column: DisplayName
+
+### Q665: FAIL
+
+*codebase_community, moderate, confidence None, 3 attempt(s), 44.43s*
+
+**Question:** What is the average monthly number of links created in 2010 for posts that have no more than 2 answers?
+
+**Hint:** calculation = DIVIDE(COUNT(Id where YEAR(CreationDate) = 2010 and AnswerCount < = 2), 12)
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(T1.Id) AS REAL) / 12
+FROM postLinks AS T1
+INNER JOIN posts AS T2
+  ON T1.PostId = T2.Id
+WHERE
+  T2.AnswerCount <= 2 AND STRFTIME('%Y', T1.CreationDate) = '2010'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  STRFTIME('%Y-%m', CreationDate) AS Month,
+  COUNT(Id) / 12 AS AverageLinksPerMonth
+FROM postLinks
+JOIN posts
+  ON postLinks.RelatedPostId = posts.Id
+WHERE
+  YEAR(CreationDate) = 2010 AND AnswerCount <= 2
+GROUP BY
+  Month
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (8.666666666666666,)
+- Error: `ambiguous column name: Id`
+
+### Q669: PASS
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 18.21s*
+
+**Question:** When did 'chl' cast its first vote in a post?
+
+**Hint:** DisplayName = 'chl'; cast its first vote refers to MIN(CreationDate);
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.CreationDate
+FROM users AS T1
+INNER JOIN votes AS T2
+  ON T1.Id = T2.UserId
+WHERE
+  T1.DisplayName = 'chl'
+ORDER BY
+  T2.CreationDate
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  MIN(T2.CreationDate) AS FirstVoteDate
+FROM users AS T1
+JOIN votes AS T2
+  ON T1.Id = T2.UserId
+WHERE
+  T1.DisplayName = 'chl'
+```
+
+- Our result: 1 row(s): ('2010-08-13',)
+- Gold result: 1 row(s): ('2010-08-13',)
+
+### Q671: FAIL
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 15.84s*
+
+**Question:** What is the display name of the user who acquired the first Autobiographer badge?
+
+**Hint:** Autobiographer is the name of the badge; acquired the first refers to MIN(Date);
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.DisplayName
+FROM users AS T1
+INNER JOIN badges AS T2
+  ON T1.Id = T2.UserId
+WHERE
+  T2."Name" = 'Autobiographer'
+ORDER BY
+  T2.Date
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.DisplayName
+FROM badges AS T1
+INNER JOIN users AS T2
+  ON T1.UserId = T2.Id
+WHERE
+  T1.Name = 'Autobiographer'
+GROUP BY
+  T2.DisplayName
+ORDER BY
+  SUM(T1.Date) ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('100rabh',)
+- Gold result: 1 row(s): ('Geoff Dalgas',)
+- Fix applied: logic fix in code: fanout_ranking: ranked users by one badges row -> GROUP BY + ORDER BY SUM(T1.Date)
+
+### Q672: PASS
+
+*codebase_community, moderate, confidence 1.0, 1 attempt(s), 19.87s*
+
+**Question:** Among the users located in United Kingdom, how many users whose post have a total favorite amount of 4 or more?
+
+**Hint:** favorite amount of 4 or more refers to FavoriteCount > = 4; Location = 'United Kingdom';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.Id)
+FROM users AS T1
+INNER JOIN posts AS T2
+  ON T1.Id = T2.OwnerUserId
+WHERE
+  T1.Location = 'United Kingdom' AND T2.FavoriteCount >= 4
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM users
+INNER JOIN posts
+  ON users."Id" = posts."OwnerUserId"
+WHERE
+  users.Location = 'United Kingdom' AND posts.FavoriteCount >= 4
+```
+
+- Our result: 1 row(s): (19,)
+- Gold result: 1 row(s): (19,)
+- Fix applied: no such column: FavoriteCount -> added missing JOIN in code
+
+### Q678: FAIL
+
+*codebase_community, simple, confidence 1.0, 2 attempt(s), 24.68s*
+
+**Question:** Which post by Harvey Motulsky has the most views? Please give the id and title of this post.
+
+**Hint:** DisplayName = 'Harvey Motulsky'; the most views refer to MAX(ViewCount);
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Id,
+  T2.Title
+FROM users AS T1
+INNER JOIN posts AS T2
+  ON T1.Id = T2.OwnerUserId
+WHERE
+  T1.DisplayName = 'Harvey Motulsky'
+ORDER BY
+  T2.ViewCount DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Id,
+  Title
+FROM posts
+WHERE
+  OwnerDisplayName = 'Harvey Motulsky'
+ORDER BY
+  ViewCount DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (109, "Power of Holm's multiple comparison testing compared to others")
+
+### Q682: FAIL
+
+*codebase_community, moderate, confidence None, 3 attempt(s), 28.64s*
+
+**Question:** Which is the most valuable post in 2010? Please give its id and the owner's display name.
+
+**Hint:** the most valuable post in 2010 refers to MAX(FavoriteCount) where year(CreationDate) = 2010;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.OwnerUserId,
+  T1.DisplayName
+FROM users AS T1
+INNER JOIN posts AS T2
+  ON T1.Id = T2.OwnerUserId
+WHERE
+  STRFTIME('%Y', T1.CreationDate) = '2010'
+ORDER BY
+  T2.FavoriteCount DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  Id,
+  OwnerDisplayName
+FROM posts
+WHERE
+  STRFTIME('%Y', CreationDate) = '2010'
+ORDER BY
+  FavoriteCount DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (890, 'Fabian Fagerholm')
+- Error: `no such column: CreationDate`
+- Fix applied: no such column: CreationDate
+- Fix applied: no such column: CreationDate
+- Fix applied: no such column: CreationDate
+
+### Q683: FAIL
+
+*codebase_community, moderate, confidence None, 3 attempt(s), 41.25s*
+
+**Question:** What is the percentage of posts whose owners had a reputation of over 1000 in 2011?
+
+**Hint:** percentage = DIVIDE(COUNT(Id where YEAR(CreationDate) = 2011 and Reputation > 1000), COUNT(Id) ) * 100;
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(STRFTIME('%Y', T2.CreaionDate) = '2011' AND T1.Reputation > 1000, 1, 0)) AS REAL) * 100 / COUNT(T1.Id)
+FROM users AS T1
+INNER JOIN posts AS T2
+  ON T1.Id = T2.OwnerUserId
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(
+    CASE WHEN YEAR(T2.CreationDate) = 2011 AND T2.Reputation > 1000 THEN 1 ELSE 0 END
+  ) AS REAL) * 100 / COUNT(T1.Id)
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (7.24159250999183,)
+- Error: `no such function: YEAR`
+- Fix applied: no such column: CreationDate
+- Fix applied: no such column: T1.CreationDate -> repaired alias in code
+
+### Q685: FAIL
+
+*codebase_community, moderate, confidence 1.0, 2 attempt(s), 36.46s*
+
+**Question:** Identify the total views on the post 'Computer Game Datasets'. Name the user who posted it last time.
+
+**Hint:** total views refer to ViewCount; Name the user refers to DisplayName; post 'Computer Game Datasets' refers to Text = 'Computer Game Datasets';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.ViewCount,
+  T3.DisplayName
+FROM postHistory AS T1
+INNER JOIN posts AS T2
+  ON T1.PostId = T2.Id
+INNER JOIN users AS T3
+  ON T2.LastEditorUserId = T3.Id
+WHERE
+  T1.Text = 'Computer Game Datasets'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.DisplayName,
+  SUM(T1.ViewCount) AS TotalViews
+FROM posts AS T1
+JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T1.Title = 'Computer Game Datasets'
+GROUP BY
+  T1.OwnerUserId
+ORDER BY
+  TotalViews DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1708, 'mbq')
+
+### Q687: PASS
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 18.72s*
+
+**Question:** How many comments were added to the post with the highest score?
+
+**Hint:** the highest score refers to MAX(Score);
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T2.Id)
+FROM posts AS T1
+INNER JOIN comments AS T2
+  ON T1.Id = T2.PostId
+GROUP BY
+  T1.Id
+ORDER BY
+  T1.Score DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.Id)
+FROM posts AS T1
+INNER JOIN comments AS T2
+  ON T1.Id = T2.PostId
+WHERE
+  T1.Score = (
+    SELECT
+      MAX(Score)
+    FROM posts
+  )
+```
+
+- Our result: 1 row(s): (3,)
+- Gold result: 1 row(s): (3,)
+
+### Q694: FAIL
+
+*codebase_community, moderate, confidence 1.0, 1 attempt(s), 65.03s*
+
+**Question:** Provide the text of the latest 10 comments to the post with the title 'Analysing wind data with R' and the display name of the user who left it.
+
+**Hint:** the latest comment refers to MAX(CreationDate);
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.Text,
+  T1.DisplayName
+FROM users AS T1
+INNER JOIN posts AS T2
+  ON T1.Id = T2.OwnerUserId
+INNER JOIN comments AS T3
+  ON T2.Id = T3.PostId
+WHERE
+  T2.Title = 'Analysing wind data with R'
+ORDER BY
+  T1.CreationDate DESC
+LIMIT 10
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  c.Text,
+  u.DisplayName
+FROM comments AS c
+JOIN posts AS p
+  ON c.PostId = p.Id
+JOIN users AS u
+  ON c.UserId = u.Id
+WHERE
+  p.Title = 'Analysing wind data with R'
+ORDER BY
+  c.CreationDate DESC
+LIMIT 10
+```
+
+- Our result: 10 row(s): ('i thought of integrating seperetly until 4 m/s, between 4 and 15m/s and over 15m/s, and comparing it to a situation of 100% of the time a turbine working in optimal speed', 'eliavs'), ('well untill 4 m/s there is no wind generation and the max is 15 m/s, wind stronger than 15 m/s will make the same amount of energy', 'eliavs'), ("Regarding your question about energy, it's going to be difficult to answer. Do you know anything about your device? Do you know anything of the relationship between wind speed/direction and power? Do you know anything about the layout of the turbines at this particular site since that has a huge impact on the power as you no doubt are aware.", 'David Heffernan'), ("note that 'lag' is a term used mainly in analysis of data in time, referring to one thing occurring after another. This isn't a lag - it's perhaps more accurately called a shift - or maybe an offset - but shift is probably more common for distributions, they shift and scale.", 'Spacedman'), ("i tried ploting it with out zero's but still there is a lag", 'eliavs') … (10 rows total)
+- Gold result: 10 row(s): ("About the picture, post to some image hosting and put a link -- I'll convert it into a pasted-in picture.", 'eliavs'), ('+1, interesting question, you might find that soon you will have enough reputation :)', 'eliavs'), ('yup i have thanks to all that helped me!!', 'eliavs'), ('judging from the graph, the problem is not the lag. What you have plotted is roughly goodness of fit. So it seems that Weibull distribution is not apropriate for your data. I see that there is a bunch up near zero, do you have zero values in your data? In that case you will need to model zero values separately. So first suggestion would be to try Weibull for non zero values. Also why Weibull, is there particular reason, some reference from similar work perhaps?', 'eliavs'), ('well yes mainly from literature and other works on wind for the purpose of wind farms', 'eliavs') … (10 rows total)
+
+### Q701: SKIP (gold SQL failed)
+
+*codebase_community, challenging, confidence 1.0, 2 attempt(s), 29.17s*
+
+**Question:** Among all the posts posted by the most influential user, identify the percentage with a score above 50.
+
+**Hint:** The higher reputation the user has the more influence; percentage = DIVIDE(COUNT(stats_posts.Id where Score > 50 and MAX(Reputation))), COUNT(stats_posts.Id where MAX(Reputation));
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.Score > 50 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.Id)
+FROM users AS T1
+INNER JOIN posts AS T2
+  ON T1.Id = T2.OwnerUserId
+INNER JOIN (
+  SELECT
+    MAX(Reputation) AS max_reputation
+  FROM users
+) AS T3
+  ON T1.Reputation = T3.max_reputation
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(
+    CASE
+      WHEN T2.Reputation > (
+        SELECT
+          MAX(Reputation)
+        FROM users
+      )
+      THEN 1
+      ELSE 0
+    END
+  ) AS REAL) * 100 / COUNT(T1.Id)
+FROM posts AS T1
+INNER JOIN users AS T2
+  ON T1.OwnerUserId = T2.Id
+WHERE
+  T1.Score > 50
+```
+
+- Our result: 1 row(s): (0.0,)
+- Gold result: 0 rows
+
+### Q704: PASS
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 15.79s*
+
+**Question:** What is the excerpt post ID and wiki post ID of the tag named sample?
+
+**Hint:** tag named sample refers to TagName = 'sample';
+
+**Gold SQL**
+
+```sql
+SELECT
+  ExcerptPostId,
+  WikiPostId
+FROM tags
+WHERE
+  TagName = 'sample'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  ExcerptPostId,
+  WikiPostId
+FROM tags
+WHERE
+  TagName = 'sample'
+```
+
+- Our result: 1 row(s): (28276, 28275)
+- Gold result: 1 row(s): (28276, 28275)
+
+### Q705: PASS
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 16.32s*
+
+**Question:** Give the user's reputation and up vote number of the user that commented "fine, you win :)".
+
+**Hint:** Text = 'fine, you win :)';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Reputation,
+  T2.UpVotes
+FROM comments AS T1
+INNER JOIN users AS T2
+  ON T1.UserId = T2.Id
+WHERE
+  T1.Text = 'fine, you win :)'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Reputation,
+  SUM(T2.UpVotes)
+FROM comments AS T1
+INNER JOIN users AS T2
+  ON T1.UserId = T2.Id
+WHERE
+  T1.Text = 'fine, you win :)'
+```
+
+- Our result: 1 row(s): (2316, 74)
+- Gold result: 1 row(s): (2316, 74)
+
+### Q707: PASS
+
+*codebase_community, moderate, confidence 1.0, 1 attempt(s), 18.45s*
+
+**Question:** Among the posts with views ranging from 100 to 150, what is the comment with the highest score?
+
+**Hint:** views ranging from 100 to 150 refers to ViewCount BETWEEN 100 and 150; comment with the highest score refers to Text where MAX(Score);
+
+**Gold SQL**
+
+```sql
+SELECT
+  Text
+FROM comments
+WHERE
+  PostId IN (
+    SELECT
+      Id
+    FROM posts
+    WHERE
+      ViewCount BETWEEN 100 AND 150
+  )
+ORDER BY
+  Score DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.Text
+FROM posts AS T1
+INNER JOIN comments AS T2
+  ON T1.Id = T2.PostId
+WHERE
+  T1.ViewCount BETWEEN 100 AND 150
+ORDER BY
+  T2.Score DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Welcome to Cross Validated David P, for more information about the site and how to ask questions, you can check out the [FAQ](http://stats.stackexchange.com/faq). Is your question just about whether the calculation is right or wrong (it is wrong, with the numbers you give on your second line the result of the operation is 0.187, rounded)? Otherwise, yes, a percentage can be as close to zero as you can imagine because it is bounded between 0 and 100 and continuous on that interval.',)
+- Gold result: 1 row(s): ('Welcome to Cross Validated David P, for more information about the site and how to ask questions, you can check out the [FAQ](http://stats.stackexchange.com/faq). Is your question just about whether the calculation is right or wrong (it is wrong, with the numbers you give on your second line the result of the operation is 0.187, rounded)? Otherwise, yes, a percentage can be as close to zero as you can imagine because it is bounded between 0 and 100 and continuous on that interval.',)
+
+### Q710: FAIL
+
+*codebase_community, simple, confidence 1.0, 1 attempt(s), 16.56s*
+
+**Question:** In posts with 1 comment, how many of the comments have 0 score?
+
+**Hint:** in posts with 1 comment refers to CommentCount = 1;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM comments AS T1
+INNER JOIN posts AS T2
+  ON T1.PostId = T2.Id
+WHERE
+  T2.CommentCount = 1 AND T2.Score = 0
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM comments
+INNER JOIN posts
+  ON comments."PostId" = posts."Id"
+WHERE
+  comments.Score = 0 AND posts.CommentCount = 1
+```
+
+- Our result: 1 row(s): (10997,)
+- Gold result: 1 row(s): (2888,)
+- Fix applied: no such column: CommentCount -> added missing JOIN in code
+
+### Q716: FAIL
+
+*codebase_community, moderate, confidence None, None attempt(s), 124.12s*
+
+**Question:** Among the comments with scores between 5 to 10, what is the percentage of the users with 0 up votes?
+
+**Hint:** percentage = DIVIDE(COUNT(UserId where UpVotes = 0 and Score BETWEEN 5 and 10))*100, (COUNT(UserId where Score BETWEEN 5 and 10));
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(IIF(T1.UpVotes = 0, 1, 0)) AS REAL) * 100 / COUNT(T1.Id) AS per
+FROM users AS T1
+INNER JOIN comments AS T2
+  ON T1.Id = T2.UserId
+WHERE
+  T2.Score BETWEEN 5 AND 10
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1.3254786450662739,)
+- Error: `ReadTimeout: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)`
+
+### Q340: FAIL
+
+*card_games, simple, confidence 1.0, 1 attempt(s), 21.49s*
+
+**Question:** Which are the cards that have incredibly powerful foils.
+
+**Hint:** incredibly poweful foils refers to cardKingdomFoilId is not null AND cardKingdomId is not null
+
+**Gold SQL**
+
+```sql
+SELECT
+  id
+FROM cards
+WHERE
+  NOT cardKingdomFoilId IS NULL AND NOT cardKingdomId IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  name
+FROM cards
+WHERE
+  NOT cardKingdomFoilId IS NULL AND NOT cardKingdomId IS NULL
+```
+
+- Our result: 25061 row(s): ('Ballista Squad',), ('Bandage',), ('Beacon of Immortality',), ('Cho-Manno, Revolutionary',), ('Condemn',) … (25061 rows total)
+- Gold result: 25061 row(s): (4,), (5,), (6,), (9,), (10,) … (25061 rows total)
+
+### Q341: FAIL
+
+*card_games, simple, confidence None, 3 attempt(s), 34.08s*
+
+**Question:** What are the borderless cards available without powerful foils?
+
+**Hint:** borderless' refers to borderColor; poweful foils refers to cardKingdomFoilId paired with cardKingdomId AND cardKingdomId is not null
+
+**Gold SQL**
+
+```sql
+SELECT
+  id
+FROM cards
+WHERE
+  borderColor = 'borderless'
+  AND (
+    cardKingdomId IS NULL OR cardKingdomId IS NULL
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  T1.name
+FROM cards AS T1
+INNER JOIN cardKingdom AS T2
+  ON T1.uuid = T2.cardId
+WHERE
+  T1.borderColor = 'borderless'
+  AND NOT T2.cardKingdomFoilId IS NULL
+  AND NOT T2.cardKingdomId IS NULL
+```
+
+- Our result: 0 rows
+- Gold result: 67 row(s): (23004,), (25350,), (25355,), (25357,), (25359,) … (67 rows total)
+- Error: `no such table: cardKingdom`
+
+### Q344: FAIL
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 18.52s*
+
+**Question:** List all the mythic rarity print cards banned in gladiator format.
+
+**Hint:** mythic rarity printing refers to rarity = 'mythic'; card banned refers to status = 'Banned'; in gladiator format refers to format = 'gladiator';
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.id
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T2.format = 'gladiator' AND T2.status = 'Banned' AND T1.rarity = 'mythic'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.uuid
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.rarity = 'mythic' AND T2.status = 'Banned' AND T2.format = 'gladiator'
+```
+
+- Our result: 5 row(s): ('46153afe-5e05-5082-852a-648c03924bcf',), ('f203bad8-9c07-507c-9699-fc8fec69e2d2',), ('f2b2679f-0d84-5602-8014-241725c94023',), ('3d8884e6-75a2-5422-98e0-44b155f71db7',), ('8c48df5c-6e6f-5602-8312-523435d88a9b',)
+- Gold result: 5 row(s): (17983,), (18058,), (29523,), (38736,), (38737,)
+
+### Q345: PASS
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 18.27s*
+
+**Question:** For artifact type of cards that do not have multiple faces on the same card, state its legalities status for vintage play format.
+
+**Hint:** Artifact type of cards refers to types = 'Artifact'; card does not have multiple faces on the same card refers to side is NULL'; vintage play format refers to format = 'vintage';
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.status
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.type = 'Artifact' AND T2.format = 'vintage' AND T1.side IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.status
+FROM legalities AS T1
+INNER JOIN cards AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T2.types = 'Artifact' AND T2.side IS NULL AND T1.format = 'vintage'
+```
+
+- Our result: 3810 row(s): ('Legal',), ('Legal',), ('Legal',), ('Legal',), ('Legal',) … (3810 rows total)
+- Gold result: 3 row(s): ('Legal',), ('Restricted',), ('Banned',)
+
+### Q346: FAIL
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 19.37s*
+
+**Question:** List all the card id and artist with unknown power which are legal for commander play format.
+
+**Hint:** unknown power refers to power = '*' or POWER IS NULL; commander play format refers to format = 'commander'; legal for commander play format refers to format = 'commander' where status = 'Legal'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.id,
+  T1.artist
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T2.status = 'Legal'
+  AND T2.format = 'commander'
+  AND (
+    T1.power IS NULL OR T1.power = '*'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.id,
+  T1.artist
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T2.format = 'commander' AND T2.status = 'Legal' AND T1.power = '*'
+```
+
+- Our result: 419 row(s): (76, 'Anthony S. Waters'), (77, 'Anthony S. Waters'), (100, 'Carl Critchlow'), (101, 'Carl Critchlow'), (266, 'Mark Zug') … (419 rows total)
+- Gold result: 29936 row(s): (5, 'Rebecca Guay'), (6, 'Rob Alexander'), (10, 'Daren Bader'), (11, 'Thomas M. Baxa'), (13, 'Christopher Rush') … (29936 rows total)
+
+### Q347: FAIL
+
+*card_games, moderate, confidence 1.0, 2 attempt(s), 32.68s*
+
+**Question:** Find all cards illustrated by Stephen Daniel and describe the text of the ruling of these cards. State if these cards have missing or degraded properties and values.
+
+**Hint:** cards have missing or degraded properties and value refers to hasContentWarning = 1; 'Stephen Daniele' is artist; Find all cards refers to return card id
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.id,
+  T2.text,
+  T1.hasContentWarning
+FROM cards AS T1
+INNER JOIN rulings AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.artist = 'Stephen Daniele'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.id
+FROM cards AS T1
+INNER JOIN rulings AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.artist = 'Stephen Daniel'
+```
+
+- Our result: 0 rows
+- Gold result: 23 row(s): (29, 'You can’t put an Aura card from your hand onto the battlefield this way if that Aura can’t legally enchant Academy Researchers. For example, you can’t put an Aura with “enchant land” or “enchant green creature” onto the battlefield attached to Academy Res', 0), (3872, 'This card now has Enchant Swamp, which works exactly like any other Enchant ability. This means it can only be cast targeting a Swamp, and it will be put into its owner’s graveyard if the permanent it’s attached to ever stops being a Swamp.', 0), (6651, 'Cycling is an activated ability. Effects that interact with activated abilities (such as Stifle or Rings of Brighthearth) will interact with cycling. Effects that interact with spells (such as Remove Soul or Faerie Tauntings) will not.', 0), (6652, 'Cycling is an activated ability. Effects that interact with activated abilities (such as Stifle or Rings of Brighthearth) will interact with cycling. Effects that interact with spells (such as Remove Soul or Faerie Tauntings) will not.', 0), (7950, 'Cycling is an activated ability. Effects that interact with activated abilities (such as Stifle or Rings of Brighthearth) will interact with cycling. Effects that interact with spells (such as Remove Soul or Faerie Tauntings) will not.', 0) … (23 rows total)
+
+### Q349: FAIL
+
+*card_games, moderate, confidence None, 3 attempt(s), 29.92s*
+
+**Question:** Name the card and artist with the most ruling information. Also state if the card is a promotional printing.
+
+**Hint:** with the most ruling information refers to Max(count(rulings.uuid)); the card is the promotional printing refers to isPromo = 1;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.name,
+  T1.artist,
+  T1.isPromo
+FROM cards AS T1
+INNER JOIN rulings AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.isPromo = 1
+  AND T1.artist = (
+    SELECT
+      artist
+    FROM cards
+    WHERE
+      isPromo = 1
+    GROUP BY
+      artist
+    HAVING
+      COUNT(DISTINCT uuid) = (
+        SELECT
+          MAX(count_uuid)
+        FROM (
+          SELECT
+            COUNT(DISTINCT uuid) AS count_uuid
+          FROM cards
+          WHERE
+            isPromo = 1
+          GROUP BY
+            artist
+        )
+      )
+  )
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Serrated Arrows', 'John Avon', 1)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q352: PASS
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 19.97s*
+
+**Question:** Calculate the percentage of the cards availabe in Chinese Simplified.
+
+**Hint:** Chinese Simplified' is the language; percentage = Divide(Sum(id where language = 'Chinese Simplified'), Count(id)) *100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.language = 'Chinese Simplified' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id)
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.language = 'Chinese Simplified' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T2.id)
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+```
+
+- Our result: 1 row(s): (8.773399659641314,)
+- Gold result: 1 row(s): (8.773399659641314,)
+
+### Q356: PASS
+
+*card_games, simple, confidence 1.0, 1 attempt(s), 16.93s*
+
+**Question:** How many cards have infinite power?
+
+**Hint:** infinite power refers to power = '*';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM cards
+WHERE
+  power = '*'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM cards
+WHERE
+  power = '*'
+```
+
+- Our result: 1 row(s): (429,)
+- Gold result: 1 row(s): (429,)
+
+### Q358: FAIL
+
+*card_games, simple, confidence None, 3 attempt(s), 28.01s*
+
+**Question:** What is the border color of card "Ancestor's Chosen"?
+
+**Hint:** name of card  = 'Ancestor''s Chosen' ;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  borderColor
+FROM cards
+WHERE
+  name = 'Ancestor''s Chosen'
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('black',)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q366: FAIL
+
+*card_games, simple, confidence None, 3 attempt(s), 34.2s*
+
+**Question:** What is the rule of playing card "Benalish Knight"?
+
+**Hint:** Benalish Knight' is the name of card; rule of playing card refers to format;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.format
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.name = 'Benalish Knight'
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 32 row(s): ('commander',), ('duel',), ('legacy',), ('modern',), ('pauper',) … (32 rows total)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q368: PASS
+
+*card_games, simple, confidence 1.0, 1 attempt(s), 21.07s*
+
+**Question:** What is the percentage of borderless cards?
+
+**Hint:** borderless card refers to borderColor = 'borderless'; percentage = Divide(Count (id) where borderColor = 'borderless', Count(id)) *100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN borderColor = 'borderless' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(id)
+FROM cards
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN borderColor = 'borderless' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(id)
+FROM cards
+```
+
+- Our result: 1 row(s): (0.42413149836331,)
+- Gold result: 1 row(s): (0.42413149836331,)
+
+### Q371: PASS
+
+*card_games, challenging, confidence 1.0, 1 attempt(s), 23.24s*
+
+**Question:** What is the percentage of cards whose language is French among the Story Spotlight cards?
+
+**Hint:** Story Spotlight card refers to isStorySpotlight = 1; French is the language; Percentage = Divide(Count(id) where language = 'French' and isStorySpotlight = 1, Count(id) where isStorySpotlight = 1)*100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.language = 'French' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id)
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.isStorySpotlight = 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.language = 'French' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T2.id)
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.isStorySpotlight = 1
+```
+
+- Our result: 1 row(s): (10.0,)
+- Gold result: 1 row(s): (10.0,)
+
+### Q377: PASS
+
+*card_games, simple, confidence 1.0, 1 attempt(s), 21.9s*
+
+**Question:** How many cards with original type of "Summon - Angel" have subtype other than "Angel"?
+
+**Hint:** subtype other than Angel refers to subtypes is not 'Angel';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(id)
+FROM cards
+WHERE
+  originalType = 'Summon - Angel' AND subtypes <> 'Angel'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM cards
+WHERE
+  originalType = 'Summon - Angel' AND subtypes <> 'Angel'
+```
+
+- Our result: 1 row(s): (3,)
+- Gold result: 1 row(s): (3,)
+
+### Q379: FAIL
+
+*card_games, simple, confidence 1.0, 1 attempt(s), 22.08s*
+
+**Question:** What are the cards belong to duel deck a? List the ID.
+
+**Hint:** duel deck a refers to duelDeck = a;
+
+**Gold SQL**
+
+```sql
+SELECT
+  id
+FROM cards
+WHERE
+  duelDeck = 'a'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.id
+FROM legalities AS T1
+INNER JOIN cards AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.format = 'duel' AND T2.duelDeck = 'a'
+```
+
+- Our result: 804 row(s): (103228,), (103233,), (103238,), (103245,), (103251,) … (804 rows total)
+- Gold result: 804 row(s): (14440,), (14441,), (14442,), (14443,), (14444,) … (804 rows total)
+
+### Q383: PASS
+
+*card_games, simple, confidence 1.0, 1 attempt(s), 21.12s*
+
+**Question:** How many of the banned cards are white border?
+
+**Hint:** banned card refers to status = 'Banned'; white border refers to borderColor = 'white';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T2.status = 'Banned' AND T1.borderColor = 'white'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.uuid)
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T2.status = 'Banned' AND T1.borderColor = 'white'
+```
+
+- Our result: 1 row(s): (258,)
+- Gold result: 1 row(s): (258,)
+
+### Q391: PASS
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 23.35s*
+
+**Question:** Among the Artifact cards, which are black color and comes with foreign languague translation?
+
+**Hint:** Artifact card refers to originalType = 'Artifact'; black color refers to colors = 'B'; foreign language refers to language in foreign_data
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.name
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.originalType = 'Artifact' AND T1.colors = 'B'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.name
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.originalType = 'Artifact' AND T1.colors = 'B' AND NOT T2.language IS NULL
+```
+
+- Our result: 80 row(s): ("Executioner's Capsule",), ("Executioner's Capsule",), ("Executioner's Capsule",), ("Executioner's Capsule",), ("Executioner's Capsule",) … (80 rows total)
+- Gold result: 8 row(s): ("Executioner's Capsule",), ('Immortal Coil',), ('Onyx Goblet',), ('Netherborn Altar',), ('Scepter of Fugue',) … (8 rows total)
+
+### Q397: PASS
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 21.43s*
+
+**Question:** What is the mana cost of cards with a normal layout, a 2003 frame version, with a black border color, and available in paper and mtgo?
+
+**Hint:** available in paper and mtgo refers to availability = 'mtgo,paper'; frameVersion = 2003;borderColor = 'black'
+
+**Gold SQL**
+
+```sql
+SELECT
+  manaCost
+FROM cards
+WHERE
+  availability = 'mtgo,paper'
+  AND borderColor = 'black'
+  AND frameVersion = 2003
+  AND layout = 'normal'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  manaCost
+FROM cards
+WHERE
+  layout = 'normal'
+  AND frameVersion = 2003
+  AND borderColor = 'black'
+  AND availability = 'mtgo,paper'
+```
+
+- Our result: 11446 row(s): ('{5}{W}{W}',), ('{4}{W}',), ('{3}{W}',), ('{3}{W}',), ('{W}',) … (11446 rows total)
+- Gold result: 11446 row(s): ('{5}{W}{W}',), ('{4}{W}',), ('{3}{W}',), ('{3}{W}',), ('{W}',) … (11446 rows total)
+
+### Q402: FAIL
+
+*card_games, moderate, confidence None, 3 attempt(s), 39.96s*
+
+**Question:** What is the percentage of Story Spotlight cards that do not have a text box? List them by their ID.
+
+**Hint:** Story Spotlight cards that do not have a text box refers to isStorylight = 1 and isTextless = 0; Percentage = DIVIDE(SUM(count(id) where isStorylight = 1 AND isTextless = 0 ), SUM(count(id))) * 100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN isTextless = 0 AND isStorySpotlight = 1 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(id)
+FROM cards
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN isStorylight = 1 AND isTextless = 0 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(id)
+FROM cards
+WHERE
+  isStorylight = 1 AND isTextless = 0
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (0.18302770053852382,)
+- Error: `no such column: isStorylight`
+- Fix applied: no such column: isStorylight
+- Fix applied: no such column: isStorylight
+- Fix applied: no such column: isStorylight
+
+### Q405: FAIL
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 22.48s*
+
+**Question:** How many Brazilian Portuguese translated sets are inside the Commander block?
+
+**Hint:** Commander block refer to block = 'Commander'; sets refer to code = setCode; Portuguese refer to language = 'Portuguese (Brasil)'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM sets AS T1
+INNER JOIN set_translations AS T2
+  ON T1.code = T2.setCode
+WHERE
+  T2.language = 'Portuguese (Brazil)' AND T1.block = 'Commander'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM set_translations
+JOIN sets
+  ON set_translations.setCode = sets.code
+WHERE
+  sets.block = 'Commander' AND set_translations.language = 'Portuguese (Brasil)'
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (7,)
+
+### Q407: FAIL
+
+*card_games, moderate, confidence None, None attempt(s), 120.01s*
+
+**Question:** Lists all types of cards in German.
+
+**Hint:** German refer to language; all types refer to the subtypes, supertypes; subtypes is not null AND supertypes is not null
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.subtypes,
+  T1.supertypes
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T2.language = 'German' AND NOT T1.subtypes IS NULL AND NOT T1.supertypes IS NULL
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1693 row(s): ('Human,Rebel', 'Legendary'), ('Angel', 'Legendary'), ('Merfolk,Wizard', 'Legendary'), ('Vampire,Noble', 'Legendary'), ('Avatar,Minion', 'Legendary') … (1693 rows total)
+- Error: `ReadTimeout: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)`
+
+### Q408: FAIL
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 15.96s*
+
+**Question:** How many unknown power cards contain info about the triggered ability
+
+**Hint:** unknown power cards refers to power is null or power = '*';contain info about the triggered ability refers to text contains 'triggered ability'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.id)
+FROM cards AS T1
+INNER JOIN rulings AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  (
+    T1.power IS NULL OR T1.power = '*'
+  ) AND T2.text LIKE '%triggered ability%'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM cards
+WHERE
+  power IS NULL OR power = '*' AND text LIKE '%triggered ability%'
+```
+
+- Our result: 1 row(s): (30624,)
+- Gold result: 1 row(s): (1382,)
+
+### Q409: PASS
+
+*card_games, moderate, confidence 1.0, 2 attempt(s), 37.69s*
+
+**Question:** Indicates the number of cards with pre-modern format, ruling text "This is a triggered mana ability." that do not have multiple faces.
+
+**Hint:** pre-modern format refers to format = 'premodern' ;do not have multiple faces refers to side IS NULL
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+INNER JOIN rulings AS T3
+  ON T1.uuid = T3.uuid
+WHERE
+  T2.format = 'premodern'
+  AND T3.text = 'This is a triggered mana ability.'
+  AND T1.Side IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.uuid)
+FROM legalities AS T1
+INNER JOIN cards AS T2
+  ON T1.uuid = T2.uuid
+INNER JOIN rulings AS T3
+  ON T2.uuid = T3.uuid
+WHERE
+  T1.format = 'premodern'
+  AND T3.text = 'This is a triggered mana ability.'
+  AND T2.side IS NULL
+```
+
+- Our result: 1 row(s): (16,)
+- Gold result: 1 row(s): (16,)
+- Fix applied: no such column: T1.format
+
+### Q412: FAIL
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 40.33s*
+
+**Question:** What is the foreign name of the card in French of type Creature, normal layout and black border color, by artist Matthew D. Wilson?
+
+**Hint:** in French refers to language = 'French'; black border color refers to borderColor = 'black'
+
+**Gold SQL**
+
+```sql
+SELECT
+  name
+FROM foreign_data
+WHERE
+  uuid IN (
+    SELECT
+      uuid
+    FROM cards
+    WHERE
+      types = 'Creature'
+      AND layout = 'normal'
+      AND borderColor = 'black'
+      AND artist = 'Matthew D. Wilson'
+  )
+  AND language = 'French'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.name
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.borderColor = 'black'
+  AND T1.layout = 'normal'
+  AND T1.types = 'Creature'
+  AND T2.language = 'French'
+```
+
+- Our result: 12059 row(s): ("Élu de l'Ancêtre",), ('Ange de miséricorde',), ('Avemain chasse-nuage',), ('Escouade de balistes',), ('Chevalier bénalian',) … (12059 rows total)
+- Gold result: 50 row(s): ('Escouade de balistes',), ('Reya Aubevenant',), ("Tisseuse d'esprit",), ('Étrangleur mou',), ('Vampire de Mephidross',) … (50 rows total)
+
+### Q414: FAIL
+
+*card_games, simple, confidence None, 3 attempt(s), 42.09s*
+
+**Question:** What language is the set of 180 cards that belongs to the Ravnica block translated into?
+
+**Hint:** set of 180 cards refers to baseSetSize = 180
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.language
+FROM sets AS T1
+INNER JOIN set_translations AS T2
+  ON T1.code = T2.setCode
+WHERE
+  T1.block = 'Ravnica' AND T1.baseSetSize = 180
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 10 row(s): ('Chinese Simplified',), ('Chinese Traditional',), ('French',), ('German',), ('Italian',) … (10 rows total)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q415: FAIL
+
+*card_games, challenging, confidence None, 3 attempt(s), 58.15s*
+
+**Question:** What percentage of cards with format commander and legal status do not have a content warning?
+
+**Hint:** do not have a content warning refers to hasContentWarning = 0; percentage refers to DIVIDE(COUNT(hasContentWarning = 0),COUNT(ID))*100 where format = 'commander' AND Status = 'legal';
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T1.hasContentWarning = 0 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id)
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T2.format = 'commander' AND T2.status = 'Legal'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN hasContentWarning = 0 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(ID)
+FROM cards
+INNER JOIN legalities
+  ON cards.uuid = legalities.uuid
+WHERE
+  format = 'commander' AND Status = 'Legal'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (100.0,)
+- Error: `ambiguous column name: ID`
+
+### Q416: FAIL
+
+*card_games, challenging, confidence 1.0, 1 attempt(s), 32.32s*
+
+**Question:** What percentage of cards without power are in French?
+
+**Hint:** in French refers to language = 'French'; cards without power refers to power IS NULL OR power = '*'; percentage = DIVIDE(COUNT(language = 'French' and power is NULL or power = '*'), COUNT( power is NULL or power = '*'))*100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T2.language = 'French' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id)
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.power IS NULL OR T1.power = '*'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(
+    CASE
+      WHEN T1.language = 'French' AND T2.power IS NULL OR T2.power = '*'
+      THEN 1
+      ELSE 0
+    END
+  ) AS REAL) * 100 / COUNT(CASE WHEN T2.power IS NULL OR T2.power = '*' THEN 1 ELSE 0 END)
+FROM foreign_data AS T1
+INNER JOIN cards AS T2
+  ON T1.uuid = T2.uuid
+```
+
+- Our result: 1 row(s): (7.151459615132871,)
+- Gold result: 1 row(s): (12.975290140452374,)
+
+### Q422: FAIL
+
+*card_games, simple, confidence None, 3 attempt(s), 35.45s*
+
+**Question:** What is the language of the card with the multiverse number 149934?
+
+**Hint:** multiverse number 149934 refers to multiverseid = 149934;
+
+**Gold SQL**
+
+```sql
+SELECT
+  language
+FROM foreign_data
+WHERE
+  multiverseid = 149934
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('French',)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q424: FAIL
+
+*card_games, simple, confidence None, 3 attempt(s), 37.41s*
+
+**Question:** What proportion of cards do not have a text box with a normal layout?
+
+**Hint:** do not have a text box refers to isTextless = 1; proportion refers to DIVIDE(COUNT(Textless = 1 and layout = 'normal'),COUNT(Textless))*100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN isTextless = 1 AND layout = 'normal' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*)
+FROM cards
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN Textless = 1 AND layout = 'normal' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(Textless)
+FROM cards
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (0.20238639963394459,)
+- Error: `no such column: Textless`
+- Fix applied: no such column: Textless
+- Fix applied: no such column: Textless
+- Fix applied: no such column: Textless
+
+### Q427: PASS
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 21.45s*
+
+**Question:** What languages are available in the set known as Archenemy on the magic card market and having the code ARC?
+
+**Hint:** known as Archenemy refers to mcmName = 'Archenemy'; having the code ARC refers to setCode = 'ARC'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.language
+FROM sets AS T1
+INNER JOIN set_translations AS T2
+  ON T1.code = T2.setCode
+WHERE
+  T1.mcmName = 'Archenemy' AND T2.setCode = 'ARC'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  set_translations.language
+FROM set_translations
+INNER JOIN sets
+  ON set_translations."setCode" = sets."code"
+WHERE
+  set_translations.setCode = 'ARC' AND sets.mcmName = 'Archenemy'
+```
+
+- Our result: 10 row(s): ('Chinese Simplified',), ('Chinese Traditional',), ('French',), ('German',), ('Italian',) … (10 rows total)
+- Gold result: 10 row(s): ('Chinese Simplified',), ('Chinese Traditional',), ('French',), ('German',), ('Italian',) … (10 rows total)
+- Fix applied: no such column: mcmName -> added missing JOIN in code
+
+### Q440: PASS
+
+*card_games, simple, confidence 1.0, 1 attempt(s), 16.61s*
+
+**Question:** Which foreign language used by "A Pedra Fellwar"?
+
+**Hint:** "A Pedra Fellwar" refers to name = 'A Pedra Fellwar'
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  language
+FROM foreign_data
+WHERE
+  name = 'A Pedra Fellwar'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  language
+FROM foreign_data
+WHERE
+  name = 'A Pedra Fellwar'
+```
+
+- Our result: 6 row(s): ('Portuguese (Brazil)',), ('Portuguese (Brazil)',), ('Portuguese (Brazil)',), ('Portuguese (Brazil)',), ('Portuguese (Brazil)',) … (6 rows total)
+- Gold result: 1 row(s): ('Portuguese (Brazil)',)
+
+### Q459: FAIL (right logic, extra columns)
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 29.67s*
+
+**Question:** Which card costs more converted mana, "Serra Angel" or "Shrine Keeper"?
+
+**Hint:** "Serra Angel" refers to name = 'Serra Angel'; "Shrine Keeper" refers to name = 'Shrine Keeper'; card costs more converted mana when the value of convertedManaCost is greater
+
+**Gold SQL**
+
+```sql
+SELECT
+  name
+FROM cards
+WHERE
+  name IN ('Serra Angel', 'Shrine Keeper')
+ORDER BY
+  convertedManaCost DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  name,
+  convertedManaCost
+FROM cards
+WHERE
+  name = 'Serra Angel' OR name = 'Shrine Keeper'
+ORDER BY
+  convertedManaCost DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Serra Angel', 5.0)
+- Gold result: 1 row(s): ('Serra Angel',)
+
+### Q462: FAIL
+
+*card_games, moderate, confidence None, 3 attempt(s), 74.12s*
+
+**Question:** What's the Italian name of the set of cards with "Ancestor's Chosen" is in?
+
+**Hint:** Italian is a language which refers to language = 'Italian'; with "Ancestor's Chosen" in the card set refers to name = 'Ancestor''s Chosen'
+
+**Gold SQL**
+
+```sql
+SELECT
+  translation
+FROM set_translations
+WHERE
+  setCode IN (
+    SELECT
+      setCode
+    FROM cards
+    WHERE
+      name = 'Ancestor''s Chosen'
+  )
+  AND language = 'Italian'
+```
+
+**Our SQL**
+
+```sql
+select the `name` from the `sets` table, which is the Italian name of the set. 5. **Execute the query**: The query is executed to get the Italian name of the set that contains the card "Ancestor's Chosen". Therefore, the Italian name of the set of cards with "Ancestor's Chosen" is in is "Core Set".
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('Set Base Decima Edizione',), ('Sentenza',)
+- Error: `near "table": syntax error`
+
+### Q465: FAIL
+
+*card_games, moderate, confidence 1.0, 2 attempt(s), 28.92s*
+
+**Question:** For the set of cards with "Ancestor's Chosen" in it, is there a Korean version of it?
+
+**Hint:** set of cards with "Ancestor''s Chosen" in it refers to name = 'Ancestor''s Chosen'; Korean version refers to language = 'Korean'
+
+**Gold SQL**
+
+```sql
+SELECT
+  IIF(
+    SUM(
+      CASE WHEN T2.language = 'Korean' AND NOT T2.translation IS NULL THEN 1 ELSE 0 END
+    ) > 0,
+    'YES',
+    'NO'
+  )
+FROM cards AS T1
+INNER JOIN set_translations AS T2
+  ON T2.setCode = T1.setCode
+WHERE
+  T1.name = 'Ancestor''s Chosen'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.name
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.name = 'Ancestor''s Chosen' AND T2.language = 'Korean'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('YES',)
+
+### Q466: FAIL
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 17.61s*
+
+**Question:** Among the cards in the set "Hauptset Zehnte Edition", how many of them are designed by Adam Rex?
+
+**Hint:** card set "Hauptset Zehnte Edition" refers to translation = 'Hauptset Zehnte Edition'; designed by Adam refers to artist = 'Adam Rex'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM cards AS T1
+INNER JOIN set_translations AS T2
+  ON T2.setCode = T1.setCode
+WHERE
+  T2.translation = 'Hauptset Zehnte Edition' AND T1.artist = 'Adam Rex'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM cards AS T1
+INNER JOIN set_translations AS T2
+  ON T1.watermark = T2.setCode
+WHERE
+  T2.translation = 'Hauptset Zehnte Edition' AND T1.artist = 'Adam Rex'
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (12,)
+
+### Q468: FAIL
+
+*card_games, moderate, confidence None, 3 attempt(s), 30.0s*
+
+**Question:** What is the Simplified Chinese translation of the name of the set "Eighth Edition"?
+
+**Hint:** Eighth Edition is the name of card set which refers to name = 'Eighth Edition'; Simplified Chinese refers to language = 'Chinese Simplified'; translation of the name refers to translation
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.translation
+FROM sets AS T1
+INNER JOIN set_translations AS T2
+  ON T2.setCode = T1.code
+WHERE
+  T1.name = 'Eighth Edition' AND T2.language = 'Chinese Simplified'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T3.translation
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+INNER JOIN set_translations AS T3
+  ON T2.setCode = T3.setCode
+WHERE
+  T1.name = 'Eighth Edition' AND T3.language = 'Chinese Simplified'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('核心系列第八版',)
+- Error: `no such column: T2.setCode`
+- Fix applied: no such column: T2.setCode
+- Fix applied: no such column: T2.setCode
+- Fix applied: no such column: T2.setCode
+
+### Q469: FAIL
+
+*card_games, moderate, confidence None, 3 attempt(s), 31.7s*
+
+**Question:** Did the set of cards with "Angel of Mercy" appear on Magic: The Gathering Online?
+
+**Hint:** card set "Angel of Mercy" refers to name = 'Angel of Mercy'; appear on Magic: The Gathering Online refers to mtgoCode is NOT NULL and vice versa
+
+**Gold SQL**
+
+```sql
+SELECT
+  IIF(NOT T2.mtgoCode IS NULL, 'YES', 'NO')
+FROM cards AS T1
+INNER JOIN sets AS T2
+  ON T2.code = T1.setCode
+WHERE
+  T1.name = 'Angel of Mercy'
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 15 row(s): ('YES',), ('YES',), ('YES',), ('YES',), ('YES',) … (15 rows total)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q472: PASS
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 18.52s*
+
+**Question:** Among the sets in the block "Ice Age", how many of them have an Italian translation?
+
+**Hint:** sets in the block "Ice Age" refers to block = 'Ice Age'; Italian translation refers to language = 'Italian' and translation is not null
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T1.id)
+FROM sets AS T1
+INNER JOIN set_translations AS T2
+  ON T2.setCode = T1.code
+WHERE
+  T1.block = 'Ice Age' AND T2.language = 'Italian' AND NOT T2.translation IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM sets
+WHERE
+  block = 'Ice Age'
+  AND EXISTS(
+    SELECT
+      1
+    FROM set_translations
+    WHERE
+      setCode = sets.code AND language = 'Italian' AND NOT translation IS NULL
+  )
+```
+
+- Our result: 1 row(s): (1,)
+- Gold result: 1 row(s): (1,)
+
+### Q473: FAIL
+
+*card_games, moderate, confidence None, 3 attempt(s), 25.79s*
+
+**Question:** Is the set of cards with Adarkar Valkyrie only available outside the United States?
+
+**Hint:** card set Adarkar Valkyrie refers to name = 'Adarkar Valkyrie'; isForeignOnly = 1 means only available outside the United States;
+
+**Gold SQL**
+
+```sql
+SELECT
+  IIF(isForeignOnly = 1, 'YES', 'NO')
+FROM cards AS T1
+INNER JOIN sets AS T2
+  ON T2.code = T1.setCode
+WHERE
+  T1.name = 'Adarkar Valkyrie'
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 5 row(s): ('NO',), ('NO',), ('NO',), ('NO',), ('NO',)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q474: PASS
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 16.37s*
+
+**Question:** Among the sets of cards that have an Italian translation, how many of them have a base set number of under 100?
+
+**Hint:** Italian translation refers to language = 'Italian'; have a translation means translation is not null; base set number of under 100 refers to baseSetSize < 10
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM sets AS T1
+INNER JOIN set_translations AS T2
+  ON T2.setCode = T1.code
+WHERE
+  NOT T2.translation IS NULL AND T1.baseSetSize < 100 AND T2.language = 'Italian'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.setCode)
+FROM set_translations AS T1
+INNER JOIN sets AS T2
+  ON T1.setCode = T2.code
+WHERE
+  T1.language = 'Italian' AND NOT T1.translation IS NULL AND T2.baseSetSize < 100
+```
+
+- Our result: 1 row(s): (30,)
+- Gold result: 1 row(s): (30,)
+
+### Q477: FAIL
+
+*card_games, challenging, confidence 1.0, 2 attempt(s), 28.15s*
+
+**Question:** Which of these artists have designed a card in the set Coldsnap, Jeremy Jarvis, Aaron Miller or Chippy?
+
+**Hint:** card set Coldsnap refers to name = 'Coldsnap'; Jeremy Jarvis, Aaron Miller or Chippy are the name of artists which refers to artist IN ('Jeremy Jarvis', 'Aaron Miller','Chippy');
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.artist
+FROM cards AS T1
+INNER JOIN sets AS T2
+  ON T2.code = T1.setCode
+WHERE
+  (
+    T2.name = 'Coldsnap' AND T1.artist = 'Chippy'
+  )
+  OR (
+    T2.name = 'Coldsnap' AND T1.artist = 'Aaron Miller'
+  )
+  OR (
+    T2.name = 'Coldsnap' AND T1.artist = 'Jeremy Jarvis'
+  )
+GROUP BY
+  T1.artist
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  T1.artist
+FROM cards AS T1
+INNER JOIN set_translations AS T2
+  ON T1.setCode = T2.setCode
+WHERE
+  T2.setCode = 'Coldsnap'
+  AND T1.artist IN ('Jeremy Jarvis', 'Aaron Miller', 'Chippy')
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('Chippy',), ('Jeremy Jarvis',)
+
+### Q479: FAIL
+
+*card_games, moderate, confidence None, 3 attempt(s), 30.82s*
+
+**Question:** Among the cards with converted mana cost higher than 5 in the set Coldsnap, how many of them have unknown power?
+
+**Hint:** card set Coldsnap refers to name = 'Coldsnap'; converted mana cost higher than 5 refers to convertedManaCost > 5; unknown power refers to power = '*' or T1.power is null
+
+**Gold SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN T1.power = '*' OR T1.power IS NULL THEN 1 ELSE 0 END)
+FROM cards AS T1
+INNER JOIN sets AS T2
+  ON T2.code = T1.setCode
+WHERE
+  T2.name = 'Coldsnap' AND T1.convertedManaCost > 5
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.id)
+FROM cards AS T1
+INNER JOIN sets AS T2
+  ON T1.set = T2.code
+WHERE
+  T2.name = 'Coldsnap'
+  AND T1.convertedManaCost > 5
+  AND (
+    T1.power = '*' OR T1.power IS NULL
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (6,)
+- Error: `near "set": syntax error`
+
+### Q480: PASS
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 17.74s*
+
+**Question:** What is the Italian flavor text of the card "Ancestor's Chosen"?
+
+**Hint:** Italian refers to language = 'Italian'; flavor text refers to flavorText; "Ancestor''s Chosen" refers to name = 'Ancestor''s Chosen'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.flavorText
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T2.uuid = T1.uuid
+WHERE
+  T1.name = 'Ancestor''s Chosen' AND T2.language = 'Italian'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.flavorText
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.name = 'Ancestor''s Chosen' AND T2.language = 'Italian'
+```
+
+- Our result: 2 row(s): ('"La volontà di tutti, eseguita per mano mia."',), ('Sancito da generazioni di forza.',)
+- Gold result: 2 row(s): ('"La volontà di tutti, eseguita per mano mia."',), ('Sancito da generazioni di forza.',)
+
+### Q483: FAIL
+
+*card_games, moderate, confidence None, 3 attempt(s), 29.6s*
+
+**Question:** Please list the Italian text ruling of all the cards in the set Coldsnap.
+
+**Hint:** card set Coldsnap refers to name = 'Coldsnap'; Italian refers to language = 'Italian'
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.text
+FROM foreign_data AS T1
+INNER JOIN cards AS T2
+  ON T2.uuid = T1.uuid
+INNER JOIN sets AS T3
+  ON T3.code = T2.setCode
+WHERE
+  T3.name = 'Coldsnap' AND T1.language = 'Italian'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.text
+FROM cards AS T1
+INNER JOIN rulings AS T2
+  ON T1.uuid = T2.uuid
+INNER JOIN sets AS T3
+  ON T1.set = T3.code
+WHERE
+  T3.name = 'Coldsnap' AND T1.language = 'Italian'
+```
+
+- Our result: 0 rows
+- Gold result: 149 row(s): ("Volare, cautela\n{T}: Quando una creatura bersaglio diversa dalla Valchiria dell'Adarkar viene messa in un cimitero in questo turno, rimetti in gioco quella carta sotto il tuo controllo.",), ('Volare\n{S}: Il Grifone di Borealia guadagna attacco improvviso fino alla fine del turno. ({S} può essere pagato con un mana da un permanente neve.)',), ('Mantenimento cumulativo {S} ({S} può essere pagato con un mana da un permanente neve.)\nSe una creatura sta per infliggere danno da combattimento a te e/o a una o più creature che controlli, previeni X di quei danni, dove X è pari al numero di segnalini ep',), ('Ogniqualvolta ti viene inflitto danno, puoi mettere in gioco altrettante pedine creatura Soldato 1/1 bianche.',), ('Gli altri Soldati prendono +1/+1 e hanno attacco improvviso.',) … (149 rows total)
+- Error: `near "set": syntax error`
+
+### Q484: FAIL
+
+*card_games, moderate, confidence None, 3 attempt(s), 32.19s*
+
+**Question:** Please list the Italian names of the cards in the set Coldsnap with the highest converted mana cost.
+
+**Hint:** card set Coldsnap refers to name = 'Coldsnap'; Italian refers to language = 'Italian'; highest converted mana cost refers to MAX(convertedManaCost)
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.name
+FROM foreign_data AS T1
+INNER JOIN cards AS T2
+  ON T2.uuid = T1.uuid
+INNER JOIN sets AS T3
+  ON T3.code = T2.setCode
+WHERE
+  T3.name = 'Coldsnap' AND T1.language = 'Italian'
+ORDER BY
+  T2.convertedManaCost DESC
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.name
+FROM cards AS T1
+INNER JOIN foreign_data AS T2
+  ON T1.uuid = T2.uuid
+INNER JOIN set_translations AS T3
+  ON T1.uuid = T3.uuid
+WHERE
+  T1.set = 'Coldsnap' AND T2.language = 'Italian'
+ORDER BY
+  T1.convertedManaCost DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 155 row(s): ('Sunscour',), ('Commandeer',), ('Jokulmorder',), ('Rimefeather Owl',), ('Herald of Leshrac',) … (155 rows total)
+- Error: `near "set": syntax error`
+
+### Q486: FAIL
+
+*card_games, moderate, confidence None, 3 attempt(s), 33.42s*
+
+**Question:** What is the percentage of the cards with a converted mana cost of 7 in the set Coldsnap?
+
+**Hint:** converted mana cost of 7 refers to convertedManaCost = 7; card set Coldsnap refers to name = 'Coldsnap'; percentage = DIVIDE(SUM(convertedManaCost = 7), SUM(convertedManaCost))*100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T1.convertedManaCost = 7 THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.id)
+FROM cards AS T1
+INNER JOIN sets AS T2
+  ON T2.code = T1.setCode
+WHERE
+  T2.name = 'Coldsnap'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T1.convertedManaCost = 7 THEN 1 ELSE 0 END) AS REAL) * 100 / SUM(T1.convertedManaCost)
+FROM cards AS T1
+INNER JOIN sets AS T2
+  ON T1.set = T2.code
+WHERE
+  T2.name = 'Coldsnap'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (7.741935483870968,)
+- Error: `near "set": syntax error`
+
+### Q487: FAIL
+
+*card_games, challenging, confidence 1.0, 1 attempt(s), 18.06s*
+
+**Question:** What is the percentage of incredibly powerful cards in the set Coldsnap?
+
+**Hint:** card set Coldsnap refers to name = 'Coldsnap'; foil is incredibly powerful refers to cardKingdomFoilId is not null AND cardKingdomId is not null; the percentage of incredibly powerful cards in the set refers to DIVIDE(SUM(incredibly powerful), SUM(name = 'Coldsnap'))*100
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(
+    CASE
+      WHEN NOT T1.cardKingdomFoilId IS NULL AND NOT T1.cardKingdomId IS NULL
+      THEN 1
+      ELSE 0
+    END
+  ) AS REAL) * 100 / COUNT(T1.id)
+FROM cards AS T1
+INNER JOIN sets AS T2
+  ON T2.code = T1.setCode
+WHERE
+  T2.name = 'Coldsnap'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(
+    CASE
+      WHEN NOT cardKingdomFoilId IS NULL AND NOT cardKingdomId IS NULL
+      THEN 1
+      ELSE 0
+    END
+  ) AS REAL) * 100 / COUNT(*)
+FROM cards
+WHERE
+  name = 'Coldsnap'
+```
+
+- Our result: 1 row(s): (None,)
+- Gold result: 1 row(s): (100.0,)
+
+### Q518: FAIL
+
+*card_games, moderate, confidence 1.0, 1 attempt(s), 17.44s*
+
+**Question:** Which of the play format has the highest number of banned status? Indicate the play format and the names of all the card meet the condition.
+
+**Hint:** play format refers to format; banned status refers to status = 'Banned'; the highest number of banned status refers to MAX(COUNT(status = 'Banned'))
+
+**Gold SQL**
+
+```sql
+WITH MaxBanned AS (
+  SELECT
+    format,
+    COUNT(*) AS count_banned
+  FROM legalities
+  WHERE
+    status = 'Banned'
+  GROUP BY
+    format
+  ORDER BY
+    COUNT(*) DESC
+  LIMIT 1
+)
+SELECT
+  T2.format,
+  T1.name
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T2.uuid = T1.uuid
+INNER JOIN MaxBanned AS MB
+  ON MB.format = T2.format
+WHERE
+  T2.status = 'Banned'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.format,
+  T2.name
+FROM legalities AS T1
+INNER JOIN cards AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.status = 'Banned'
+GROUP BY
+  T1.format
+ORDER BY
+  SUM(CASE WHEN T1.status = 'Banned' THEN 1 ELSE 0 END) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('legacy', 'Balance')
+- Gold result: 546 row(s): ('legacy', 'Balance'), ('legacy', 'Crusade'), ('legacy', 'Ancestral Recall'), ('legacy', 'Time Walk'), ('legacy', 'Timetwister') … (546 rows total)
+- Fix applied: logic fix in code: count_condition: 1 x COUNT(condition) -> SUM(CASE WHEN condition THEN 1 ELSE 0 END)
+
+### Q522: FAIL
+
+*card_games, moderate, confidence None, None attempt(s), 120.01s*
+
+**Question:** Which cards are ranked 1st on EDHRec? List all of the cards name and its banned play format.
+
+**Hint:** ranked 1st on EDHRec refers to edhrecRank = 1; banned refers to status = 'Banned'; play format refers to format; cards name refers to name
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.name,
+  T2.format
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T2.uuid = T1.uuid
+WHERE
+  T1.edhrecRank = 1 AND T2.status = 'Banned'
+GROUP BY
+  T1.name,
+  T2.format
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('Sol Ring', 'duel'), ('Sol Ring', 'legacy')
+- Error: `ReadTimeout: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)`
+
+### Q528: FAIL
+
+*card_games, challenging, confidence None, 3 attempt(s), 30.25s*
+
+**Question:** List the names of all the cards in the set Hour of Devastation and find the formats in which these cards are legal.
+
+**Hint:** the set Hour of Devastation refers to set.name = 'Hour of Devastation'; names of all the cards in the set refers to cards.name; legal cards refers to status = 'Legal'; the formats refers to format
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.name,
+  CASE WHEN T1.status = 'Legal' THEN T1.format ELSE NULL END
+FROM legalities AS T1
+INNER JOIN cards AS T2
+  ON T2.uuid = T1.uuid
+WHERE
+  T2.setCode IN (
+    SELECT
+      code
+    FROM sets
+    WHERE
+      name = 'Hour of Devastation'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.name,
+  T2.format
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.set = 'Hour of Devastation' AND T2.status = 'Legal'
+```
+
+- Our result: 0 rows
+- Gold result: 1664 row(s): ('Act of Heroism', 'commander'), ('Act of Heroism', 'duel'), ('Act of Heroism', 'legacy'), ('Act of Heroism', 'modern'), ('Act of Heroism', 'pauper') … (1664 rows total)
+- Error: `near "set": syntax error`
+
+### Q529: FAIL
+
+*card_games, moderate, confidence 1.0, 3 attempt(s), 44.31s*
+
+**Question:** Find and list the names of sets which doesn't have Japanese translation but have Korean translation.
+
+**Hint:** names of sets refers to name; doesn't have Japanese translation refers to language not like '%Japanese%'; have Korean translation refers to language = 'Korean'
+
+**Gold SQL**
+
+```sql
+SELECT
+  name
+FROM sets
+WHERE
+  code IN (
+    SELECT
+      setCode
+    FROM set_translations
+    WHERE
+      language = 'Korean' AND language NOT LIKE '%Japanese%'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.name
+FROM sets AS T1
+INNER JOIN set_translations AS T2
+  ON T1.code = T2.setCode
+WHERE
+  T2.language = 'Korean'
+EXCEPT
+SELECT
+  T1.name
+FROM sets AS T1
+INNER JOIN set_translations AS T2
+  ON T1.code = T2.setCode
+WHERE
+  T2.language LIKE '%Japanese%'
+```
+
+- Our result: 0 rows
+- Gold result: 121 row(s): ('Tenth Edition',), ('Fourth Edition',), ('Fifth Dawn',), ('Fifth Edition',), ('Classic Sixth Edition',) … (121 rows total)
+- Fix applied: no such column: language
+
+### Q530: FAIL
+
+*card_games, moderate, confidence 1.0, 2 attempt(s), 29.74s*
+
+**Question:** List all the frame styles and cards Allen Williams worked on and find any banned cards if there are any.
+
+**Hint:** frame styles refers to frameVersion; cards Allen Williams worked on refers to artist = 'Allen Williams'; banned cards refers to status = 'Banned'
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.frameVersion,
+  T1.name,
+  IIF(T2.status = 'Banned', T1.name, 'NO')
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.artist = 'Allen Williams'
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  T1.frameVersion
+FROM cards AS T1
+INNER JOIN legalities AS T2
+  ON T1.uuid = T2.uuid
+WHERE
+  T1.artist = 'Allen Williams' AND T2.status = 'Banned'
+```
+
+- Our result: 0 rows
+- Gold result: 83 row(s): ('1997', 'Blinking Spirit', 'NO'), ('1997', 'Kjeldoran Royal Guard', 'NO'), ('1997', 'Enervate', 'NO'), ('1997', 'Diminishing Returns', 'NO'), ('2003', 'Blinking Spirit', 'NO') … (83 rows total)
+
+### Q195: FAIL (right logic, extra columns)
+
+*toxicology, simple, confidence 1.0, 1 attempt(s), 10.68s*
+
+**Question:** What is the most common bond type?
+
+**Hint:** most common bond type refers MAX(COUNT(bond_type))
+
+**Gold SQL**
+
+```sql
+SELECT
+  T.bond_type
+FROM (
+  SELECT
+    bond_type,
+    COUNT(bond_id)
+  FROM bond
+  GROUP BY
+    bond_type
+  ORDER BY
+    COUNT(bond_id) DESC
+  LIMIT 1
+) AS T
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  bond_type,
+  COUNT(bond_type) AS count
+FROM bond
+GROUP BY
+  bond_type
+ORDER BY
+  count DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('-', 7743)
+- Gold result: 1 row(s): ('-',)
+
+### Q197: FAIL
+
+*toxicology, moderate, confidence 1.0, 1 attempt(s), 12.46s*
+
+**Question:** Calculate the average number of oxygen atoms in single-bonded molecules.
+
+**Hint:** single-bonded molecules refers to bond_type = '-' ; average number of oxygen atom = AVG(element = 'o')
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(oxygen_count)
+FROM (
+  SELECT
+    T1.molecule_id,
+    COUNT(T1.element) AS oxygen_count
+  FROM atom AS T1
+  INNER JOIN bond AS T2
+    ON T1.molecule_id = T2.molecule_id
+  WHERE
+    T2.bond_type = '-' AND T1.element = 'o'
+  GROUP BY
+    T1.molecule_id
+) AS oxygen_counts
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(atom.element = 'o') AS avg_oxygen_atoms
+FROM molecule
+JOIN bond
+  ON molecule.molecule_id = bond.molecule_id
+INNER JOIN atom
+  ON molecule."molecule_id" = atom."molecule_id"
+WHERE
+  bond.bond_type = '-'
+```
+
+- Our result: 1 row(s): (0.08006384774143697,)
+- Gold result: 1 row(s): (99.68354430379746,)
+- Fix applied: no such column: element -> added missing JOIN in code
+
+### Q198: FAIL
+
+*toxicology, challenging, confidence None, 3 attempt(s), 21.31s*
+
+**Question:** On average how many carcinogenic molecules are single bonded?
+
+**Hint:** carcinogenic molecules refers to label = '+'; single-bonded refers to bond_type = '-'; average = DIVIDE(SUM(bond_type = '-'), COUNT(atom_id))
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(single_bond_count)
+FROM (
+  SELECT
+    T3.molecule_id,
+    COUNT(T1.bond_type) AS single_bond_count
+  FROM bond AS T1
+  INNER JOIN atom AS T2
+    ON T1.molecule_id = T2.molecule_id
+  INNER JOIN molecule AS T3
+    ON T3.molecule_id = T2.molecule_id
+  WHERE
+    T1.bond_type = '-' AND T3.label = '+'
+  GROUP BY
+    T3.molecule_id
+) AS subquery
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN bond_type = '-' THEN 1 ELSE 0 END) / COUNT(atom_id) AS average_single_bonded_carcinogenic_molecules
+FROM bond
+JOIN molecule
+  ON bond.molecule_id = molecule.molecule_id
+WHERE
+  molecule.label = '+'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (732.125,)
+- Error: `no such column: atom_id`
+- Fix applied: no such column: atom_id
+- Fix applied: no such column: atom_id
+- Fix applied: no such column: atom_id
+
+### Q200: PASS
+
+*toxicology, simple, confidence 1.0, 1 attempt(s), 10.24s*
+
+**Question:** Find the triple-bonded molecules which are carcinogenic.
+
+**Hint:** triple-bonded molecules refers to bond_type = '#'; carcinogenic refers to label = '+'
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.molecule_id
+FROM bond AS T1
+INNER JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+WHERE
+  T1.bond_type = '#' AND T2.label = '+'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  molecule.molecule_id
+FROM molecule
+INNER JOIN bond
+  ON molecule."molecule_id" = bond."molecule_id"
+WHERE
+  molecule.label = '+' AND bond.bond_type = '#'
+```
+
+- Our result: 3 row(s): ('TR041',), ('TR041',), ('TR499',)
+- Gold result: 2 row(s): ('TR041',), ('TR499',)
+- Fix applied: no such column: bond_type -> added missing JOIN in code
+
+### Q201: FAIL
+
+*toxicology, moderate, confidence 1.0, 1 attempt(s), 14.0s*
+
+**Question:** What is the percentage of carbon in double-bond molecules?
+
+**Hint:** carbon refers to element = 'c'; double-bond molecules refers to bond_type = '='; percentage = DIVIDE(SUM(element = 'c'), COUNT(atom_id))
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(DISTINCT CASE WHEN T1.element = 'c' THEN T1.atom_id ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T1.atom_id)
+FROM atom AS T1
+INNER JOIN bond AS T2
+  ON T1.molecule_id = T2.molecule_id
+WHERE
+  T2.bond_type = '='
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  1.0 * SUM(CASE WHEN element = 'c' THEN 1 ELSE 0 END) * 100 / COUNT(atom_id) AS percentage_of_carbon
+FROM atom
+JOIN bond
+  ON atom.molecule_id = bond.molecule_id
+WHERE
+  bond.bond_type = '='
+```
+
+- Our result: 1 row(s): (41.196235238637925,)
+- Gold result: 1 row(s): (38.80961092816197,)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q206: FAIL
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 12.17s*
+
+**Question:** What elements are in the TR004_8_9 bond atoms?
+
+**Hint:** TR004_8_9 bond atoms refers to bond_id = 'TR004_8_9';
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.element
+FROM atom AS T1
+INNER JOIN connected AS T2
+  ON T1.atom_id = T2.atom_id
+WHERE
+  T2.bond_id = 'TR004_8_9'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  element
+FROM atom
+WHERE
+  molecule_id = (
+    SELECT
+      molecule_id
+    FROM bond
+    WHERE
+      bond_id = 'TR004_8_9'
+  )
+```
+
+- Our result: 24 row(s): ('s',), ('n',), ('o',), ('c',), ('h',) … (24 rows total)
+- Gold result: 1 row(s): ('c',)
+
+### Q207: FAIL
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 8.8s*
+
+**Question:** What elements are in a double type bond?
+
+**Hint:** double type bond refers to bond_type = '=';
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.element
+FROM atom AS T1
+INNER JOIN bond AS T2
+  ON T1.molecule_id = T2.molecule_id
+INNER JOIN connected AS T3
+  ON T1.atom_id = T3.atom_id
+WHERE
+  T2.bond_type = '='
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  bond_type
+FROM bond
+WHERE
+  bond_type = '='
+```
+
+- Our result: 1408 row(s): ('=',), ('=',), ('=',), ('=',), ('=',) … (1408 rows total)
+- Gold result: 13 row(s): ('c',), ('o',), ('cl',), ('h',), ('s',) … (13 rows total)
+
+### Q208: FAIL
+
+*toxicology, moderate, confidence None, 3 attempt(s), 20.43s*
+
+**Question:** Which type of label is the most numerous in atoms with hydrogen?
+
+**Hint:** with hydrogen refers to element = 'h'; label most numerous in atoms refers to MAX(COUNT(label)); 
+
+**Gold SQL**
+
+```sql
+SELECT
+  T.label
+FROM (
+  SELECT
+    T2.label,
+    COUNT(T2.molecule_id)
+  FROM atom AS T1
+  INNER JOIN molecule AS T2
+    ON T1.molecule_id = T2.molecule_id
+  WHERE
+    T1.element = 'h'
+  GROUP BY
+    T2.label
+  ORDER BY
+    COUNT(T2.molecule_id) DESC
+  LIMIT 1
+) AS t
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  label,
+  MAX(COUNT(label)) AS max_label_count
+FROM atom
+JOIN molecule
+  ON atom.molecule_id = molecule.molecule_id
+WHERE
+  element = 'h'
+GROUP BY
+  label
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('-',)
+- Error: `misuse of aggregate function COUNT()`
+
+### Q212: FAIL (right logic, extra columns)
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 11.24s*
+
+**Question:** Which element is the least numerous in non-carcinogenic molecules?
+
+**Hint:** label = '-' means molecules are non-carcinogenic; least numerous refers to MIN(COUNT(element));
+
+**Gold SQL**
+
+```sql
+SELECT
+  T.element
+FROM (
+  SELECT
+    T1.element,
+    COUNT(DISTINCT T1.molecule_id)
+  FROM atom AS T1
+  INNER JOIN molecule AS T2
+    ON T1.molecule_id = T2.molecule_id
+  WHERE
+    T2.label = '-'
+  GROUP BY
+    T1.element
+  ORDER BY
+    COUNT(DISTINCT T1.molecule_id) ASC
+  LIMIT 1
+) AS t
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  element,
+  COUNT(element) AS count
+FROM atom
+JOIN molecule
+  ON atom.molecule_id = molecule.molecule_id
+WHERE
+  molecule.label = '-'
+GROUP BY
+  element
+ORDER BY
+  count ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('ca', 1)
+- Gold result: 1 row(s): ('ca',)
+
+### Q213: FAIL
+
+*toxicology, moderate, confidence None, 3 attempt(s), 26.53s*
+
+**Question:** What type of bond is there between the atoms TR004_8 and TR004_20?
+
+**Hint:** type of bond refers to bond_type; between the atoms TR004_8 and TR004_20 refers to atom_id = 'TR004_8' AND atom_id2 = 'TR004_20' OR another way around
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.bond_type
+FROM bond AS T1
+INNER JOIN connected AS T2
+  ON T1.bond_id = T2.bond_id
+WHERE
+  T2.atom_id = 'TR004_8'
+  AND T2.atom_id2 = 'TR004_20'
+  OR T2.atom_id2 = 'TR004_8'
+  AND T2.atom_id = 'TR004_20'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  bond_type
+FROM bond
+WHERE
+  (
+    atom_id = 'TR004_8' AND atom_id2 = 'TR004_20'
+  )
+  OR (
+    atom_id = 'TR004_20' AND atom_id2 = 'TR004_8'
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('-',), ('-',)
+- Error: `no such column: atom_id`
+- Fix applied: no such column: atom_id
+- Fix applied: no such column: atom_id
+- Fix applied: no such column: atom_id
+
+### Q215: FAIL
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 14.06s*
+
+**Question:** How many atoms with iodine and with sulfur type elements are there in single bond molecules?
+
+**Hint:** with iodine element refer to element = 'i'; with sulfur element refers to element = 's'; single type bond refers to bond_type = '-'; Should consider the distinct atoms when counting;
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT CASE WHEN T1.element = 'i' THEN T1.atom_id ELSE NULL END) AS iodine_nums,
+  COUNT(DISTINCT CASE WHEN T1.element = 's' THEN T1.atom_id ELSE NULL END) AS sulfur_nums
+FROM atom AS T1
+INNER JOIN connected AS T2
+  ON T1.atom_id = T2.atom_id
+INNER JOIN bond AS T3
+  ON T2.bond_id = T3.bond_id
+WHERE
+  T3.bond_type = '-'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT atom_id)
+FROM atom
+JOIN bond
+  ON atom.molecule_id = bond.molecule_id
+WHERE
+  atom.element = 'i' AND atom.element = 's' AND bond.bond_type = '-'
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (3, 77)
+
+### Q218: FAIL
+
+*toxicology, challenging, confidence None, 3 attempt(s), 36.17s*
+
+**Question:** What percentage of carcinogenic-type molecules does not contain fluorine?
+
+**Hint:** label = '+' mean molecules are carcinogenic; contain fluorine refers to element = 'f'; percentage = DIVIDE(SUM(element = 'f') * 100, COUNT(molecule_id)) where label = '+'; Should consider the distinct atoms when counting;
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(DISTINCT CASE WHEN T1.element <> 'f' THEN T2.molecule_id ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.molecule_id)
+FROM atom AS T1
+INNER JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+WHERE
+  T2.label = '+'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN element = 'f' THEN 1 ELSE 0 END) * 100 / COUNT(DISTINCT molecule_id) AS percentage_without_fluorine
+FROM atom
+JOIN molecule
+  ON atom.molecule_id = molecule.molecule_id
+WHERE
+  molecule.label = '+'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (100.0,)
+- Error: `ambiguous column name: molecule_id`
+
+### Q219: FAIL
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 16.41s*
+
+**Question:** What is the percentage of carcinogenic molecules in triple type bonds?
+
+**Hint:** label = '+' mean molecules are carcinogenic; triple bond refers to bond_type = '#'; percentage = DIVIDE(SUM(bond_type = '#') * 100, COUNT(bond_id)) as percent where label = '+'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(DISTINCT CASE WHEN T2.label = '+' THEN T2.molecule_id ELSE NULL END) AS REAL) * 100 / COUNT(DISTINCT T2.molecule_id)
+FROM atom AS T1
+INNER JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+INNER JOIN bond AS T3
+  ON T2.molecule_id = T3.molecule_id
+WHERE
+  T3.bond_type = '#'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    1.0 * SUM(CASE WHEN bond_type = '#' THEN 1 ELSE 0 END) * 100 / COUNT(bond_id)
+  ) AS percent
+FROM bond
+JOIN molecule
+  ON bond.molecule_id = molecule.molecule_id
+WHERE
+  molecule.label = '+'
+```
+
+- Our result: 1 row(s): (0.08075370121130551,)
+- Gold result: 1 row(s): (66.66666666666667,)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...); derived_projection: kept only the computed column; dropped components total_bonds, triple_bonds
+
+### Q220: PASS
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 13.3s*
+
+**Question:** Please list top three elements of the toxicology of the molecule TR000 in alphabetical order.
+
+**Hint:** TR000 is the molecule id;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T.element
+FROM atom AS T
+WHERE
+  T.molecule_id = 'TR000'
+ORDER BY
+  T.element
+LIMIT 3
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  element
+FROM atom
+WHERE
+  molecule_id = 'TR000'
+GROUP BY
+  element
+ORDER BY
+  element ASC
+LIMIT 3
+```
+
+- Our result: 3 row(s): ('c',), ('cl',), ('h',)
+- Gold result: 3 row(s): ('c',), ('cl',), ('h',)
+
+### Q226: FAIL
+
+*toxicology, moderate, confidence 1.0, 1 attempt(s), 12.42s*
+
+**Question:** What is the percentage of double bonds in the molecule TR008? Please provide your answer as a percentage with five decimal places.
+
+**Hint:** double bond refers to bond_type = '='; TR008 is the molecule id; percentage = DIVIDE(SUM(bond_type = '='), COUNT(bond_id)) as percent where molecule_id = 'TR008'
+
+**Gold SQL**
+
+```sql
+SELECT
+  ROUND(
+    CAST(COUNT(CASE WHEN T.bond_type = '=' THEN T.bond_id ELSE NULL END) AS REAL) * 100 / COUNT(T.bond_id),
+    5
+  )
+FROM bond AS T
+WHERE
+  T.molecule_id = 'TR008'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN bond_type = '=' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(bond_id) AS percent
+FROM bond
+WHERE
+  molecule_id = 'TR008'
+```
+
+- Our result: 1 row(s): (3.8461538461538463,)
+- Gold result: 1 row(s): (3.84615,)
+
+### Q227: FAIL
+
+*toxicology, simple, confidence 1.0, 1 attempt(s), 10.94s*
+
+**Question:** What is the percentage of molecules that are carcinogenic? Please provide your answer as a percentage with three decimal places.
+
+**Hint:** label = '+' mean molecules are carcinogenic; percentage = DIVIDE(SUM(label = '+'), COUNT(molecule_id)) as percent
+
+**Gold SQL**
+
+```sql
+SELECT
+  ROUND(
+    CAST(COUNT(CASE WHEN T.label = '+' THEN T.molecule_id ELSE NULL END) AS REAL) * 100 / COUNT(T.molecule_id),
+    3
+  )
+FROM molecule AS t
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN label = '+' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(molecule_id) AS percent
+FROM molecule
+```
+
+- Our result: 1 row(s): (44.31486880466473,)
+- Gold result: 1 row(s): (44.315,)
+
+### Q228: FAIL
+
+*toxicology, moderate, confidence 1.0, 1 attempt(s), 14.67s*
+
+**Question:** How much of the hydrogen in molecule TR206 is accounted for? Please provide your answer as a percentage with four decimal places.
+
+**Hint:** hydrogen refers to element = 'h'; TR206 is the molecule id; percentage = DIVIDE(SUM(element = 'h'), COUNT(atom_id)) as percent where molecule_id = 'TR206'
+
+**Gold SQL**
+
+```sql
+SELECT
+  ROUND(
+    CAST(COUNT(CASE WHEN T.element = 'h' THEN T.atom_id ELSE NULL END) AS REAL) * 100 / COUNT(T.atom_id),
+    4
+  )
+FROM atom AS T
+WHERE
+  T.molecule_id = 'TR206'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  1.0 * SUM(CASE WHEN element = 'h' THEN 1 ELSE 0 END) * 100 / COUNT(atom_id) AS percent
+FROM atom
+WHERE
+  molecule_id = 'TR206'
+```
+
+- Our result: 1 row(s): (45.45454545454545,)
+- Gold result: 1 row(s): (45.4545,)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q230: FAIL
+
+*toxicology, challenging, confidence None, 3 attempt(s), 15.22s*
+
+**Question:** What are the elements of the toxicology and label of molecule TR060?
+
+**Hint:** TR060 is the molecule id; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.element,
+  T2.label
+FROM atom AS T1
+INNER JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+WHERE
+  T2.molecule_id = 'TR060'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  toxicology,
+  label
+FROM molecule
+WHERE
+  molecule_id = 'TR060'
+```
+
+- Our result: 0 rows
+- Gold result: 5 row(s): ('c', '-'), ('h', '-'), ('o', '-'), ('n', '-'), ('cl', '-')
+- Error: `no such column: toxicology`
+- Fix applied: no such column: toxicology
+- Fix applied: no such column: toxicology
+- Fix applied: no such column: toxicology
+
+### Q231: FAIL (right logic, extra columns)
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 12.94s*
+
+**Question:** Which bond type accounted for the majority of the bonds found in molecule TR010 and state whether or not this molecule is carcinogenic?
+
+**Hint:** TR010 is the molecule id; majority of the bond found refers to MAX(COUNT(bond_type)); 
+
+**Gold SQL**
+
+```sql
+SELECT
+  T.bond_type
+FROM (
+  SELECT
+    T1.bond_type,
+    COUNT(T1.molecule_id)
+  FROM bond AS T1
+  WHERE
+    T1.molecule_id = 'TR010'
+  GROUP BY
+    T1.bond_type
+  ORDER BY
+    COUNT(T1.molecule_id) DESC
+  LIMIT 1
+) AS T
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  bond_type,
+  molecule.label
+FROM bond
+INNER JOIN molecule
+  ON bond.molecule_id = molecule.molecule_id
+WHERE
+  molecule.molecule_id = 'TR010'
+GROUP BY
+  bond_type
+ORDER BY
+  COUNT(bond_type) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('-', '-')
+- Gold result: 1 row(s): ('-',)
+
+### Q232: PASS
+
+*toxicology, moderate, confidence 1.0, 2 attempt(s), 21.68s*
+
+**Question:** Please list top three molecules that have single bonds between two atoms and are not carcinogenic in alphabetical order.
+
+**Hint:** label = '-' means molecules are not carcinogenic; single type bond refers to bond_type = '-'; list top three molecules refers to return molecule_id and order by molecule_id;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.molecule_id
+FROM bond AS T1
+INNER JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+WHERE
+  T1.bond_type = '-' AND T2.label = '-'
+ORDER BY
+  T2.molecule_id
+LIMIT 3
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  molecule.molecule_id
+FROM molecule
+JOIN bond
+  ON molecule.molecule_id = bond.molecule_id
+WHERE
+  bond_type = '-' AND label = '-'
+GROUP BY
+  molecule.molecule_id
+ORDER BY
+  molecule.molecule_id
+LIMIT 3
+```
+
+- Our result: 3 row(s): ('TR002',), ('TR004',), ('TR007',)
+- Gold result: 3 row(s): ('TR002',), ('TR004',), ('TR007',)
+
+### Q234: FAIL
+
+*toxicology, moderate, confidence None, 3 attempt(s), 25.43s*
+
+**Question:** How many bonds which involved atom 12 does molecule TR009 have?
+
+**Hint:** TR009 is the molecule id;  involved atom 12 refers to atom_id = 'TR009_12' or atom_id2 = 'TR009_12'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T2.bond_id)
+FROM bond AS T1
+INNER JOIN connected AS T2
+  ON T1.bond_id = T2.bond_id
+WHERE
+  T1.molecule_id = 'TR009'
+  AND T2.atom_id = T1.molecule_id || '_1'
+  OR T2.atom_id2 = T1.molecule_id || '_2'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM connected
+WHERE
+  atom_id = 'TR009_12' OR atom_id2 = 'TR009_12' AND molecule_id = 'TR009'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1041,)
+- Error: `no such column: molecule_id`
+- Fix applied: no such column: molecule_id
+- Fix applied: no such column: molecule_id
+- Fix applied: no such column: molecule_id
+
+### Q236: FAIL
+
+*toxicology, moderate, confidence None, 3 attempt(s), 23.22s*
+
+**Question:** What are the bond type and the atoms of the bond ID of TR001_6_9?
+
+**Hint:** atoms refer to atom_id or atom_id2
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.bond_type,
+  T2.atom_id,
+  T2.atom_id2
+FROM bond AS T1
+INNER JOIN connected AS T2
+  ON T1.bond_id = T2.bond_id
+WHERE
+  T2.bond_id = 'TR001_6_9'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  bond_type,
+  atom_id,
+  atom_id2
+FROM bond
+WHERE
+  bond_id = 'TR001_6_9'
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('-', 'TR001_6', 'TR001_9'), ('-', 'TR001_9', 'TR001_6')
+- Error: `no such column: atom_id`
+- Fix applied: no such column: atom_id
+- Fix applied: no such column: atom_id
+- Fix applied: no such column: atom_id
+
+### Q239: PASS
+
+*toxicology, simple, confidence 1.0, 1 attempt(s), 12.54s*
+
+**Question:** How many connections does the atom 19 have?
+
+**Hint:** connections refers to bond_id; atom 19 refers to atom_id like 'TR%_19';
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T.bond_id)
+FROM connected AS T
+WHERE
+  SUBSTRING(T.atom_id, -2) = '19'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM connected
+WHERE
+  atom_id LIKE 'TR%_19'
+```
+
+- Our result: 1 row(s): (377,)
+- Gold result: 1 row(s): (377,)
+
+### Q240: PASS
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 13.72s*
+
+**Question:** List all the elements of the toxicology of the molecule "TR004".
+
+**Hint:** TR004 is the molecule id;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T.element
+FROM atom AS T
+WHERE
+  T.molecule_id = 'TR004'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  element
+FROM atom
+WHERE
+  molecule_id = 'TR004'
+```
+
+- Our result: 24 row(s): ('s',), ('n',), ('o',), ('c',), ('h',) … (24 rows total)
+- Gold result: 6 row(s): ('s',), ('n',), ('o',), ('c',), ('h',) … (6 rows total)
+
+### Q242: PASS
+
+*toxicology, moderate, confidence 1.0, 1 attempt(s), 13.22s*
+
+**Question:** Among all the atoms from 21 to 25, list all the molecules that are carcinogenic.
+
+**Hint:** atoms from 21 to 25 refers to SUBSTR(atom_id, 7, 2) between '21' and '25'; label = '+' mean molecules are carcinogenic
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T2.molecule_id
+FROM atom AS T1
+INNER JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+WHERE
+  SUBSTRING(T1.atom_id, -2) BETWEEN '21' AND '25' AND T2.label = '+'
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  m.molecule_id
+FROM atom AS a
+JOIN molecule AS m
+  ON a.molecule_id = m.molecule_id
+WHERE
+  SUBSTRING(a.atom_id, 7, 2) BETWEEN '21' AND '25' AND m.label = '+'
+```
+
+- Our result: 75 row(s): ('TR001',), ('TR006',), ('TR019',), ('TR020',), ('TR029',) … (75 rows total)
+- Gold result: 75 row(s): ('TR001',), ('TR006',), ('TR019',), ('TR020',), ('TR029',) … (75 rows total)
+
+### Q243: FAIL
+
+*toxicology, moderate, confidence None, 3 attempt(s), 20.18s*
+
+**Question:** What are the bonds that have phosphorus and nitrogen as their atom elements?
+
+**Hint:** have phosphorus as atom elements refers to element = 'p'; have nitrogen as atom elements refers to element = 'n'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.bond_id
+FROM atom AS T1
+INNER JOIN connected AS T2
+  ON T1.atom_id = T2.atom_id
+WHERE
+  T2.bond_id IN (
+    SELECT
+      T3.bond_id
+    FROM connected AS T3
+    INNER JOIN atom AS T4
+      ON T3.atom_id = T4.atom_id
+    WHERE
+      T4.element = 'p'
+  )
+  AND T1.element = 'n'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  bond_id
+FROM atom
+WHERE
+  element = 'p'
+INTERSECT
+SELECT
+  bond_id
+FROM atom
+WHERE
+  element = 'n'
+```
+
+- Our result: 0 rows
+- Gold result: 6 row(s): ('TR032_2_3',), ('TR032_3_5',), ('TR058_1_3',), ('TR058_1_4',), ('TR058_1_5',) … (6 rows total)
+- Error: `no such column: bond_id`
+- Fix applied: no such column: bond_id
+- Fix applied: no such column: bond_id
+- Fix applied: no such column: bond_id
+
+### Q244: FAIL
+
+*toxicology, moderate, confidence 1.0, 1 attempt(s), 13.19s*
+
+**Question:** Is the molecule with the most double bonds carcinogenic?
+
+**Hint:** double bond refers to bond_type = ' = '; label = '+' mean molecules are carcinogenic
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.label
+FROM molecule AS T1
+INNER JOIN (
+  SELECT
+    T.molecule_id,
+    COUNT(T.bond_type)
+  FROM bond AS T
+  WHERE
+    T.bond_type = '='
+  GROUP BY
+    T.molecule_id
+  ORDER BY
+    COUNT(T.bond_type) DESC
+  LIMIT 1
+) AS T2
+  ON T1.molecule_id = T2.molecule_id
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  m.molecule_id,
+  SUM(b.bond_type = ' = ') AS double_bond_count
+FROM bond AS b
+JOIN molecule AS m
+  ON b.molecule_id = m.molecule_id
+WHERE
+  m.label = '+'
+GROUP BY
+  m.molecule_id
+ORDER BY
+  double_bond_count DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('TR499', 0)
+- Gold result: 1 row(s): ('+',)
+
+### Q245: FAIL
+
+*toxicology, moderate, confidence None, 3 attempt(s), 27.11s*
+
+**Question:** What is the average number of bonds the atoms with the element iodine have?
+
+**Hint:** atoms with the element iodine refers to element = 'i'; average = DIVIDE(COUND(bond_id), COUNT(atom_id)) where element = 'i'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(T2.bond_id) AS REAL) / COUNT(T1.atom_id)
+FROM atom AS T1
+INNER JOIN connected AS T2
+  ON T1.atom_id = T2.atom_id
+WHERE
+  T1.element = 'i'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(COUNT(bond_id)) / COUNT(atom_id) AS average_bonds_per_atom
+FROM atom
+JOIN bond
+  ON atom.atom_id = bond.atom_id
+WHERE
+  atom.element = 'i'
+GROUP BY
+  atom.element
+ORDER BY
+  average_bonds_per_atom ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1.0,)
+- Error: `misuse of aggregate function COUNT()`
+
+### Q247: FAIL
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 13.18s*
+
+**Question:** List all the elements of atoms that can not bond with any other atoms.
+
+**Hint:**  atoms cannot bond with other atoms means atom_id NOT in connected table;
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T.element
+FROM atom AS T
+WHERE
+  NOT T.element IN (
+    SELECT DISTINCT
+      T1.element
+    FROM atom AS T1
+    INNER JOIN connected AS T2
+      ON T1.atom_id = T2.atom_id
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  element
+FROM atom
+WHERE
+  NOT atom_id IN (
+    SELECT
+      atom_id
+    FROM connected
+  )
+```
+
+- Our result: 38 row(s): ('na',), ('na',), ('na',), ('na',), ('na',) … (38 rows total)
+- Gold result: 3 row(s): ('na',), ('zn',), ('k',)
+
+### Q248: FAIL
+
+*toxicology, simple, confidence 1.0, 1 attempt(s), 13.36s*
+
+**Question:** What are the atoms of the triple bond with the molecule "TR041"?
+
+**Hint:** TR041 is the molecule id; triple bond refers to bond_type = '#';
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.atom_id,
+  T2.atom_id2
+FROM atom AS T1
+INNER JOIN connected AS T2
+  ON T1.atom_id = T2.atom_id
+INNER JOIN bond AS T3
+  ON T2.bond_id = T3.bond_id
+WHERE
+  T3.bond_type = '#' AND T3.molecule_id = 'TR041'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  atom.element
+FROM atom
+JOIN bond
+  ON atom.molecule_id = bond.molecule_id
+WHERE
+  bond.molecule_id = 'TR041' AND bond.bond_type = '#'
+```
+
+- Our result: 28 row(s): ('c',), ('c',), ('n',), ('n',), ('cl',) … (28 rows total)
+- Gold result: 4 row(s): ('TR041_10', 'TR041_7'), ('TR041_7', 'TR041_10'), ('TR041_8', 'TR041_9'), ('TR041_9', 'TR041_8')
+
+### Q249: FAIL
+
+*toxicology, challenging, confidence 1.0, 2 attempt(s), 19.13s*
+
+**Question:** What are the elements of the atoms of TR144_8_19?
+
+**Hint:** TR144_8_19 is the bond id; 
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.element
+FROM connected AS T1
+INNER JOIN atom AS T2
+  ON T1.atom_id = T2.atom_id
+WHERE
+  T1.bond_id = 'TR144_8_19'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  element
+FROM atom
+WHERE
+  molecule_id = 'TR144_8_19'
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('h',), ('c',)
+
+### Q253: FAIL
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 10.55s*
+
+**Question:** List the elements of all the triple bonds.
+
+**Hint:** triple bond refers to bond_type = '#';
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T3.element
+FROM bond AS T1
+INNER JOIN connected AS T2
+  ON T1.bond_id = T2.bond_id
+INNER JOIN atom AS T3
+  ON T2.atom_id = T3.atom_id
+WHERE
+  T1.bond_type = '#'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  bond_id
+FROM bond
+WHERE
+  bond_type = '#'
+```
+
+- Our result: 5 row(s): ('TR041_7_10',), ('TR041_8_9',), ('TR377_3_5',), ('TR377_4_6',), ('TR499_1_2',)
+- Gold result: 4 row(s): ('n',), ('c',), ('y',), ('p',)
+
+### Q255: FAIL
+
+*toxicology, moderate, confidence 1.0, 1 attempt(s), 16.38s*
+
+**Question:** What proportion of single bonds are carcinogenic? Please provide your answer as a percentage with five decimal places.
+
+**Hint:** single bond refers to bond_type = '-'; label = '+' mean molecules are carcinogenic; proportion = DIVIDE(SUM(label = '+') * 100, COUNT(bond_id)) where bond_type = '-'
+
+**Gold SQL**
+
+```sql
+SELECT
+  ROUND(
+    CAST(COUNT(CASE WHEN T2.label = '+' THEN T1.bond_id ELSE NULL END) AS REAL) * 100 / COUNT(T1.bond_id),
+    5
+  )
+FROM bond AS T1
+INNER JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+WHERE
+  T1.bond_type = '-'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T1.bond_type = '-' AND T2.label = '+' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.bond_id) AS proportion_carcinogenic_single_bonds
+FROM bond AS T1
+JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+```
+
+- Our result: 1 row(s): (33.6173001310616,)
+- Gold result: 1 row(s): (39.75203,)
+
+### Q260: FAIL
+
+*toxicology, moderate, confidence 1.0, 1 attempt(s), 14.97s*
+
+**Question:** Calculate the total atoms with triple-bond molecules containing the element phosphorus or bromine.
+
+**Hint:** triple bond refers to bond_type = '#'; phosphorus refers to element = 'p'; bromine refers to element = 'br'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.atom_id)
+FROM atom AS T1
+INNER JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+INNER JOIN bond AS T3
+  ON T2.molecule_id = T3.molecule_id
+WHERE
+  T3.bond_type = '#' AND T1.element IN ('p', 'br')
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(atom_id) AS total_atoms
+FROM atom
+JOIN bond
+  ON atom.molecule_id = bond.molecule_id
+WHERE
+  bond.bond_type = '#' AND (
+    atom.element = 'p' OR atom.element = 'br'
+  )
+```
+
+- Our result: 1 row(s): (0.0,)
+- Gold result: 1 row(s): (1,)
+
+### Q263: PASS
+
+*toxicology, challenging, confidence 1.0, 2 attempt(s), 26.28s*
+
+**Question:** What is the composition of element chlorine in percentage among the single bond molecules?
+
+**Hint:** element chlorine refers to element = 'cl'; single bond refers to bond_type = '-'; percentage = DIVIDE(SUM(element = 'cl'), COUNT(atom_id)) as percent where bond_type = '-'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN T.element = 'cl' THEN T.atom_id ELSE NULL END) AS REAL) * 100 / COUNT(T.atom_id)
+FROM (
+  SELECT
+    T1.atom_id,
+    T1.element
+  FROM atom AS T1
+  INNER JOIN molecule AS T2
+    ON T1.molecule_id = T2.molecule_id
+  INNER JOIN bond AS T3
+    ON T2.molecule_id = T3.molecule_id
+  WHERE
+    T3.bond_type = '-'
+) AS T
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T1.element = 'cl' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.atom_id) AS percent
+FROM atom AS T1
+JOIN bond AS T2
+  ON T1.molecule_id = T2.molecule_id
+WHERE
+  T2.bond_type = '-'
+```
+
+- Our result: 1 row(s): (2.6840451814272206,)
+- Gold result: 1 row(s): (2.6840451814272206,)
+
+### Q268: FAIL
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 11.03s*
+
+**Question:** What are the elements for bond id TR001_10_11?
+
+**Hint:** TR001_10_11 is the bond id;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.element
+FROM connected AS T1
+INNER JOIN atom AS T2
+  ON T1.atom_id = T2.atom_id
+WHERE
+  T1.bond_id = 'TR001_10_11'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  molecule_id,
+  bond_type
+FROM bond
+WHERE
+  bond_id = 'TR001_10_11'
+```
+
+- Our result: 1 row(s): ('TR001', '=')
+- Gold result: 2 row(s): ('c',), ('o',)
+
+### Q273: FAIL
+
+*toxicology, moderate, confidence None, 3 attempt(s), 29.74s*
+
+**Question:** What is the percentage of element chlorine in carcinogenic molecules?
+
+**Hint:** chlorine refers to element = 'cl'; label = '+' mean molecules are carcinogenic; percentage = DIVIDE(SUM(element = 'pb'); COUNT(molecule_id)) as percentage where label = '+'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(CASE WHEN T1.element = 'cl' THEN T1.element ELSE NULL END) AS REAL) * 100 / COUNT(T1.element)
+FROM atom AS T1
+INNER JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+WHERE
+  T2.label = '+'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN element = 'cl' THEN 1 ELSE 0 END) * 100 / COUNT(molecule_id) AS percentage
+FROM atom
+JOIN molecule
+  ON atom.molecule_id = molecule.molecule_id
+WHERE
+  label = '+'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (3.1419284940411703,)
+- Error: `ambiguous column name: molecule_id`
+
+### Q281: FAIL
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 15.01s*
+
+**Question:** Tally the toxicology element of the 4th atom of each molecule that was carcinogenic.
+
+**Hint:** label = '+' means molecules are carcinogenic; 4th atom of each molecule refers to substr(atom_id, 7, 1) = '4'; 
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.element
+FROM atom AS T1
+INNER JOIN molecule AS T2
+  ON T1.molecule_id = T2.molecule_id
+WHERE
+  T2.label = '+' AND SUBSTRING(T1.atom_id, -1) = '4' AND LENGTH(T1.atom_id) = 7
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(atom.element) AS total_toxicology,
+  molecule.molecule_id
+FROM atom
+JOIN molecule
+  ON atom.molecule_id = molecule.molecule_id
+WHERE
+  molecule.label = '+' AND SUBSTRING(atom.atom_id, 7, 1) = '4'
+GROUP BY
+  molecule.molecule_id
+```
+
+- Our result: 152 row(s): (0.0, 'TR000'), (0.0, 'TR001'), (0.0, 'TR006'), (0.0, 'TR019'), (0.0, 'TR020') … (152 rows total)
+- Gold result: 8 row(s): ('cl',), ('c',), ('br',), ('n',), ('o',) … (8 rows total)
+
+### Q282: FAIL
+
+*toxicology, challenging, confidence 1.0, 1 attempt(s), 12.94s*
+
+**Question:** What is the ratio of Hydrogen elements in molecule ID TR006? List the ratio with its label.
+
+**Hint:** hydrogen refers to element = 'h'; ratio = DIVIDE(SUM(element = 'h'), count(element)) where molecule_id = 'TR006' ; label = '+' mean molecules are carcinogenic; label = '-' means molecules are non-carcinogenic
+
+**Gold SQL**
+
+```sql
+WITH SubQuery AS (
+  SELECT DISTINCT
+    T1.atom_id,
+    T1.element,
+    T1.molecule_id,
+    T2.label
+  FROM atom AS T1
+  INNER JOIN molecule AS T2
+    ON T1.molecule_id = T2.molecule_id
+  WHERE
+    T2.molecule_id = 'TR006'
+)
+SELECT
+  CAST(COUNT(CASE WHEN element = 'h' THEN atom_id ELSE NULL END) AS REAL) / (
+    CASE WHEN COUNT(atom_id) = 0 THEN NULL ELSE COUNT(atom_id) END
+  ) AS ratio,
+  label
+FROM SubQuery
+GROUP BY
+  label
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(CASE WHEN atom.element = 'h' THEN 1 ELSE 0 END) AS hydrogen_count,
+  molecule.molecule_id,
+  molecule.label
+FROM molecule
+INNER JOIN atom
+  ON molecule."molecule_id" = atom."molecule_id"
+WHERE
+  molecule.molecule_id = 'TR006'
+GROUP BY
+  molecule.molecule_id,
+  molecule.label
+```
+
+- Our result: 1 row(s): (17, 'TR006', '+')
+- Gold result: 1 row(s): (0.3617021276595745, '+')
+- Fix applied: no such column: element -> added missing JOIN in code
+
+### Q327: FAIL
+
+*toxicology, moderate, confidence 1.0, 2 attempt(s), 19.2s*
+
+**Question:** Which non-carcinogenic molecules consisted more than 5 atoms?
+
+**Hint:** label = '-' means molecules are non-carcinogenic; molecules consisted more than 5 atoms refers to COUNT(molecule_id) > 5
+
+**Gold SQL**
+
+```sql
+SELECT
+  T.molecule_id
+FROM (
+  SELECT
+    T1.molecule_id,
+    COUNT(T2.atom_id)
+  FROM molecule AS T1
+  INNER JOIN atom AS T2
+    ON T1.molecule_id = T2.molecule_id
+  WHERE
+    T1.label = '-'
+  GROUP BY
+    T1.molecule_id
+  HAVING
+    COUNT(T2.atom_id) > 5
+) AS t
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  molecule_id
+FROM molecule
+WHERE
+  label = '-'
+GROUP BY
+  molecule_id
+HAVING
+  COUNT(molecule_id) > 5
+```
+
+- Our result: 0 rows
+- Gold result: 186 row(s): ('TR002',), ('TR004',), ('TR007',), ('TR008',), ('TR009',) … (186 rows total)
+
+### Q5: FAIL
+
+*california_schools, simple, confidence None, None attempt(s), 125.72s*
+
+**Question:** How many schools with an average score in Math greater than 400 in the SAT test are exclusively virtual?
+
+**Hint:** Exclusively virtual refers to Virtual = 'F'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T2.School)
+FROM satscores AS T1
+INNER JOIN schools AS T2
+  ON T1.cds = T2.CDSCode
+WHERE
+  T2.Virtual = 'F' AND T1.AvgScrMath > 400
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (4,)
+- Error: `ReadTimeout: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)`
+
+### Q11: FAIL
+
+*california_schools, simple, confidence None, 3 attempt(s), 60.63s*
+
+**Question:** Please list the codes of the schools with a total enrollment of over 500.
+
+**Hint:** Total enrollment can be represented by `Enrollment (K-12)` + `Enrollment (Ages 5-17)`
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.CDSCode
+FROM schools AS T1
+INNER JOIN frpm AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2."Enrollment (K-12)" + T2."Enrollment (Ages 5-17)" > 500
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CDSCode
+FROM schools
+WHERE
+  (
+    ENROLLMENT('K-12') + ENROLLMENT('Ages 5-17')
+  ) > 500
+```
+
+- Our result: 0 rows
+- Gold result: 7806 row(s): ('01100170109835',), ('01100170112607',), ('01100170124172',), ('01100170125567',), ('01100176001788',) … (7806 rows total)
+- Error: `no such function: Enrollment`
+
+### Q12: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 103.12s*
+
+**Question:** Among the schools with an SAT excellence rate of over 0.3, what is the highest eligible free rate for students aged 5-17?
+
+**Hint:** Excellence rate = NumGE1500 / NumTstTakr; Eligible free rates for students aged 5-17 = `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)`
+
+**Gold SQL**
+
+```sql
+SELECT
+  MAX(CAST(T1."Free Meal Count (Ages 5-17)" AS REAL) / T1."Enrollment (Ages 5-17)")
+FROM frpm AS T1
+INNER JOIN satscores AS T2
+  ON T1.CDSCode = T2.cds
+WHERE
+  CAST(T2.NumGE1500 AS REAL) / T2.NumTstTakr > 0.3
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (0.9049079754601227,)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q17: FAIL
+
+*california_schools, simple, confidence None, 3 attempt(s), 75.56s*
+
+**Question:** Rank schools by their average score in Writing where the score is greater than 499, showing their charter numbers.
+
+**Hint:** Valid charter number means the number is not null
+
+**Gold SQL**
+
+```sql
+SELECT
+  CharterNum,
+  AvgScrWrite,
+  RANK() OVER (ORDER BY AvgScrWrite DESC) AS WritingScoreRank
+FROM schools AS T1
+INNER JOIN satscores AS T2
+  ON T1.CDSCode = T2.cds
+WHERE
+  T2.AvgScrWrite > 499 AND NOT CharterNum IS NULL
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CharterNum,
+  AVG(score) AS avg_score
+FROM schools
+WHERE
+  score > 499 AND NOT CharterNum IS NULL
+GROUP BY
+  CharterNum
+ORDER BY
+  avg_score DESC
+LIMIT 10
+```
+
+- Our result: 0 rows
+- Gold result: 58 row(s): ('0210', 630, 1), ('0890', 593, 2), ('0290', 582, 3), ('0352', 581, 4), ('0930', 579, 5) … (58 rows total)
+- Error: `no such column: score`
+- Fix applied: no such column: score
+- Fix applied: no such column: score
+- Fix applied: no such column: score
+
+### Q23: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 55.73s*
+
+**Question:** List the names of schools with more than 30 difference in enrollements between K-12 and ages 5-17? Please also give the full street adress of the schools.
+
+**Hint:** Diffrence in enrollement = `Enrollment (K-12)` - `Enrollment (Ages 5-17)`
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.School,
+  T1.Street
+FROM schools AS T1
+INNER JOIN frpm AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2."Enrollment (K-12)" - T2."Enrollment (Ages 5-17)" > 30
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  School,
+  Street
+FROM schools
+WHERE
+  Enrollment_K12 - Enrollment_5_17 > 30
+```
+
+- Our result: 0 rows
+- Gold result: 1239 row(s): ('Alameda County Community', '313 West Winton Avenue'), ('California School for the Deaf-Fremont', '39350 Gallaudet Drive'), ('Alameda High', '2201 Encinal Avenue'), ('Encinal High', '210 Central Avenue'), ('Island High (Continuation)', '1900 Third Street') … (1239 rows total)
+- Error: `no such column: Enrollment_K12`
+- Fix applied: no such column: Enrollment_K12
+- Fix applied: no such column: Enrollment_K12
+- Fix applied: no such column: Enrollment_K12
+
+### Q24: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 46.2s*
+
+**Question:** Give the names of the schools with the percent eligible for free meals in K-12 is more than 0.1 and test takers whose test score is greater than or equal to 1500?
+
+**Hint:** Percent eligible for free meals = Free Meal Count (K-12) / Total (Enrollment (K-12)
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2."School Name"
+FROM satscores AS T1
+INNER JOIN frpm AS T2
+  ON T1.cds = T2.CDSCode
+WHERE
+  CAST(T2."Free Meal Count (K-12)" AS REAL) / T2."Enrollment (K-12)" > 0.1
+  AND T1.NumGE1500 > 0
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.SchoolName
+FROM schools AS T1
+INNER JOIN frpm AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T1.GSoffered = 'K-12'
+  AND T1.GSserved = 'K-12'
+  AND T2.FreeMealCount / T1.Enrollment > 0.1
+  AND T2.TestScore >= 1500
+```
+
+- Our result: 0 rows
+- Gold result: 1165 row(s): ('FAME Public Charter',), ('Envision Academy for Arts & Technology',), ('Alameda Science and Technology Institute',), ('Alameda High',), ('Alternatives in Action',) … (1165 rows total)
+- Error: `no such column: T1.SchoolName`
+- Fix applied: no such column: T1.SchoolName
+- Fix applied: no such column: T1.SchoolName
+- Fix applied: no such column: T1.SchoolName
+
+### Q25: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 68.32s*
+
+**Question:** Name schools in Riverside which the average of average math score for SAT is grater than 400, what is the funding type of these schools?
+
+**Hint:** Average of average math = sum(average math scores) / count(schools).
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.sname,
+  T2."Charter Funding Type"
+FROM satscores AS T1
+INNER JOIN frpm AS T2
+  ON T1.cds = T2.CDSCode
+WHERE
+  T2."District Name" LIKE 'Riverside%'
+GROUP BY
+  T1.sname,
+  T2."Charter Funding Type"
+HAVING
+  CAST(SUM(T1.AvgScrMath) AS REAL) / COUNT(T1.cds) > 400
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  schools.SchoolName,
+  schools.FundingType
+FROM schools
+JOIN satscores
+  ON schools.CDSCode = satscores.cds
+WHERE
+  schools.County = 'Riverside' AND satscores.avg_math > 400
+```
+
+- Our result: 0 rows
+- Gold result: 6 row(s): ('Arlington High', None), ('John W. North High', None), ('Martin Luther King Jr. High', None), ('Polytechnic High', None), ('Ramona High', None) … (6 rows total)
+- Error: `no such column: schools.SchoolName`
+- Fix applied: no such column: s.Name
+- Fix applied: no such column: schools.SchoolName
+- Fix applied: no such column: schools.SchoolName
+
+### Q26: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 73.18s*
+
+**Question:** State the names and full communication address of high schools in Monterey which has more than 800 free or reduced price meals for ages 15-17?
+
+**Hint:** Full communication address should include Street, City, State and zip code if any.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1."School Name",
+  T2.Street,
+  T2.City,
+  T2.State,
+  T2.Zip
+FROM frpm AS T1
+INNER JOIN schools AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2.County = 'Monterey'
+  AND T1."Free Meal Count (Ages 5-17)" > 800
+  AND T1."School Type" = 'High Schools (Public)'
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 5 row(s): ('Alisal High', '777 Williams Road', 'Salinas', 'CA', '93905-1907'), ('Everett Alvarez High', '1900 Independence Boulevard', 'Salinas', 'CA', '93906-5300'), ('North Salinas High', '55 Kip Drive', 'Salinas', 'CA', '93906-2908'), ('Salinas High', '726 South Main Street', 'Salinas', 'CA', '93901-3243'), ('Soledad High', '425 Gabilan Drive', 'Soledad', 'CA', '93960-3207')
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q27: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 72.89s*
+
+**Question:** What is the average score in writing for the schools that were opened after 1991 or closed before 2000? List the school names along with the score. Also, list the communication number of the schools if there is any.
+
+**Hint:** Communication number refers to phone number.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.School,
+  T1.AvgScrWrite,
+  T2.Phone
+FROM schools AS T2
+LEFT JOIN satscores AS T1
+  ON T2.CDSCode = T1.cds
+WHERE
+  STRFTIME('%Y', T2.OpenDate) > '1991' OR STRFTIME('%Y', T2.ClosedDate) < '2000'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.school,
+  T1.score,
+  T1.phone
+FROM schools AS T1
+WHERE
+  T1.OpenDate > '1991-01-01' OR T1.CloseDate < '2000-01-01'
+```
+
+- Our result: 0 rows
+- Gold result: 8574 row(s): ('FAME Public Charter', 505, None), ('Envision Academy for Arts & Technology', 395, '(510) 596-8901'), ('Aspire California College Preparatory Academy', None, None), ('Community School for Creative Education', None, '(510) 686-4131'), ('Yu Ming Charter', None, '(510) 452-2063') … (8574 rows total)
+- Error: `no such column: T1.score`
+- Fix applied: no such column: T1.score
+- Fix applied: no such column: T1.score
+- Fix applied: no such column: T1.score
+
+### Q28: FAIL
+
+*california_schools, challenging, confidence 1.0, 1 attempt(s), 68.19s*
+
+**Question:** Consider the average difference between K-12 enrollment and 15-17 enrollment of schools that are locally funded, list the names and DOC type of schools which has a difference above this average.
+
+**Hint:** Difference between K-12 enrollment and 15-17 enrollment can be computed by `Enrollment (K-12)` - `Enrollment (Ages 5-17)`
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.School,
+  T2.DOC
+FROM frpm AS T1
+INNER JOIN schools AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2.FundingType = 'Locally funded'
+  AND (
+    T1."Enrollment (K-12)" - T1."Enrollment (Ages 5-17)"
+  ) > (
+    SELECT
+      AVG(T3."Enrollment (K-12)" - T3."Enrollment (Ages 5-17)")
+    FROM frpm AS T3
+    INNER JOIN schools AS T4
+      ON T3.CDSCode = T4.CDSCode
+    WHERE
+      T4.FundingType = 'Locally funded'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  *
+FROM schools
+WHERE
+  FundingType = 'Locally funded'
+```
+
+- Our result: 460 row(s): ('01611760130534', '0614400', '07479', 'Active', 'Alameda', 'Fremont Unified', 'Circle of Independent Learning', '4700 Calaveras Avenue', '4700 Calaveras Ave.', 'Fremont', '94538-1124', 'CA', '4700 Calaveras Avenue', '4700 Calaveras Ave.', 'Fremont', '94538-1124', 'CA', '(510) 797-0100', None, 'http://coil.schoolwires.net', '1998-09-09', None, 1, '0152', 'Locally funded', '54', 'Unified School District', '65', 'K-12 Schools (Public)', 'TRAD', 'Traditional', 'ELEMHIGH', 'Elementary-High Combination', 'K-12', 'K-12', 'P', 0, 37.537962, -121.99206, 'Stephanie', 'Walton', 'swalton@fremont.k12.ca.us', None, None, None, None, None, None, '2016-08-18'), ('01612590106468', '0628050', '10717', 'Closed', 'Alameda', 'Oakland Unified', 'Youth Employment Partnership Charter', '2300 International Boulevard', '2300 International Blvd.', 'Oakland', '94601', 'CA', '2300 International Boulevard', '2300 International Blvd.', 'Oakland', '94601', 'CA', None, None, None, '2004-09-27', '2008-07-01', 1, '0532', 'Locally funded', '54', 'Unified School District', '66', 'High Schools (Public)', 'TRAD', 'Traditional', 'HS', 'High School', '9-12', '9-12', None, None, None, None, None, None, None, None, None, None, None, None, None, '2009-10-02'), ('01612596115711', '0628050', '07939', 'Closed', 'Alameda', 'Oakland Unified', 'West Oakland Community Charter', '955 12th Street', '955 12th St.', 'Oakland', '94607', 'CA', '955 12th Street', '955 12th St.', 'Oakland', '94607', 'CA', None, None, None, '2007-08-27', '2007-08-28', 0, '0145', 'Locally funded', '54', 'Unified School District', '62', 'Intermediate/Middle Schools (Public)', 'TRAD', 'Traditional', 'ELEM', 'Elementary', '6-8', '6', None, None, None, None, None, None, None, None, None, None, None, None, None, '2009-10-02'), ('03100330129692', '0691001', '13745', 'Active', 'Amador', 'Amador County Office of Education', 'Shenandoah Valley', '10010 Shenandoah Road', '10010 Shenandoah Rd.', 'Plymouth', '95669', 'CA', '217 Rex Avenue', '217 Rex Ave.', 'Jackson', '95642', 'CA', '(209) 245-4284', None, 'www.acoecurriculum.net/shenandoah-valley-schoola-dependent-charter-school.html', '2014-08-11', None, 1, '1662', 'Locally funded', '00', 'County Office of Education (COE)', '62', 'Intermediate/Middle Schools (Public)', 'TRAD', 'Traditional', 'INTMIDJR', 'Intermediate/Middle/Junior High', '6-8', '7-8', 'N', 0, 38.483322, -120.83492, 'Tia', 'Peters', 'tpeters@amadorcoe.k12.ca.us', None, None, None, None, None, None, '2016-09-27'), ('04100410134213', '0691002', None, 'Active', 'Butte', 'Butte County Office of Education', 'Come Back Butte Charter', '5 County Center Drive', '5 County Center Dr.', 'Oroville', '95965-3334', 'CA', '1859 Bird Street', '1859 Bird St.', 'Oroville', '95965', 'CA', '(530) 532-5757', None, 'www.bcoe.org/divisions/sps', '2016-08-17', None, 1, '1811', 'Locally funded', '00', 'County Office of Education (COE)', '66', 'High Schools (Public)', 'TRAD', 'Traditional', 'HS', 'High School', '9-12', None, 'N', 0, 39.524381, -121.57068, 'Karen', 'Stiles', 'kstiles@bcoe.org', None, None, None, None, None, None, '2016-08-17') … (460 rows total)
+- Gold result: 57 row(s): ('Mountain Oaks', '00'), ('Castle Rock', '00'), ('Charter Community School Home Study Academy', '00'), ('Clovis Online Charter', '54'), ('Washington Elementary', '52') … (57 rows total)
+
+### Q31: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 146.32s*
+
+**Question:** What is the eligible free rate of the 10th and 11th schools with the highest enrolment for students in grades 1 through 12?
+
+**Hint:** K-12 refers to students in grades 1 through 12; Eligible free rate for K-12 = `Free Meal Count (K-12)` / `Enrollment (K-12)`
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST("Free Meal Count (K-12)" AS REAL) / "Enrollment (K-12)"
+FROM frpm
+ORDER BY
+  "Enrollment (K-12)" DESC
+LIMIT 2
+OFFSET 9
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): (0.1344364012409514,), (0.2905894519131334,)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q32: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 152.76s*
+
+**Question:** What is the eligible free or reduced price meal rate for the top 5 schools in grades 1-12 with the highest free or reduced price meal count of the schools with the ownership code 66?
+
+**Hint:** grades 1-12 means K-12; Eligible free or reduced price meal rate for K-12 = `FRPM Count (K-12)` / `Enrollment (K-12)`
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(T1."FRPM Count (K-12)" AS REAL) / T1."Enrollment (K-12)"
+FROM frpm AS T1
+INNER JOIN schools AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2.SOC = 66
+ORDER BY
+  T1."FRPM Count (K-12)" DESC
+LIMIT 5
+```
+
+**Our SQL**
+
+```sql
+Select the Top 5 Schools**: The top 5 schools are School D, School B, School C, School A, and School E. 5. **Calculate the Eligible Free or Reduced Price Meal Rate**: - School D: \(\frac{300}{1200} = 0.25\) or 25% - School B: \(\frac{200}{1000} = 0.20\) or 20% - School C: \(\frac{150}{750} = 0.20\) or 20% - School A: \(\frac{100}{500} = 0.20\) or 20% - School E: \(\frac{50}{250} = 0.20\) or 20% 6. **Display the Results**: - School D: 25% - School B: 20% - School C: 20% - School A: 20% - School E: 20% Therefore, the eligible free or reduced price meal rates for the top 5 schools in grades 1-12 with the highest free or reduced price meal count for schools with the ownership code 66 are 25%, 20%, 20%, 20%, and 20%.
+```
+
+- Our result: 0 rows
+- Gold result: 5 row(s): (0.9179476526796843,), (0.9993290841999329,), (0.8964987714987716,), (0.8958203368683718,), (0.9141803553469662,)
+- Error: `near "5": syntax error`
+- Fix applied: no such column: s.FRPMCountK12
+
+### Q37: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 114.78s*
+
+**Question:** What is the complete address of the school with the lowest excellence rate? Indicate the Street, City, Zip and State.
+
+**Hint:** Execellence Rate = NumGE1500 / NumTstTakr; complete address has Street, City, State, Zip code
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Street,
+  T2.City,
+  T2.State,
+  T2.Zip
+FROM satscores AS T1
+INNER JOIN schools AS T2
+  ON T1.cds = T2.CDSCode
+ORDER BY
+  CAST(T1.NumGE1500 AS REAL) / T1.NumTstTakr ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('2125 Jefferson Avenue', 'Berkeley', 'CA', '94703-1414')
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q36: FAIL
+
+*california_schools, challenging, confidence 1.0, 2 attempt(s), 76.61s*
+
+**Question:** Under whose administration is the school with the highest number of students scoring 1500 or more on the SAT? Indicate their full names.
+
+**Hint:** full name means first name, last name; There are at most 3 administrators for each school; SAT Scores are greater or equal to 1500 refers to NumGE1500
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.AdmFName1,
+  T2.AdmLName1,
+  T2.AdmFName2,
+  T2.AdmLName2,
+  T2.AdmFName3,
+  T2.AdmLName3
+FROM satscores AS T1
+INNER JOIN schools AS T2
+  ON T1.cds = T2.CDSCode
+ORDER BY
+  T1.NumGE1500 DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.School,
+  T1.AdmFName1,
+  T1.AdmLName1
+FROM schools AS T1
+JOIN satscores AS T2
+  ON T1.NCESSchool = T1.NCESSchool
+WHERE
+  T2.NumGE1500 >= 1500
+GROUP BY
+  T1.School,
+  T1.AdmFName1,
+  T1.AdmLName1
+ORDER BY
+  COUNT(*) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('Community Day', None, None)
+- Gold result: 1 row(s): ('Michelle', 'King', None, None, None, None)
+- Fix applied: no such column: T2.NCESSchool -> repaired alias in code
+
+### Q39: FAIL
+
+*california_schools, simple, confidence None, 3 attempt(s), 86.82s*
+
+**Question:** What is the average number of test takers from Fresno schools that opened between 1/1/1980 and 12/31/1980?
+
+**Hint:** between 1/1/1980 and 12/31/1980 means the year = 1980
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T1.NumTstTakr)
+FROM satscores AS T1
+INNER JOIN schools AS T2
+  ON T1.cds = T2.CDSCode
+WHERE
+  STRFTIME('%Y', T2.OpenDate) = '1980' AND T2.County = 'Fresno'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(testtakers) AS average_test_takers
+FROM frpm
+JOIN schools
+  ON frpm.CDSCode = schools.CDSCode
+WHERE
+  frpm.year = 1980 AND schools.County = 'Fresno'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (137.88888888888889,)
+- Error: `no such column: testtakers`
+- Fix applied: no such column: testtakers
+- Fix applied: no such column: testtakers
+
+### Q40: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 37.86s*
+
+**Question:** What is the telephone number for the school with the lowest average score in reading in Fresno Unified?
+
+**Hint:** Fresno Unified is a name of district;
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.Phone
+FROM satscores AS T1
+INNER JOIN schools AS T2
+  ON T1.cds = T2.CDSCode
+WHERE
+  T2.District = 'Fresno Unified' AND NOT T1.AvgScrRead IS NULL
+ORDER BY
+  T1.AvgScrRead ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('(559) 248-5100',)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q41: FAIL
+
+*california_schools, simple, confidence None, 3 attempt(s), 74.64s*
+
+**Question:** List the names of virtual schools that are among the top 5 in their respective counties based on average reading scores.
+
+**Hint:** Exclusively virtual refers to Virtual = 'F'; respective counties means PARTITION BY County
+
+**Gold SQL**
+
+```sql
+SELECT
+  School
+FROM (
+  SELECT
+    T2.School,
+    T1.AvgScrRead,
+    RANK() OVER (PARTITION BY T2.County ORDER BY T1.AvgScrRead DESC) AS rnk
+  FROM satscores AS T1
+  INNER JOIN schools AS T2
+    ON T1.cds = T2.CDSCode
+  WHERE
+    T2.Virtual = 'F'
+) AS ranked_schools
+WHERE
+  rnk <= 5
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.School,
+  T1.County,
+  AVG(T2.ReadingScore) AS AvgReadingScore
+FROM schools AS T1
+JOIN student_scores AS T2
+  ON T1.NCESSchool = T2.SchoolID
+WHERE
+  T1.Virtual = 'F'
+GROUP BY
+  T1.County
+ORDER BY
+  AvgReadingScore DESC
+LIMIT 5
+```
+
+- Our result: 0 rows
+- Gold result: 34 row(s): ('Dunlap Leadership Academy',), ('Academy of Arts and Sciences: Fresno',), ('Insight School of California',), ('California Virtual Academy @ Kings',), ('National University Academy, Armona',) … (34 rows total)
+- Error: `no such table: student_scores`
+
+### Q45: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 83.68s*
+
+**Question:** What is the average writing score of each of the schools managed by Ricci Ulrich? List the schools and the corresponding average writing scores.
+
+**Hint:** Usually, administrators manage the school stuff.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.School,
+  T1.AvgScrWrite
+FROM satscores AS T1
+INNER JOIN schools AS T2
+  ON T1.cds = T2.CDSCode
+WHERE
+  T2.AdmFName1 = 'Ricci' AND T2.AdmLName1 = 'Ulrich'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  s.CDSCode,
+  s.SchoolName,
+  AVG(satscores.WritingScore) AS AverageWritingScore
+FROM schools AS s
+JOIN satscores
+  ON s.CDSCode = satscores.cds
+WHERE
+  s.AdmFName1 = 'Ricci' AND s.AdmLName1 = 'Ulrich'
+GROUP BY
+  s.CDSCode,
+  s.SchoolName
+ORDER BY
+  AverageWritingScore DESC
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Buchanan High', 507)
+- Error: `no such column: s.SchoolName`
+- Fix applied: no such column: s.SchoolName
+- Fix applied: no such column: s.SchoolName
+- Fix applied: no such column: s.SchoolName
+
+### Q46: FAIL
+
+*california_schools, simple, confidence None, 3 attempt(s), 145.89s*
+
+**Question:** Which state special schools have the highest number of enrollees from grades 1 through 12?
+
+**Hint:** State Special Schools refers to DOC = 31; Grades 1 through 12 means K-12
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.School
+FROM frpm AS T1
+INNER JOIN schools AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2.DOC = 31
+ORDER BY
+  T1."Enrollment (K-12)" DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('California School for the Deaf-Fremont',)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q47: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 101.65s*
+
+**Question:** What is the monthly average number of schools that opened in Alameda County under the jurisdiction of the Elementary School District in 1980?
+
+**Hint:** Elementary School District refers to DOC = 52; Monthly average number of schools that opened in 1980 = count(schools that opened in 1980) / 12
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(COUNT(School) AS REAL) / 12
+FROM schools
+WHERE
+  DOC = 52 AND County = 'Alameda' AND STRFTIME('%Y', OpenDate) = '1980'
+```
+
+**Our SQL**
+
+```sql
+SELECT COUNT(*) / 12 AS monthly_average FROM schools WHERE frpm.CDSCode = satscores.cds AND frpm.County Name = 'Alameda' AND schools.DOCType = 'Elementary School District' AND YEAR(schools.OpeningDate) = 1980
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1.4166666666666667,)
+- Error: `near "Name": syntax error`
+
+### Q48: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 176.2s*
+
+**Question:** What is the ratio of merged Unified School District schools in Orange County to merged Elementary School District schools?
+
+**Hint:** Elementary School District refers to DOC = 52; Unified School District refers to DOC = 54.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN DOC = 54 THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN DOC = 52 THEN 1 ELSE 0 END)
+FROM schools
+WHERE
+  StatusType = 'Merged' AND County = 'Orange'
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (0.5714285714285714,)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q50: FAIL
+
+*california_schools, simple, confidence None, 3 attempt(s), 292.08s*
+
+**Question:** What is the postal street address for the school with the 7th highest Math average? Indicate the school's name.
+
+**Hint:** Postal street and mailing street are synonyms.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.MailStreet,
+  T2.School
+FROM satscores AS T1
+INNER JOIN schools AS T2
+  ON T1.cds = T2.CDSCode
+ORDER BY
+  T1.AvgScrMath DESC
+LIMIT 1
+OFFSET 6
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.School,
+  T1.Street
+FROM schools AS T1
+ORDER BY
+  T1.Math DESC
+LIMIT 1
+OFFSET 6
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('25 Churchill Avenue', None)
+- Error: `no such column: T1.Math`
+- Fix applied: no such column: T1.Math
+- Fix applied: no such column: T1.Math
+- Fix applied: no such column: T1.Math
+
+### Q62: FAIL
+
+*california_schools, challenging, confidence None, None attempt(s), 140.77s*
+
+**Question:** What is the total number of non-chartered schools in the county of Los Angeles with a percent (%) of eligible free meals for grades 1 through 12 that is less than 0.18%?
+
+**Hint:** non-chartered schools refer to schools whose Charter = 0; K-12 means grades 1 through 12; percent of eligible free rate for K-12 = `Free Meal Count (K-12)` * 100 / `Enrollment (K-12)`
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T2.School)
+FROM frpm AS T1
+INNER JOIN schools AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2.County = 'Los Angeles'
+  AND T2.Charter = 0
+  AND CAST(T1."Free Meal Count (K-12)" AS REAL) * 100 / T1."Enrollment (K-12)" < 0.18
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1,)
+- Error: `ReadTimeout: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)`
+
+### Q72: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 224.96s*
+
+**Question:** How many students from the ages of 5 to 17 are enrolled at the State Special School school in Fremont for the 2014-2015 academic year?
+
+**Hint:** State Special School means EdOpsCode = 'SSS'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1."Enrollment (Ages 5-17)"
+FROM frpm AS T1
+INNER JOIN schools AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2.EdOpsCode = 'SSS'
+  AND T2.City = 'Fremont'
+  AND T1."Academic Year" BETWEEN 2014 AND 2015
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): (40.0,), (335.0,)
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q77: FAIL
+
+*california_schools, moderate, confidence None, 3 attempt(s), 295.49s*
+
+**Question:** Which schools served a grade span of Kindergarten to 9th grade in the county of Los Angeles and what is its Percent (%) Eligible FRPM (Ages 5-17)?
+
+**Hint:** Percent (%) Eligible FRPM (Ages 5-17) can be acquired by `FRPM Count (Ages 5-17)` / `Enrollment (Ages 5-17)` * 100
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.School,
+  T1."FRPM Count (Ages 5-17)" * 100 / T1."Enrollment (Ages 5-17)"
+FROM frpm AS T1
+INNER JOIN schools AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2.County = 'Los Angeles' AND T2.GSserved = 'K-9'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  schools.CDSCode,
+  schools.GSoffered,
+  (
+    frpm.FRPMCount / frpm.Enrollment
+  ) * 100 AS PercentEligibleFRPM
+FROM schools
+JOIN frpm
+  ON schools.CDSCode = frpm.CDSCode
+WHERE
+  schools.GSoffered = 'K-9' AND frpm.CountyName = 'Los Angeles'
+```
+
+- Our result: 0 rows
+- Gold result: 2 row(s): ('White Oak Elementary', 3.755868544600939), ('The Accelerated', 97.63888888888889)
+- Error: `no such column: frpm.FRPMCount`
+- Fix applied: no such column: frpm.FRPMCount
+- Fix applied: no such column: frpm.FRPMCount
+- Fix applied: no such column: frpm.FRPMCount
+
+### Q79: FAIL
+
+*california_schools, moderate, confidence None, None attempt(s), 139.99s*
+
+**Question:** Between San Diego and Santa Barbara, which county offers the most number of schools that does not offer physical building? Indicate the amount.
+
+**Hint:** 'Does not offer physical building' means Virtual = F in the database.
+
+**Gold SQL**
+
+```sql
+SELECT
+  County,
+  COUNT(Virtual)
+FROM schools
+WHERE
+  (
+    County = 'San Diego' OR County = 'Santa Barbara'
+  ) AND Virtual = 'F'
+GROUP BY
+  County
+ORDER BY
+  COUNT(Virtual) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('San Diego', 8)
+- Error: `ReadTimeout: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)`
+
+### Q82: PASS
+
+*california_schools, simple, confidence 1.0, 1 attempt(s), 120.55s*
+
+**Question:** What is the grade span offered in the school with the highest longitude?
+
+**Hint:** the highest longitude refers to the school with the maximum absolute longitude value.
+
+**Gold SQL**
+
+```sql
+SELECT
+  GSoffered
+FROM schools
+ORDER BY
+  ABS(longitude) DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  GSoffered
+FROM schools
+ORDER BY
+  ABS(Longitude) DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): ('K-8',)
+- Gold result: 1 row(s): ('K-8',)
+
+### Q83: FAIL
+
+*california_schools, challenging, confidence None, 3 attempt(s), 280.55s*
+
+**Question:** Of the schools that offers a magnet program serving a grade span of Kindergarten to 8th grade, how many offers Multiple Provision Types? List the number of cities that offers a Kindergarten to 8th grade span and indicate how many schools are there serving such grade span for each city.
+
+**Hint:** Kindergarten to 8th grade refers to K-8; 'Offers a magnet program' means Magnet = 1; Multiple Provision Types refers to `NSLP Provision Status` = 'Multiple Provision Types'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.City,
+  COUNT(T2.CDSCode)
+FROM frpm AS T1
+INNER JOIN schools AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2.Magnet = 1
+  AND T2.GSoffered = 'K-8'
+  AND T1."NSLP Provision Status" = 'Multiple Provision Types'
+GROUP BY
+  T2.City
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  s.city,
+  COUNT(s.school_name) AS num_schools
+FROM frpm AS f
+JOIN schools AS s
+  ON f.CDSCode = s.CDSCode
+WHERE
+  f.Magnet = 1 AND s.GSoffered = 'K-8'
+GROUP BY
+  s.city
+ORDER BY
+  num_schools DESC
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Adelanto', 1)
+- Error: `no such column: s.school_name`
+- Fix applied: no such column: s.school_name
+- Fix applied: no such column: s.school_name
+- Fix applied: no such column: s.school_name
+
+### Q85: FAIL
+
+*california_schools, moderate, confidence None, None attempt(s), 140.26s*
+
+**Question:** What is the Percent (%) Eligible Free (K-12) in the school administered by an administrator whose first name is Alusine. List the district code of the school.
+
+**Hint:** Percent (%) Eligible Free (K-12) = `Free Meal Count (K-12)` / `Enrollment (K-12)` * 100%
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1."Free Meal Count (K-12)" * 100 / T1."Enrollment (K-12)",
+  T1."District Code"
+FROM frpm AS T1
+INNER JOIN schools AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2.AdmFName1 = 'Alusine'
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (70.15113350125945, 64857)
+- Error: `ReadTimeout: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=120)`
+
+### Q87: FAIL
+
+*california_schools, challenging, confidence None, 3 attempt(s), 172.31s*
+
+**Question:** What are the valid e-mail addresses of the administrator of the school located in the San Bernardino county, City of San Bernardino City Unified that opened between 1/1/2009 to 12/31/2010 whose school types are public Intermediate/Middle Schools and Unified Schools?
+
+**Hint:** Intermediate/Middle Schools refers to SOC = 62; Unified School refers to DOC = 54; years between 2009 and 2010 can refer to 'between 1/1/2009 to 12/31/2010'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.AdmEmail1,
+  T2.AdmEmail2
+FROM frpm AS T1
+INNER JOIN schools AS T2
+  ON T1.CDSCode = T2.CDSCode
+WHERE
+  T2.County = 'San Bernardino'
+  AND T2.City = 'San Bernardino'
+  AND T2.DOC = 54
+  AND STRFTIME('%Y', T2.OpenDate) BETWEEN '2009' AND '2010'
+  AND T2.SOC = 62
+```
+
+**Our SQL**
+
+```sql
+(none)
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('a.lucero@realjourney.org', 'j.hernandez@realjourney.org')
+- Error: `your reply contained no SQL query. Reply with exactly one SQLite SELECT query in a ```sql block, using only the tables in the schema.`
+
+### Q89: FAIL
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 19.06s*
+
+**Question:** How many accounts who choose issuance after transaction are staying in East Bohemia region?
+
+**Hint:** A3 contains the data of region; 'POPLATEK PO OBRATU' represents for 'issuance after transaction'.
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T2.account_id)
+FROM district AS T1
+INNER JOIN account AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T1.A3 = 'east Bohemia' AND T2.frequency = 'POPLATEK PO OBRATU'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM account
+JOIN district
+  ON account.district_id = district.district_id
+WHERE
+  account.frequency = 'POPLATEK PO OBRATU' AND district.A3 = 'East Bohemia'
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (13,)
+
+### Q92: FAIL
+
+*financial, simple, confidence 1.0, 1 attempt(s), 15.57s*
+
+**Question:** List out the no. of districts that have female average salary is more than 6000 but less than 10000?
+
+**Hint:** A11 refers to average salary; Female mapps to gender = 'F'
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(DISTINCT T2.district_id)
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T1.gender = 'F' AND T2.A11 BETWEEN 6000 AND 10000
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(district.district_id)
+FROM district
+INNER JOIN client
+  ON district."district_id" = client."district_id"
+WHERE
+  district.A11 BETWEEN 6000 AND 10000 AND client.gender = 'F'
+```
+
+- Our result: 1 row(s): (2009,)
+- Gold result: 1 row(s): (69,)
+- Fix applied: no such column: gender -> added missing JOIN in code
+
+### Q93: FAIL
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 16.23s*
+
+**Question:** How many male customers who are living in North Bohemia have average salary greater than 8000?
+
+**Hint:** Male means that gender = 'M'; A3 refers to region; A11 pertains to average salary.
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.client_id)
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T1.gender = 'M' AND T2.A3 = 'north Bohemia' AND T2.A11 > 8000
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(client_id)
+FROM client
+JOIN district
+  ON client.district_id = district.district_id
+WHERE
+  gender = 'M' AND district.A3 = 'North Bohemia' AND district.A11 > 8000
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (280,)
+
+### Q94: FAIL
+
+*financial, challenging, confidence None, 3 attempt(s), 39.57s*
+
+**Question:** List out the account numbers of female clients who are oldest and has lowest average salary, calculate the gap between this lowest average salary with the highest average salary?
+
+**Hint:** Female means gender = 'F'; A11 refers to average salary; Gap = highest average salary - lowest average salary; If the person A's birthdate > B's birthdate, it means that person B is order than person A.
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.account_id,
+  (
+    SELECT
+      MAX(A11) - MIN(A11)
+    FROM district
+  )
+FROM account AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+INNER JOIN disp AS T3
+  ON T1.account_id = T3.account_id
+INNER JOIN client AS T4
+  ON T3.client_id = T4.client_id
+WHERE
+  T2.district_id = (
+    SELECT
+      district_id
+    FROM client
+    WHERE
+      gender = 'F'
+    ORDER BY
+      birth_date ASC
+    LIMIT 1
+  )
+ORDER BY
+  T2.A11 DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  account_id,
+  AVG(salary) AS A11
+FROM client
+WHERE
+  gender = 'F'
+GROUP BY
+  account_id
+ORDER BY
+  birth_date DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (6, 4431)
+- Error: `no such column: account_id`
+- Fix applied: no such column: account_id
+- Fix applied: no such column: salary
+- Fix applied: no such column: account_id
+- Fix applied: no such column: account_id
+
+### Q95: FAIL
+
+*financial, moderate, confidence None, 3 attempt(s), 27.69s*
+
+**Question:** List out the account numbers of clients who are youngest and have highest average salary?
+
+**Hint:** If the person A's birthdate < B's birthdate, it means that person B is younger than person A; A11 refers to average salary
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.account_id
+FROM account AS T1
+INNER JOIN disp AS T2
+  ON T1.account_id = T2.account_id
+INNER JOIN client AS T3
+  ON T2.client_id = T3.client_id
+INNER JOIN district AS T4
+  ON T4.district_id = T1.district_id
+WHERE
+  T2.client_id = (
+    SELECT
+      client_id
+    FROM client
+    ORDER BY
+      birth_date DESC
+    LIMIT 1
+  )
+GROUP BY
+  T4.A11,
+  T1.account_id
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  a.account_id
+FROM client AS c
+JOIN disp AS d
+  ON c.client_id = d.client_id
+JOIN account AS a
+  ON d.account_id = a.account_id
+WHERE
+  c.birth_date = (
+    SELECT
+      MIN(birth_date)
+    FROM client
+  )
+ORDER BY
+  AVG(a.salary) DESC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (2836,)
+- Error: `no such column: a.salary`
+- Fix applied: no such column: salary
+- Fix applied: no such column: a.salary
+- Fix applied: no such column: a.salary
+
+### Q98: FAIL (right logic, extra columns)
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 19.64s*
+
+**Question:** Among the accounts who have approved loan date in 1997, list out the accounts that have the lowest approved amount and choose weekly issuance statement.
+
+**Hint:** 'POPLATEK TYDNE' stands for weekly issuance
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.account_id
+FROM loan AS T1
+INNER JOIN account AS T2
+  ON T1.account_id = T2.account_id
+WHERE
+  STRFTIME('%Y', T1.date) = '1997' AND T2.frequency = 'POPLATEK TYDNE'
+ORDER BY
+  T1.amount
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  a.account_id,
+  a.frequency,
+  MIN(l.amount) AS min_amount
+FROM account AS a
+JOIN loan AS l
+  ON a.account_id = l.account_id
+WHERE
+  l.date LIKE '1997%' AND a.frequency = 'POPLATEK TYDNE'
+GROUP BY
+  a.account_id,
+  a.frequency
+ORDER BY
+  min_amount ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (176, 'POPLATEK TYDNE', 27456)
+- Gold result: 1 row(s): (176,)
+
+### Q99: FAIL
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 18.86s*
+
+**Question:** Among the accounts who have loan validity more than 12 months, list out the accounts that have the highest approved amount and have account opening date in 1993.
+
+**Hint:** Loan validity more than 12 months refers to duration > 12
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.account_id
+FROM loan AS T1
+INNER JOIN account AS T2
+  ON T1.account_id = T2.account_id
+WHERE
+  STRFTIME('%Y', T2.date) = '1993' AND T1.duration > 12
+ORDER BY
+  T1.amount DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  a.account_id,
+  MAX(l.amount) AS max_amount
+FROM account AS a
+JOIN loan AS l
+  ON a.account_id = l.account_id
+WHERE
+  l.duration > 12 AND STRFTIME('%Y', l.date) = '1993'
+GROUP BY
+  a.account_id
+ORDER BY
+  max_amount DESC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (6034, 464520)
+- Gold result: 1 row(s): (10451,)
+
+### Q100: PASS
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 18.6s*
+
+**Question:** Among the account opened, how many female customers who were born before 1950 and stayed in Sokolov?
+
+**Hint:** Customers refer to clients; Female refers to gender = 'F'; Names of districts appear in column A2
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T2.client_id)
+FROM district AS T1
+INNER JOIN client AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T2.gender = 'F' AND STRFTIME('%Y', T2.birth_date) < '1950' AND T1.A2 = 'Sokolov'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(client_id)
+FROM client
+JOIN district
+  ON client.district_id = district.district_id
+WHERE
+  client.gender = 'F'
+  AND client.birth_date < '1950-01-01'
+  AND district.A2 = 'Sokolov'
+```
+
+- Our result: 1 row(s): (8,)
+- Gold result: 1 row(s): (8,)
+
+### Q112: FAIL
+
+*financial, simple, confidence 1.0, 2 attempt(s), 28.05s*
+
+**Question:** For the female client who was born in 1976/1/29, which district did she opened her account?
+
+**Hint:** Female refers to gender = 'F'; A2 refers to district names
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.A2
+FROM district AS T1
+INNER JOIN client AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T2.birth_date = '1976-01-29' AND T2.gender = 'F'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.district_id
+FROM client AS T1
+INNER JOIN account AS T2
+  ON T1.client_id = T1.client_id
+INNER JOIN district AS T3
+  ON T1.district_id = T3.district_id
+WHERE
+  T1.gender = 'F' AND T1.birth_date = '19760129'
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): ('Tachov',)
+- Fix applied: no such column: T2.client_id -> repaired alias in code
+- Fix applied: no such column: T2.client_id -> repaired alias in code
+
+### Q115: FAIL
+
+*financial, challenging, confidence 1.0, 1 attempt(s), 19.02s*
+
+**Question:** For the branch which located in the south Bohemia with biggest number of inhabitants, what is the percentage of the male clients?
+
+**Hint:** Percentage of the male clients = DIVIDE(COUNT(male clients), COUNT(clients)) * 100; Male refers to gender = 'M', A3 is the region name. A4 contains the information about inhabitants.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(T1.gender = 'M') AS REAL) * 100 / COUNT(T1.client_id)
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T2.A3 = 'south Bohemia'
+GROUP BY
+  T2.A4
+ORDER BY
+  T2.A4 DESC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  CAST(SUM(CASE WHEN T1.gender = 'M' THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(T1.client_id)
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T2.A3 = 'south Bohemia'
+```
+
+- Our result: 1 row(s): (48.55233853006681,)
+- Gold result: 1 row(s): (44.26229508196721,)
+
+### Q116: FAIL
+
+*financial, challenging, confidence None, 3 attempt(s), 57.05s*
+
+**Question:** For the client whose loan was approved first in 1993/7/5, what is the increase rate of his/her account balance from 1993/3/22 to 1998/12/27?
+
+**Hint:** Increase rate of his/her account balance = [(balance of date A - balance of date B) / balance of Date B] * 100%
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST((
+    SUM(IIF(T3.date = '1998-12-27', T3.balance, 0)) - SUM(IIF(T3.date = '1993-03-22', T3.balance, 0))
+  ) AS REAL) * 100 / SUM(IIF(T3.date = '1993-03-22', T3.balance, 0))
+FROM loan AS T1
+INNER JOIN account AS T2
+  ON T1.account_id = T2.account_id
+INNER JOIN trans AS T3
+  ON T3.account_id = T2.account_id
+WHERE
+  T1.date = '1993-07-05'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  a.balance AS balance_1993_3_22,
+  a.balance AS balance_1998_12_27,
+  (
+    (
+      a.balance - b.balance
+    ) / b.balance
+  ) * 100 AS increase_rate
+FROM account AS a
+JOIN loan AS l
+  ON a.account_id = l.account_id
+JOIN client AS c
+  ON a.client_id = c.client_id
+JOIN (
+  SELECT
+    disp.client_id,
+    MIN(date) AS first_loan_date
+  FROM loan
+  WHERE
+    date = '19930705'
+  GROUP BY
+    disp.client_id
+) AS first_loan
+  ON c.client_id = first_loan.client_id
+INNER JOIN disp
+  ON c."client_id" = disp."client_id"
+WHERE
+  l.date = first_loan.first_loan_date
+ORDER BY
+  l.date ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (430.45454545454544,)
+- Error: `no such column: disp.client_id`
+- Fix applied: no such column: a.balance
+- Fix applied: no such column: a.balance
+- Fix applied: no such column: client_id -> added missing JOIN in code
+- Fix applied: no such column: disp.client_id
+
+### Q117: PASS
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 16.03s*
+
+**Question:** What is the percentage of loan amount that has been fully paid with no issue.
+
+**Hint:** Loan paid with no issue means contract finished, no problems; status = 'A' means contract finished, no problems; Percentage of accounts by condition = [(total(amount) & condition) / (total amount)] * 100%
+
+**Gold SQL**
+
+```sql
+SELECT
+  (
+    CAST(SUM(CASE WHEN status = 'A' THEN amount ELSE 0 END) AS REAL) * 100
+  ) / SUM(amount)
+FROM loan
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    SUM(CASE WHEN status = 'A' THEN amount ELSE 0 END) * 100.0
+  ) / SUM(amount) AS percentage_paid
+FROM loan
+```
+
+- Our result: 1 row(s): (18.01559415907576,)
+- Gold result: 1 row(s): (18.01559415907576,)
+
+### Q118: FAIL
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 15.98s*
+
+**Question:** For loan amount less than USD100,000, what is the percentage of accounts that is still running with no issue.
+
+**Hint:** Status = 'C' stands for running contract, ok so far; Percentage of accounts by condition = [(total(amount) & condition) / (total amount)] * 100.
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(status = 'C') AS REAL) * 100 / COUNT(account_id)
+FROM loan
+WHERE
+  amount < 100000
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  (
+    1.0 * SUM(CASE WHEN status = 'C' THEN amount ELSE 0 END) / SUM(amount)
+  ) * 100 AS percentage_running
+FROM loan
+WHERE
+  amount < 100000
+```
+
+- Our result: 1 row(s): (47.55164983164983,)
+- Gold result: 1 row(s): (46.885245901639344,)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q125: FAIL
+
+*financial, challenging, confidence 1.0, 1 attempt(s), 23.72s*
+
+**Question:** For loans contracts which are still running where client are in debt, list the district of the and the state the percentage unemployment rate increment from year 1995 to 1996.
+
+**Hint:** Unemployment increment rate in percentage = [(unemployment rate 2016 - unemployment rate 2015) / unemployment rate 2015] * 100; unemployment rate 2015 appears in the A12; unemployment rate 2016 appears in the A13; Loan contracts which are still running where client are in debt can be presented as status = 'D'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST((
+    T3.A13 - T3.A12
+  ) AS REAL) * 100 / T3.A12
+FROM loan AS T1
+INNER JOIN account AS T2
+  ON T1.account_id = T2.account_id
+INNER JOIN district AS T3
+  ON T2.district_id = T3.district_id
+WHERE
+  T1.status = 'D'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.district_id,
+  T2.A12,
+  T2.A13,
+  (
+    T2.A13 - T2.A12
+  ) * 100 / T2.A12 AS unemployment_increment_rate
+FROM loan AS T1
+JOIN district AS T2
+  ON T2.district_id = T2.district_id
+WHERE
+  T1.status = 'D'
+```
+
+- Our result: 3465 row(s): (1, 0.2, 0.43, 115.0), (1, 0.2, 0.43, 115.0), (1, 0.2, 0.43, 115.0), (1, 0.2, 0.43, 115.0), (1, 0.2, 0.43, 115.0) … (3465 rows total)
+- Gold result: 45 row(s): (40.0,), (39.25925925925924,), (115.0,), (22.49999999999999,), (20.0,) … (45 rows total)
+- Fix applied: no such column: T1.district_id -> repaired alias in code
+
+### Q128: FAIL
+
+*financial, moderate, confidence None, 3 attempt(s), 40.9s*
+
+**Question:** List the top nine districts, by descending order, from the highest to the lowest, the number of female account holders.
+
+**Hint:** A2 refers to districts; Female refers to gender = 'F'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T2.A2,
+  COUNT(T1.client_id)
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T1.gender = 'F'
+GROUP BY
+  T2.district_id,
+  T2.A2
+ORDER BY
+  COUNT(T1.client_id) DESC
+LIMIT 9
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.A2,
+  COUNT(*) AS female_count
+FROM account AS T1
+JOIN district AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T1.gender = 'F'
+GROUP BY
+  T2.A2
+ORDER BY
+  female_count DESC
+LIMIT 9
+```
+
+- Our result: 0 rows
+- Gold result: 9 row(s): ('Hl.m. Praha', 324), ('Karvina', 88), ('Ostrava - mesto', 84), ('Brno - mesto', 75), ('Zlin', 57) … (9 rows total)
+- Error: `no such column: T1.gender`
+- Fix applied: no such column: T1.gender
+- Fix applied: no such column: T1.gender
+- Fix applied: no such column: T1.gender
+
+### Q136: FAIL
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 20.93s*
+
+**Question:** Between 1/1/1995 and 12/31/1997, how many loans in the amount of at least 250,000 per account that chose monthly statement issuance were approved?
+
+**Hint:** Frequency = 'POPLATEK MESICNE' stands for monthly issurance
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.account_id)
+FROM account AS T1
+INNER JOIN loan AS T2
+  ON T1.account_id = T2.account_id
+WHERE
+  T2.date BETWEEN '1995-01-01' AND '1997-12-31'
+  AND T1.frequency = 'POPLATEK MESICNE'
+  AND T2.amount >= 250000
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM loan
+JOIN account
+  ON loan.account_id = account.account_id
+WHERE
+  account.frequency = 'POPLATEK MESICNE'
+  AND loan.amount >= 250000
+  AND loan.date BETWEEN '19950101' AND '19971231'
+```
+
+- Our result: 1 row(s): (0,)
+- Gold result: 1 row(s): (65,)
+
+### Q137: FAIL
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 19.22s*
+
+**Question:** How many accounts have running contracts in Branch location 1?
+
+**Hint:** Status = 'C' stands for running contract, OK so far; Status = 'D' stands for running contract, client in debt
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.account_id)
+FROM account AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+INNER JOIN loan AS T3
+  ON T1.account_id = T3.account_id
+WHERE
+  T1.district_id = 1 AND (
+    T3.status = 'C' OR T3.status = 'D'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM loan AS T1
+INNER JOIN account AS T2
+  ON T1.account_id = T2.account_id
+INNER JOIN client AS T3
+  ON T3.client_id = T3.client_id
+WHERE
+  T2.district_id = 1 AND T1.status = 'C'
+```
+
+- Our result: 1 row(s): (230867,)
+- Gold result: 1 row(s): (47,)
+- Fix applied: no such column: T2.client_id -> repaired alias in code
+
+### Q138: FAIL
+
+*financial, moderate, confidence None, 3 attempt(s), 70.45s*
+
+**Question:** In the branch where the second-highest number of crimes were committed in 1995 occurred, how many male clients are there?
+
+**Hint:** Male refers to gender = 'M'; A15 stands for no. of commited crimes 1995
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.client_id)
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T1.gender = 'M'
+  AND T2.A15 = (
+    SELECT
+      T3.A15
+    FROM district AS T3
+    ORDER BY
+      T3.A15 DESC
+    LIMIT 1
+    OFFSET 1
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.client_id)
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T1.gender = 'M'
+  AND T2.district_id = (
+    SELECT
+      T3.district_id
+    FROM crime AS T3
+    INNER JOIN district AS T4
+      ON T3.district_id = T4.district_id
+    WHERE
+      T3.year = 1995
+    ORDER BY
+      T3.crimes DESC
+    LIMIT 1
+    OFFSET 1
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (96,)
+- Error: `no such table: crime`
+
+### Q129: FAIL
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 31.39s*
+
+**Question:** Which are the top ten withdrawals (non-credit card) by district names for the month of January 1996?
+
+**Hint:** Non-credit card withdraws refers to type = 'VYDAJ'; January 1996 can be found by date LIKE '1996-01%' in the database; A2 means district names
+
+**Gold SQL**
+
+```sql
+SELECT DISTINCT
+  T1.A2
+FROM district AS T1
+INNER JOIN account AS T2
+  ON T1.district_id = T2.district_id
+INNER JOIN trans AS T3
+  ON T2.account_id = T3.account_id
+WHERE
+  T3.type = 'VYDAJ' AND T3.date LIKE '1996-01%'
+ORDER BY
+  A2 ASC
+LIMIT 10
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T2.A2
+FROM trans AS T1
+JOIN district AS T2
+  ON T1.account_id = T2.district_id
+WHERE
+  T1.type = 'VYDAJ' AND T1.date LIKE '1996-01%'
+GROUP BY
+  T2.A2
+ORDER BY
+  SUM(T1.amount) DESC
+LIMIT 10
+```
+
+- Our result: 10 row(s): ('Pardubice',), ('Liberec',), ('Zdar nad Sazavou',), ('Nymburk',), ('Frydek - Mistek',) … (10 rows total)
+- Gold result: 10 row(s): ('Benesov',), ('Beroun',), ('Blansko',), ('Breclav',), ('Brno - mesto',) … (10 rows total)
+- Fix applied: logic fix in code: ranking_projection: dropped ranking-only column(s) SUM(T1.amount) AS total_withdrawals from SELECT
+
+### Q137: FAIL
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 25.01s*
+
+**Question:** How many accounts have running contracts in Branch location 1?
+
+**Hint:** Status = 'C' stands for running contract, OK so far; Status = 'D' stands for running contract, client in debt
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.account_id)
+FROM account AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+INNER JOIN loan AS T3
+  ON T1.account_id = T3.account_id
+WHERE
+  T1.district_id = 1 AND (
+    T3.status = 'C' OR T3.status = 'D'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM loan AS T1
+INNER JOIN account AS T2
+  ON T1.account_id = T2.account_id
+INNER JOIN client AS T3
+  ON T3.client_id = T3.client_id
+WHERE
+  T2.district_id = 1 AND T1.status = 'C'
+```
+
+- Our result: 1 row(s): (230867,)
+- Gold result: 1 row(s): (47,)
+- Fix applied: no such column: T2.client_id -> repaired alias in code
+
+### Q138: FAIL
+
+*financial, moderate, confidence None, 3 attempt(s), 81.82s*
+
+**Question:** In the branch where the second-highest number of crimes were committed in 1995 occurred, how many male clients are there?
+
+**Hint:** Male refers to gender = 'M'; A15 stands for no. of commited crimes 1995
+
+**Gold SQL**
+
+```sql
+SELECT
+  COUNT(T1.client_id)
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T1.gender = 'M'
+  AND T2.A15 = (
+    SELECT
+      T3.A15
+    FROM district AS T3
+    ORDER BY
+      T3.A15 DESC
+    LIMIT 1
+    OFFSET 1
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(T1.client_id)
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T1.gender = 'M'
+  AND T2.district_id = (
+    SELECT
+      T3.district_id
+    FROM crime AS T3
+    INNER JOIN district AS T4
+      ON T3.district_id = T4.district_id
+    WHERE
+      T3.year = 1995
+    ORDER BY
+      T3.crimes DESC
+    LIMIT 1
+    OFFSET 1
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (96,)
+- Error: `no such table: crime`
+
+### Q145: FAIL
+
+*financial, moderate, confidence 1.0, 2 attempt(s), 74.97s*
+
+**Question:** Who are the account holder identification numbers whose who have transactions on the credit card with the amount is less than the average, in 1998?
+
+**Hint:** Operation = 'VYBER KARTOU' refers to credit card withdrawal
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.account_id
+FROM trans AS T1
+INNER JOIN account AS T2
+  ON T1.account_id = T2.account_id
+WHERE
+  STRFTIME('%Y', T1.date) = '1998'
+  AND T1.operation = 'VYBER KARTOU'
+  AND T1.amount < (
+    SELECT
+      AVG(amount)
+    FROM trans
+    WHERE
+      STRFTIME('%Y', date) = '1998'
+  )
+```
+
+**Our SQL**
+
+```sql
+SELECT DISTINCT
+  account.account_id
+FROM account
+JOIN card
+  ON account.account_id = card.disp_id
+JOIN trans
+  ON account.account_id = trans.account_id
+WHERE
+  card.type = 'junior'
+  AND trans.operation = 'VYBER KARTOU'
+  AND SUBSTRING(trans.date, 1, 4) = '1998'
+GROUP BY
+  account.account_id
+HAVING
+  AVG(trans.amount) < (
+    SELECT
+      AVG(amount)
+    FROM trans
+    WHERE
+      card.type = 'junior'
+      AND trans.operation = 'VYBER KARTOU'
+      AND SUBSTRING(trans.date, 1, 4) = '1998'
+  )
+ORDER BY
+  AVG(trans.amount) ASC
+LIMIT 1
+```
+
+- Our result: 1 row(s): (2540,)
+- Gold result: 4484 row(s): (14,), (14,), (14,), (14,), (14,) … (4484 rows total)
+- Fix applied: no such column: account.account_id -> repaired alias in code
+- Fix applied: no such column: card.account_id -> repaired alias in code
+
+### Q149: FAIL (right logic, extra columns)
+
+*financial, challenging, confidence 1.0, 1 attempt(s), 27.3s*
+
+**Question:** Please list the account types that are not eligible for loans, and the average income of residents in the district where the account is located exceeds $8000 but is no more than $9000.
+
+**Hint:** A11 represents the average salary; Salary and income share the similar meanings; when the account type = 'OWNER', it's eligible for loans
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.type
+FROM district AS T1
+INNER JOIN account AS T2
+  ON T1.district_id = T2.district_id
+INNER JOIN disp AS T3
+  ON T2.account_id = T3.account_id
+WHERE
+  T3.type <> 'OWNER' AND T1.A11 BETWEEN 8000 AND 9000
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T1.type,
+  AVG(T3.A11)
+FROM disp AS T1
+JOIN account AS T2
+  ON T1.account_id = T2.account_id
+JOIN district AS T3
+  ON T2.district_id = T3.district_id
+WHERE
+  T1.type <> 'OWNER' AND T3.A11 > 8000 AND T3.A11 <= 9000
+```
+
+- Our result: 1 row(s): ('DISPONENT', 8598.709327548808)
+- Gold result: 461 row(s): ('DISPONENT',), ('DISPONENT',), ('DISPONENT',), ('DISPONENT',), ('DISPONENT',) … (461 rows total)
+- Fix applied: no such column: T2.A11 -> repaired alias in code
+
+### Q152: FAIL
+
+*financial, moderate, confidence None, 3 attempt(s), 35.27s*
+
+**Question:** What is the average number of crimes committed in 1995 in regions where the number exceeds 4000 and the region has accounts that are opened starting from the year 1997?
+
+**Hint:** A3 refers to region names; A15 stands for the average number of crimes commited in 1995.
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T1.A15)
+FROM district AS T1
+INNER JOIN account AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  STRFTIME('%Y', T2.date) >= '1997' AND T1.A15 > 4000
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(crimes) AS A15
+FROM crime
+WHERE
+  YEAR(date) = 1995
+  AND region IN (
+    SELECT
+      region
+    FROM account
+    WHERE
+      YEAR(date) > 1997
+  )
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (29670.44951923077,)
+- Error: `no such table: crime`
+
+### Q159: FAIL
+
+*financial, simple, confidence None, 3 attempt(s), 44.29s*
+
+**Question:** List all the withdrawals in cash transactions that the client with the id 3356 makes.
+
+**Hint:** operation = 'VYBER' refers to withdrawal in cash
+
+**Gold SQL**
+
+```sql
+SELECT
+  T4.trans_id
+FROM client AS T1
+INNER JOIN disp AS T2
+  ON T1.client_id = T2.client_id
+INNER JOIN account AS T3
+  ON T2.account_id = T3.account_id
+INNER JOIN trans AS T4
+  ON T3.account_id = T4.account_id
+WHERE
+  T1.client_id = 3356 AND T4.operation = 'VYBER'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  SUM(amount)
+FROM trans
+WHERE
+  client_id = 3356 AND operation = 'VYBER'
+```
+
+- Our result: 0 rows
+- Gold result: 140 row(s): (816173,), (816174,), (816175,), (816181,), (816185,) … (140 rows total)
+- Error: `no such column: client_id`
+- Fix applied: no such column: client_id
+- Fix applied: no such column: client_id
+- Fix applied: no such column: client_id
+
+### Q168: FAIL
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 37.09s*
+
+**Question:** What percentage of clients who opened their accounts in the district with an average salary of over 10000 are women?
+
+**Hint:** Female refers to gender = 'F'; Woman and female are closed; Average salary can be found in A11
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(T2.gender = 'F') AS REAL) * 100 / COUNT(T2.client_id)
+FROM district AS T1
+INNER JOIN client AS T2
+  ON T1.district_id = T2.district_id
+WHERE
+  T1.A11 > 10000
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  COUNT(*)
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+INNER JOIN account AS T3
+  ON T1.client_id = T1.client_id
+WHERE
+  T2.A11 > 10000 AND T1.gender = 'F'
+```
+
+- Our result: 1 row(s): (2862000,)
+- Gold result: 1 row(s): (49.609984399375975,)
+- Fix applied: no such column: T3.client_id -> repaired alias in code
+
+### Q169: FAIL
+
+*financial, challenging, confidence 1.0, 2 attempt(s), 58.93s*
+
+**Question:** What was the growth rate of the total amount of loans across all accounts for a male client between 1996 and 1997?
+
+**Hint:** Growth rate = (sum of amount_1997 - sum of amount_1996) / (sum of amount_1996) * 100%; Male refers to gender = 'M'
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST((
+    SUM(CASE WHEN STRFTIME('%Y', T1.date) = '1997' THEN T1.amount ELSE 0 END) - SUM(CASE WHEN STRFTIME('%Y', T1.date) = '1996' THEN T1.amount ELSE 0 END)
+  ) AS REAL) * 100 / SUM(CASE WHEN STRFTIME('%Y', T1.date) = '1996' THEN T1.amount ELSE 0 END)
+FROM loan AS T1
+INNER JOIN account AS T2
+  ON T1.account_id = T2.account_id
+INNER JOIN disp AS T3
+  ON T3.account_id = T2.account_id
+INNER JOIN client AS T4
+  ON T4.client_id = T3.client_id
+WHERE
+  T4.gender = 'M' AND T3.type = 'OWNER'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  1.0 * (
+    SUM(CASE WHEN T1.date LIKE '1997%' THEN T1.amount ELSE 0 END) - SUM(CASE WHEN T1.date LIKE '1996%' THEN T1.amount ELSE 0 END)
+  ) / SUM(CASE WHEN T1.date LIKE '1996%' THEN T1.amount ELSE 0 END) * 100 AS growth_rate
+FROM loan AS T1
+JOIN client AS T2
+  ON T2.client_id = T2.client_id
+WHERE
+  T2.gender = 'M'
+```
+
+- Our result: 1 row(s): (67.76890256165684,)
+- Gold result: 1 row(s): (25.300191222790616,)
+- Fix applied: no such column: gender
+- Fix applied: no such column: T2.date -> repaired alias in code
+- Fix applied: no such column: T1.client_id -> repaired alias in code
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q173: FAIL
+
+*financial, challenging, confidence 1.0, 1 attempt(s), 25.01s*
+
+**Question:** How often does account number 3 request an account statement to be released? What was the aim of debiting 3539 in total?
+
+**Hint:** k_symbol refers to the purpose of payments
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.frequency,
+  T2.k_symbol
+FROM account AS T1
+INNER JOIN (
+  SELECT
+    account_id,
+    k_symbol,
+    SUM(amount) AS total_amount
+  FROM "order"
+  GROUP BY
+    account_id,
+    k_symbol
+) AS T2
+  ON T1.account_id = T2.account_id
+WHERE
+  T1.account_id = 3 AND T2.total_amount = 3539
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  frequency
+FROM account
+WHERE
+  account_id = 3
+```
+
+- Our result: 1 row(s): ('POPLATEK MESICNE',)
+- Gold result: 1 row(s): ('POPLATEK MESICNE', 'POJISTNE')
+
+### Q186: FAIL
+
+*financial, moderate, confidence 1.0, 1 attempt(s), 26.36s*
+
+**Question:** What percentage of male clients request for weekly statements to be issued?
+
+**Hint:** Percentage of male clients = [count(male clients who requested weekly statements / count(clients who requested weekly statements)] * 100%; Male means gender = 'M'; 'POPLATEK TYDNE' stands for weekly issuance
+
+**Gold SQL**
+
+```sql
+SELECT
+  CAST(SUM(T1.gender = 'M') AS REAL) * 100 / COUNT(T1.client_id)
+FROM client AS T1
+INNER JOIN district AS T3
+  ON T1.district_id = T3.district_id
+INNER JOIN account AS T2
+  ON T2.district_id = T3.district_id
+INNER JOIN disp AS T4
+  ON T1.client_id = T4.client_id AND T2.account_id = T4.account_id
+WHERE
+  T2.frequency = 'POPLATEK TYDNE'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  1.0 * COUNT(*) * 100 / SUM(CASE WHEN T1.gender = 'M' THEN 1 ELSE 0 END) AS percentage_male_clients
+FROM client AS T1
+JOIN disp AS T2
+  ON T1.client_id = T2.client_id
+WHERE
+  T2.type = 'OWNER' AND T1.gender = 'M'
+```
+
+- Our result: 1 row(s): (100.0,)
+- Gold result: 1 row(s): (52.63157894736842,)
+- Fix applied: logic fix in code: integer_division: SUM/COUNT ratio made decimal (1.0 * ...)
+
+### Q189: FAIL
+
+*financial, moderate, confidence None, 3 attempt(s), 60.69s*
+
+**Question:** Name the account numbers of female clients who are oldest and have lowest average salary?
+
+**Hint:** Female refers to 'F' in the gender; A11 contains information about average salary
+
+**Gold SQL**
+
+```sql
+SELECT
+  T3.account_id
+FROM client AS T1
+INNER JOIN district AS T2
+  ON T1.district_id = T2.district_id
+INNER JOIN account AS T3
+  ON T2.district_id = T3.district_id
+INNER JOIN disp AS T4
+  ON T1.client_id = T4.client_id AND T4.account_id = T3.account_id
+WHERE
+  T1.gender = 'F'
+ORDER BY
+  T1.birth_date ASC,
+  T2.A11 ASC
+LIMIT 1
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  T3.account_id
+FROM client AS T1
+JOIN disp AS T2
+  ON T1.client_id = T2.client_id
+JOIN account AS T3
+  ON T2.account_id = T3.account_id
+JOIN a11 AS T4
+  ON T3.account_id = T4.account_id
+WHERE
+  T1.gender = 'F'
+ORDER BY
+  T1.birth_date DESC,
+  T4.avg_salary ASC
+LIMIT 1
+```
+
+- Our result: 0 rows
+- Gold result: 1 row(s): (1743,)
+- Error: `no such table: a11`
+
+### Q192: FAIL
+
+*financial, moderate, confidence 1.0, 2 attempt(s), 46.5s*
+
+**Question:** What is the average amount of loan which are still on running contract with statement issuance after each transaction?
+
+**Hint:** status = 'C' stands for running contract, OK so far; status = 'D' stands for running contract, client in debt. 'POPLATEK PO OBRATU' stands for issuance after transaction
+
+**Gold SQL**
+
+```sql
+SELECT
+  AVG(T2.amount)
+FROM account AS T1
+INNER JOIN loan AS T2
+  ON T1.account_id = T2.account_id
+WHERE
+  T2.status IN ('C', 'D') AND T1.frequency = 'POPLATEK PO OBRATU'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  AVG(T2.amount) AS average_loan_amount
+FROM disp AS T1
+JOIN loan AS T2
+  ON T1.account_id = T2.account_id
+JOIN account AS T3
+  ON T2.account_id = T3.account_id
+WHERE
+  T1.type = 'OWNER' AND T2.status = 'C' AND T3.frequency = 'POPLATEK PO OBRATU'
+```
+
+- Our result: 1 row(s): (195839.33333333334,)
+- Gold result: 1 row(s): (192836.57142857142,)
+- Fix applied: no such column: T2.frequency
+
+### Q194: FAIL
+
+*financial, moderate, confidence None, 3 attempt(s), 46.56s*
+
+**Question:** Provide the IDs and age of the client with high level credit card, which is eligible for loans.
+
+**Hint:** the credit card is high-level refers to card.type = 'gold'; eligible for loans refers to disp.type = 'OWNER'
+
+**Gold SQL**
+
+```sql
+SELECT
+  T1.client_id,
+  STRFTIME('%Y', CURRENT_TIMESTAMP) - STRFTIME('%Y', T3.birth_date)
+FROM disp AS T1
+INNER JOIN card AS T2
+  ON T2.disp_id = T1.disp_id
+INNER JOIN client AS T3
+  ON T1.client_id = T3.client_id
+WHERE
+  T2.type = 'gold' AND T1.type = 'OWNER'
+```
+
+**Our SQL**
+
+```sql
+SELECT
+  client.client_id,
+  TIMESTAMPDIFF(YEAR, client.birth_date, 2026-11-16) AS age
+FROM client
+JOIN disp
+  ON client.client_id = disp.client_id
+JOIN card
+  ON disp.disp_id = card.disp_id
+WHERE
+  card.type = 'gold' AND disp.type = 'OWNER'
+```
+
+- Our result: 0 rows
+- Gold result: 88 row(s): (9, 91), (41, 58), (79, 57), (326, 59), (548, 89) … (88 rows total)
+- Error: `no such column: YEAR`
+- Fix applied: no such column: YEAR
+- Fix applied: no such column: YEAR
+- Fix applied: no such column: YEAR

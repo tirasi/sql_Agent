@@ -41,5 +41,9 @@
  "benchmark_20261116_034733.jsonl": {
   "command": "python bench/run_benchmark.py --questions /Users/trashisharma/bird/minidev/MINIDEV/mini_dev_sqlite.json --db-root /Users/trashisharma/bird/minidev/MINIDEV/dev_databases --oracle --limit 3 --show-sql",
   "commit": "b84b441"
+ },
+ "benchmark_20261116_142735.jsonl": {
+  "command": "python bench/run_benchmark.py --candidates 1",
+  "commit": "512ed3b"
  }
 }

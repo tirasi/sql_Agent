@@ -87,3 +87,37 @@ All settings are environment variables — see `.env.example` (models, `SQL_CAND
 ## License
 
 MIT
+
+## latest accuracy
+================ BENCHMARK SUMMARY ================
+Questions scored     : 499  (skipped, gold SQL failed: 1)
+EX strict            :  33.7% (168/499)   <- clarifying question = wrong
+EX best guess        :  33.7% (168/499)
+EX lenient (unofficial, extra columns OK):  36.1% (180/499)
+Asked to clarify     :   1.2% (6/499)
+Refused / blocked    :   0.0% (0/499)
+No SQL ran           :  25.9% (129/499)
+Avg latency          : 31.1s per question
+
+By difficulty:
+  challenging   18.8% (19/101)
+  moderate      29.2% (73/250)
+  simple        51.4% (76/148)
+
+By database:
+  california_schools           3.3% (1/30)
+  card_games                  28.8% (15/52)
+  codebase_community          35.4% (17/48)
+  debit_card_specializing     40.0% (12/30)
+  european_football_2         52.9% (27/51)
+  financial                    6.2% (2/32)
+  formula_1                   31.8% (21/66)
+  student_club                56.2% (27/48)
+  superhero                   48.1% (25/52)
+  thrombosis_prediction       28.0% (14/50)
+  toxicology                  17.5% (7/40)
+
+Confidence check (is the agent right more often when its candidates agree?):
+  all candidates agreed :  46.4% (168/362)
+  candidates disagreed  :   0.0% (0/2)
+
